@@ -1232,7 +1232,7 @@ async function envoyerQuestionIA(question) {
   messagesEl.scrollTop=messagesEl.scrollHeight;
   iaConversation.push({role:"user",content:question});
   try {
-    var response=await fetch("/api/Sanny",{
+    var response=await fetch("/API/Sanny",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"llama3-70b-8192",max_tokens:1500,messages:[{role:"system",content:getSannySystem()},...iaConversation]})
     });
