@@ -332,6 +332,8 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 
 <div id="offline-banner" class="offline-banner">📵 Mode hors-ligne</div>
 <div id="toast"></div>
+<div id="version-badge" style="position:fixed;bottom:10px;right:10px;background:#27ae60;color:white;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,0.3)">✅ V-GROQ OK</div>
+<script>setTimeout(function(){var b=document.getElementById('version-badge');if(b)b.remove();},1200000);</script>
 
 <!-- ═══════════════════════════════════════
      HEADER
@@ -1230,13 +1232,12 @@ async function envoyerQuestionIA(question) {
   messagesEl.scrollTop=messagesEl.scrollHeight;
   iaConversation.push({role:"user",content:question});
   try {
-    var response=await fetch("/api/sanny",{
+    var response=await fetch("/api/Sanny",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,system:getSannySystem(),messages:iaConversation})
+      body:JSON.stringify({model:"llama3-70b-8192",max_tokens:1500,messages:[{role:"system",content:getSannySystem()},...iaConversation]})
     });
-    if(!response.ok){var ed=await response.json().catch(function(){return{};});throw new Error(ed.error&&ed.error.message?ed.error.message:"Erreur "+response.status);}
     var data=await response.json();
-    var reponse=data.content&&data.content[0]&&data.content[0].text?data.content[0].text:"Je n'ai pas pu repondre. Reessayez.";
+    var reponse=data.choices&&data.choices[0]?data.choices[0].message.content:"Désolé, je n'ai pas pu répondre. Réessayez.";
     iaConversation.push({role:"assistant",content:reponse});
     var loading=document.getElementById("ia-loading"); if(loading)loading.remove();
     var botMsg=document.createElement("div");
