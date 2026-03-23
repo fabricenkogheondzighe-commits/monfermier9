@@ -1156,19 +1156,65 @@ function sannyStopSpeaking() {
   sannySpeaking = false;
 }
 
+function formatMontantVocal(text) {
+  // Convertir les montants en texte lisible
+  text = text.replace(/(\d[\d\s]*)\s*(FCFA|XAF|CFA|F\.?CFA)/gi, function(m, nb, dev) {
+    var n = parseInt(nb.replace(/\s/g,''));
+    var mot = '';
+    if(n >= 1000000) mot = (n/1000000).toFixed(n%1000000===0?0:1) + ' million';
+    else if(n >= 1000) mot = (n/1000).toFixed(n%1000===0?0:0) + ' mille';
+    else mot = n.toString();
+    return mot + ' francs CFA';
+  });
+  // Convertir % en "pourcent"
+  text = text.replace(/(\d+)\s*%/g, '$1 pourcent');
+  // Convertir les nombres avec espaces (ex: 15 000)
+  text = text.replace(/(\d{1,3})((\s\d{3})+)/g, function(m) {
+    return m.replace(/\s/g,'');
+  });
+  return text;
+}
+
 function sannySpeak(text) {
   if(!window._sannyTTS || !window.speechSynthesis) return;
   sannyStopSpeaking();
-  var cleanText = text.replace(/[\u{1F300}-\u{1FFFF}]/gu,"").replace(/[#*_~`]/g,"").slice(0,600).trim();
+  var cleanText = text.replace(/[\u{1F300}-\u{1FFFF}]/gu,"").replace(/[#*_~`]/g,"").trim();
+  cleanText = formatMontantVocal(cleanText);
   if(!cleanText) return;
-  var utterance = new SpeechSynthesisUtterance(cleanText);
-  utterance.lang = "fr-FR"; utterance.rate = 1.0; utterance.pitch = 1.1;
+
+  // Découper en morceaux de 180 caractères max sur les phrases
+  var chunks = [];
+  var sentences = cleanText.match(/[^.!?]+[.!?]*/g) || [cleanText];
+  var current = "";
+  sentences.forEach(function(s) {
+    if((current + s).length > 180) {
+      if(current.trim()) chunks.push(current.trim());
+      current = s;
+    } else {
+      current += s;
+    }
+  });
+  if(current.trim()) chunks.push(current.trim());
+
   var voices = window.speechSynthesis.getVoices();
   var frVoice = voices.find(function(v){return v.lang.startsWith("fr")&&v.name.toLowerCase().includes("female");}) || voices.find(function(v){return v.lang.startsWith("fr");});
-  if(frVoice) utterance.voice = frVoice;
+
+  var index = 0;
   sannySpeaking = true;
-  utterance.onend = function(){ sannySpeaking=false; };
-  window.speechSynthesis.speak(utterance);
+
+  function speakNext() {
+    if(index >= chunks.length || !sannySpeaking) {
+      sannySpeaking = false;
+      return;
+    }
+    var utterance = new SpeechSynthesisUtterance(chunks[index]);
+    utterance.lang = "fr-FR"; utterance.rate = 1.0; utterance.pitch = 1.1;
+    if(frVoice) utterance.voice = frVoice;
+    utterance.onend = function() { index++; speakNext(); };
+    utterance.onerror = function() { index++; speakNext(); };
+    window.speechSynthesis.speak(utterance);
+  }
+  speakNext();
 }
 
 function toggleSannyVoice() {
@@ -1232,7 +1278,7 @@ async function envoyerQuestionIA(question) {
   messagesEl.scrollTop=messagesEl.scrollHeight;
   iaConversation.push({role:"user",content:question});
   try {
-    var response=await fetch("/api/Sanny",{
+    var response=await fetch("/API/Sanny",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"llama3-70b-8192",max_tokens:1500,messages:[{role:"system",content:getSannySystem()},...iaConversation]})
     });
