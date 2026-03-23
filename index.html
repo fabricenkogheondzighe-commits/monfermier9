@@ -458,7 +458,10 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
     </button>
   </div>
   <!-- ONGLETS RANGÉE 4 -->
-  <div class="admin-tabs-row2" style="grid-template-columns:repeat(2,1fr);padding-top:0">
+  <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
+    <button class="admin-tab" id="tab-catalogue" onclick="openTab('catalogue')">
+      <span class="tab-icon">🛍️</span>Catalogue
+    </button>
     <button class="admin-tab" id="tab-reglement" onclick="openTab('reglement')">
       <span class="tab-icon">📜</span>Règlement
     </button>
@@ -1360,6 +1363,7 @@ function openTab(tab) {
     case "settings":  renderTabSettings(content); break;
     case "reglement": renderTabReglement(content); break;
     case "messages":  renderTabMessages(content); break;
+    case "catalogue": renderTabCatalogue(content); break;
   }
 }
 
@@ -3878,6 +3882,12 @@ function renderVendorHome() {
     '<button onclick="showMyVendorProfile()" style="padding:12px;background:#0a0f1a;border:1px solid #c9a84c44;color:#c9a84c;border-radius:10px;font-size:13px;font-weight:600">👤 Mon profil</button>'+
     '<button onclick="showMyCommissions()" style="padding:12px;background:#0a0f1a;border:1px solid #a07ad544;color:#a07ad5;border-radius:10px;font-size:13px;font-weight:600">💰 Mes commissions</button>'+
     '</div>';
+  // Bouton Catalogues
+  var nbCats = getCatalogues().filter(function(c){return c.publie;}).length;
+  html += '<div style="padding:0 16px 8px">'+
+    '<button onclick="renderVendorCatalogues()" style="width:100%;padding:13px;background:linear-gradient(135deg,#1a0a00,#3a1a00);border:2px solid #c9a84c55;color:#c9a84c;border-radius:12px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">'+
+    '<span style="font-size:20px">🛍️</span> Catalogues produits'+(nbCats>0?' <span style="background:#c9a84c;color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">'+nbCats+' nouveau'+(nbCats>1?'x':'')+'</span>':'')+
+    '</button></div>';
   // Bouton Sanny
   html += '<div style="padding:0 16px 8px">'+
     '<button onclick="openAssistantIA()" style="width:100%;padding:14px;background:linear-gradient(135deg,#12002a,#2d0a5a);border:2px solid #9b59b655;color:#c39bd3;border-radius:12px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">'+
@@ -5353,6 +5363,184 @@ document.getElementById("login-code").addEventListener("keydown", function(e){
     </div>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════
+     SYSTÈME CATALOGUE
+═══════════════════════════════════════ -->
+<script>
+function getCatalogues(){try{return JSON.parse(localStorage.getItem('mf_catalogues')||'[]');}catch(e){return[];}}
+function saveCatalogues(arr){localStorage.setItem('mf_catalogues',JSON.stringify(arr));}
+
+function renderTabCatalogue(el){
+  var cats=getCatalogues();
+  var html='<div style="margin-bottom:12px"><button class="btn-gold" style="width:100%" onclick="openNouveauCatalogue()">➕ Nouveau catalogue</button></div>';
+  if(cats.length===0){
+    html+='<div style="text-align:center;padding:40px 20px;color:#4a5a7a"><div style="font-size:48px;margin-bottom:12px">🛍️</div><div style="font-size:14px">Aucun catalogue créé</div><div style="font-size:12px;margin-top:6px">Créez votre premier catalogue promotionnel</div></div>';
+  } else {
+    cats.forEach(function(cat,i){
+      html+='<div style="background:linear-gradient(135deg,#001428,#000f1e);border:1px solid #c9a84c33;border-radius:12px;padding:14px;margin-bottom:10px">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">';
+      html+='<div><div style="font-size:14px;font-weight:700;color:#c9a84c">'+cat.titre+'</div>';
+      html+='<div style="font-size:11px;color:#4a5a7a;margin-top:3px">'+cat.date+' · '+(cat.produits||[]).length+' produit(s)</div></div>';
+      html+='<span style="font-size:11px;font-weight:700;color:'+(cat.publie?'#7ac97a':'#c97a7a')+'">'+(cat.publie?'🟢 Publié':'🔴 Brouillon')+'</span></div>';
+      if(cat.description)html+='<div style="font-size:12px;color:#8a8070;margin-bottom:10px">'+cat.description+'</div>';
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">';
+      html+='<button onclick="voirCatalogueAdmin('+i+')" style="padding:8px;background:#0a0f1a;border:1px solid #c9a84c44;color:#c9a84c;border-radius:8px;font-size:11px;font-weight:600">👁️ Voir</button>';
+      html+='<button onclick="togglePublieCatalogue('+i+')" style="padding:8px;background:#0a0f1a;border:1px solid '+(cat.publie?'#c97a7a44':'#7ac97a44')+';color:'+(cat.publie?'#c97a7a':'#7ac97a')+';border-radius:8px;font-size:11px;font-weight:600">'+(cat.publie?'⏸️ Dépublier':'✅ Publier')+'</button>';
+      html+='<button onclick="supprimerCatalogue('+i+')" style="padding:8px;background:#0a0f1a;border:1px solid #ff444433;color:#ff6666;border-radius:8px;font-size:11px;font-weight:600">🗑️ Sup.</button>';
+      html+='</div></div>';
+    });
+  }
+  el.innerHTML=html;
+}
+
+function openNouveauCatalogue(){
+  window._catProduitsTemp=[];
+  var html='<div style="padding:16px;background:#0a0f1a;min-height:100vh">';
+  html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px"><button onclick="openTab(\'catalogue\')" style="background:none;border:none;color:#c9a84c;font-size:22px;cursor:pointer">←</button><div style="font-size:16px;font-weight:700;color:#c9a84c">Nouveau catalogue</div></div>';
+  html+='<div class="field"><label>TITRE *</label><input id="cat-titre" placeholder="Ex: Nouveautés Avril 2026" style="width:100%;background:#14120f;border:1px solid #2e2a22;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px"></div>';
+  html+='<div class="field"><label>DESCRIPTION / MESSAGE PROMO</label><textarea id="cat-desc" placeholder="Message pour vos clients..." style="width:100%;background:#14120f;border:1px solid #2e2a22;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px;min-height:70px;resize:none"></textarea></div>';
+  html+='<div style="font-size:11px;color:#c9a84c;letter-spacing:2px;margin:16px 0 10px">PRODUITS</div>';
+  html+='<div id="cat-produits-list"></div>';
+  html+='<button onclick="ajouterProduitCatalogue()" style="width:100%;background:#14120f;border:2px dashed #c9a84c44;color:#c9a84c;padding:12px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;cursor:pointer">➕ Ajouter un produit</button>';
+  html+='<button onclick="sauvegarderCatalogue()" class="btn-gold" style="width:100%;padding:15px;font-size:15px">💾 Sauvegarder le catalogue</button>';
+  html+='</div>';
+  document.getElementById("admin-content").innerHTML=html;
+}
+
+function ajouterProduitCatalogue(){
+  window._catProduitsTemp=window._catProduitsTemp||[];
+  window._catProduitsTemp.push({nom:'',prix:'',description:'',promo:'',image:'',video:''});
+  renderProduitsTemp();
+}
+
+function renderProduitsTemp(){
+  var list=document.getElementById("cat-produits-list");
+  if(!list)return;
+  var html='';
+  (window._catProduitsTemp||[]).forEach(function(p,i){
+    html+='<div style="background:#14120f;border:1px solid #2e2a22;border-radius:10px;padding:14px;margin-bottom:10px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:#c9a84c">PRODUIT '+(i+1)+'</div>';
+    html+='<button onclick="supprimerProduitTemp('+i+')" style="background:none;border:none;color:#ff6666;font-size:16px;cursor:pointer">🗑️</button></div>';
+    html+='<div class="field"><label>NOM DU PRODUIT *</label><input value="'+(p.nom||'')+'" oninput="updateProduitTemp('+i+',\'nom\',this.value)" placeholder="Ex: Piment en pâte 250g" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    html+='<div class="field"><label>PRIX</label><input value="'+(p.prix||'')+'" oninput="updateProduitTemp('+i+',\'prix\',this.value)" placeholder="500 FCFA" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
+    html+='<div class="field"><label>PROMO</label><input value="'+(p.promo||'')+'" oninput="updateProduitTemp('+i+',\'promo\',this.value)" placeholder="-20%" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div></div>';
+    html+='<div class="field"><label>DESCRIPTION / COMPOSITION</label><textarea oninput="updateProduitTemp('+i+',\'description\',this.value)" placeholder="Ingrédients, utilisation..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;min-height:60px;resize:none">'+(p.description||'')+'</textarea></div>';
+    html+='<div class="field"><label>📸 PHOTO PACKAGING</label><div style="display:flex;gap:8px;align-items:center">';
+    if(p.image)html+='<img src="'+p.image+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #c9a84c44">';
+    html+='<label style="flex:1;background:#0a0f1a;border:2px dashed #c9a84c44;color:#c9a84c;padding:10px;border-radius:8px;font-size:12px;font-weight:600;text-align:center;cursor:pointer">📷 '+(p.image?'Changer':'Ajouter photo')+'<input type="file" accept="image/*" style="display:none" onchange="uploadImageProduit('+i+',this)"></label></div></div>';
+    html+='<div class="field"><label>🎥 VIDÉO (lien YouTube...)</label><input value="'+(p.video||'')+'" oninput="updateProduitTemp('+i+',\'video\',this.value)" placeholder="https://youtube.com/..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
+    html+='</div>';
+  });
+  list.innerHTML=html;
+}
+
+function updateProduitTemp(i,champ,val){if(window._catProduitsTemp&&window._catProduitsTemp[i])window._catProduitsTemp[i][champ]=val;}
+function supprimerProduitTemp(i){window._catProduitsTemp.splice(i,1);renderProduitsTemp();}
+
+function uploadImageProduit(i,input){
+  var file=input.files[0]; if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){window._catProduitsTemp[i].image=e.target.result;renderProduitsTemp();};
+  reader.readAsDataURL(file);
+}
+
+function sauvegarderCatalogue(){
+  var titre=document.getElementById("cat-titre").value.trim();
+  if(!titre){showToast("⚠️ Titre obligatoire !");return;}
+  var cats=getCatalogues();
+  cats.push({titre:titre,description:document.getElementById("cat-desc").value.trim(),date:new Date().toLocaleDateString("fr-FR"),publie:false,produits:JSON.parse(JSON.stringify(window._catProduitsTemp||[]))});
+  saveCatalogues(cats);
+  showToast("✅ Catalogue sauvegardé !");
+  openTab("catalogue");
+}
+
+function togglePublieCatalogue(i){
+  var cats=getCatalogues(); cats[i].publie=!cats[i].publie; saveCatalogues(cats);
+  showToast(cats[i].publie?"✅ Catalogue publié aux vendeurs !":"⏸️ Catalogue dépublié");
+  openTab("catalogue");
+}
+
+function supprimerCatalogue(i){
+  if(!confirm("Supprimer ce catalogue ?"))return;
+  var cats=getCatalogues(); cats.splice(i,1); saveCatalogues(cats);
+  showToast("🗑️ Catalogue supprimé"); openTab("catalogue");
+}
+
+function voirCatalogueAdmin(i){
+  var cat=getCatalogues()[i];
+  renderCatalogueDetail(cat,true);
+}
+
+function renderCatalogueDetail(cat,isAdmin){
+  var retourFn=isAdmin?"openTab('catalogue')":'renderVendorCatalogues()';
+  var html='<div style="padding:16px;background:#0a0f1a;min-height:100vh">';
+  html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><button onclick="'+retourFn+'" style="background:none;border:none;color:#c9a84c;font-size:22px;cursor:pointer">←</button>';
+  html+='<div style="flex:1"><div style="font-size:16px;font-weight:700;color:#c9a84c">'+cat.titre+'</div><div style="font-size:11px;color:#4a5a7a">'+cat.date+'</div></div></div>';
+  if(cat.description)html+='<div style="background:linear-gradient(135deg,#0d1525,#1a2540);border:1px solid #c9a84c33;border-radius:10px;padding:12px;margin:10px 0;font-size:13px;color:#c9a84c;font-style:italic">'+cat.description+'</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">';
+  html+='<button onclick="partagerWhatsApp(\''+encodeURIComponent(cat.titre)+'\',\''+encodeURIComponent(cat.description||'')+'\','+JSON.stringify((cat.produits||[]).map(function(p){return {nom:p.nom,prix:p.prix,promo:p.promo,description:p.description};}))+')" style="padding:11px;background:linear-gradient(135deg,#128c3e,#25d366);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">💬 WhatsApp</button>';
+  html+='<button onclick="showToast(\'📸 Faites une capture d\'écran pour partager !\')" style="padding:11px;background:linear-gradient(135deg,#1a2540,#2a3a60);color:#7aaad5;border:1px solid #3a5a9a55;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">📸 Image</button>';
+  html+='</div>';
+  (cat.produits||[]).forEach(function(p){
+    html+='<div style="background:linear-gradient(135deg,#001428,#000f1e);border:1px solid #c9a84c33;border-radius:14px;overflow:hidden;margin-bottom:14px">';
+    if(p.image)html+='<img src="'+p.image+'" style="width:100%;max-height:220px;object-fit:cover">';
+    html+='<div style="padding:14px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
+    html+='<div style="font-size:16px;font-weight:700;color:#e8e0d0">'+p.nom+'</div>';
+    if(p.promo)html+='<span style="background:linear-gradient(135deg,#8b0000,#c0392b);color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">🔥 '+p.promo+'</span>';
+    html+='</div>';
+    if(p.prix)html+='<div style="font-size:20px;font-weight:700;color:#c9a84c;margin-bottom:8px">'+p.prix+'</div>';
+    if(p.description)html+='<div style="font-size:13px;color:#8a8070;line-height:1.6;margin-bottom:8px">'+p.description+'</div>';
+    if(p.video)html+='<a href="'+p.video+'" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1a0a2e;border:1px solid #9b59b644;color:#c39bd3;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">▶️ Voir la vidéo</a>';
+    html+='</div></div>';
+  });
+  html+='</div>';
+  if(isAdmin){document.getElementById("admin-content").innerHTML=html;}
+  else{document.getElementById("vendor-home-content").innerHTML=html;}
+}
+
+function partagerWhatsApp(titreEnc,descEnc,produits){
+  var titre=decodeURIComponent(titreEnc);
+  var desc=decodeURIComponent(descEnc);
+  var msg="🌶️ *Mon Fermier SARL* — "+titre+"\n\n";
+  if(desc)msg+=desc+"\n\n";
+  produits.forEach(function(p){
+    msg+="• *"+p.nom+"*";
+    if(p.prix)msg+=" — "+p.prix;
+    if(p.promo)msg+=" 🔥 "+p.promo;
+    if(p.description)msg+="\n  _"+p.description+"_";
+    msg+="\n";
+  });
+  msg+="\n📲 *Commandez maintenant !*";
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+}
+
+function renderVendorCatalogues(){
+  var cats=getCatalogues().filter(function(c){return c.publie;});
+  var html='<div style="padding:16px;background:#0a0f1a;min-height:100vh">';
+  html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><button onclick="renderVendorHome()" style="background:none;border:none;color:#c9a84c;font-size:22px;cursor:pointer">←</button><div style="font-size:16px;font-weight:700;color:#c9a84c">🛍️ Catalogues</div></div>';
+  if(cats.length===0){
+    html+='<div style="text-align:center;padding:40px;color:#4a5a7a"><div style="font-size:48px;margin-bottom:12px">🛍️</div><div>Aucun catalogue disponible</div><div style="font-size:12px;margin-top:6px;color:#2a3a5a">La direction publiera bientôt un catalogue</div></div>';
+  } else {
+    cats.forEach(function(cat,i){
+      html+='<div onclick="renderCatalogueDetail(getCatalogues().filter(function(c){return c.publie;})['+i+'],false)" style="background:linear-gradient(135deg,#001428,#000f1e);border:1px solid #c9a84c33;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer">';
+      // Première image du catalogue si disponible
+      var firstImg=(cat.produits||[]).find(function(p){return p.image;});
+      if(firstImg)html+='<img src="'+firstImg.image+'" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:10px">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center">';
+      html+='<div><div style="font-size:14px;font-weight:700;color:#c9a84c">'+cat.titre+'</div>';
+      html+='<div style="font-size:11px;color:#4a5a7a;margin-top:3px">'+cat.date+' · '+(cat.produits||[]).length+' produit(s)</div></div>';
+      html+='<span style="font-size:20px;color:#c9a84c">›</span></div>';
+      if(cat.description)html+='<div style="font-size:12px;color:#8a8070;margin-top:6px">'+cat.description+'</div>';
+      html+='</div>';
+    });
+  }
+  html+='</div>';
+  document.getElementById("vendor-home-content").innerHTML=html;
+}
+</script>
 
 <!-- ═══════════════════════════════════════
      PWA — SERVICE WORKER + BANNIÈRE
