@@ -7,22 +7,13 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { model, max_tokens, messages } = req.body;
+    const { max_tokens, messages } = req.body;
 
     // Séparer le system message des autres messages
     const systemMsg = messages && messages.find(m => m.role === 'system');
     const chatMessages = messages ? messages.filter(m => m.role !== 'system') : [];
 
-    const body = {
-      model: model || 'llama3-70b-8192',
-      max_tokens: max_tokens || 1500,
-      messages: chatMessages
-    };
-
-    // Groq accepte le system comme premier message avec role "system"
-    if (systemMsg) {
-      body.messages = [systemMsg, ...chatMessages];
-    }
+    const bodyMessages = systemMsg ? [systemMsg, ...chatMessages] : chatMessages;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -30,13 +21,16 @@ module.exports = async function handler(req, res) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: max_tokens || 1500,
+        messages: bodyMessages
+      })
     });
 
     const data = await response.json();
 
-    // Log pour debug
-    console.log('Groq response status:', response.status);
+    console.log('Groq status:', response.status);
     console.log('Groq data:', JSON.stringify(data));
 
     if (!response.ok) {
