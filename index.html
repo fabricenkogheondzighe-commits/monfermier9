@@ -5422,10 +5422,34 @@ function openNouveauCatalogue(){
   document.getElementById("admin-content").innerHTML=html;
 }
 
+function sauverProduitsAvantAction(){
+  // Sauvegarder les valeurs actuelles des inputs avant de rerendre
+  var list=document.getElementById("cat-produits-list");
+  if(!list)return;
+  (window._catProduitsTemp||[]).forEach(function(p,i){
+    var nom=document.getElementById('p-nom-'+i);
+    var prix=document.getElementById('p-prix-'+i);
+    var promo=document.getElementById('p-promo-'+i);
+    var desc=document.getElementById('p-desc-'+i);
+    var video=document.getElementById('p-video-'+i);
+    if(nom)p.nom=nom.value;
+    if(prix)p.prix=prix.value;
+    if(promo)p.promo=promo.value;
+    if(desc)p.description=desc.value;
+    if(video)p.video=video.value;
+  });
+}
+
 function ajouterProduitCatalogue(){
+  sauverProduitsAvantAction();
   window._catProduitsTemp=window._catProduitsTemp||[];
   window._catProduitsTemp.push({nom:'',prix:'',description:'',promo:'',image:'',video:''});
   renderProduitsTemp();
+  // Scroller vers le bas pour voir le nouveau produit
+  setTimeout(function(){
+    var list=document.getElementById("cat-produits-list");
+    if(list)list.lastElementChild&&list.lastElementChild.scrollIntoView({behavior:'smooth'});
+  },100);
 }
 
 function renderProduitsTemp(){
@@ -5436,15 +5460,15 @@ function renderProduitsTemp(){
     html+='<div style="background:#14120f;border:1px solid #2e2a22;border-radius:10px;padding:14px;margin-bottom:10px">';
     html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:#c9a84c">PRODUIT '+(i+1)+'</div>';
     html+='<button onclick="supprimerProduitTemp('+i+')" style="background:none;border:none;color:#ff6666;font-size:16px;cursor:pointer">🗑️</button></div>';
-    html+='<div class="field"><label>NOM DU PRODUIT *</label><input value="'+(p.nom||'')+'" oninput="updateProduitTemp('+i+',\'nom\',this.value)" placeholder="Ex: Piment en pâte 250g" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
+    html+='<div class="field"><label>NOM DU PRODUIT *</label><input id="p-nom-'+i+'" value="'+(p.nom||'')+'" oninput="updateProduitTemp('+i+',\'nom\',this.value)" placeholder="Ex: Piment en pâte 250g" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-    html+='<div class="field"><label>PRIX</label><input value="'+(p.prix||'')+'" oninput="updateProduitTemp('+i+',\'prix\',this.value)" placeholder="500 FCFA" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
-    html+='<div class="field"><label>PROMO</label><input value="'+(p.promo||'')+'" oninput="updateProduitTemp('+i+',\'promo\',this.value)" placeholder="-20%" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div></div>';
-    html+='<div class="field"><label>DESCRIPTION / COMPOSITION</label><textarea oninput="updateProduitTemp('+i+',\'description\',this.value)" placeholder="Ingrédients, utilisation..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;min-height:60px;resize:none">'+(p.description||'')+'</textarea></div>';
+    html+='<div class="field"><label>PRIX</label><input id="p-prix-'+i+'" value="'+(p.prix||'')+'" oninput="updateProduitTemp('+i+',\'prix\',this.value)" placeholder="500 FCFA" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
+    html+='<div class="field"><label>PROMO</label><input id="p-promo-'+i+'" value="'+(p.promo||'')+'" oninput="updateProduitTemp('+i+',\'promo\',this.value)" placeholder="-20%" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div></div>';
+    html+='<div class="field"><label>DESCRIPTION / COMPOSITION</label><textarea id="p-desc-'+i+'" oninput="updateProduitTemp('+i+',\'description\',this.value)" placeholder="Ingrédients, utilisation..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;min-height:60px;resize:none">'+(p.description||'')+'</textarea></div>';
     html+='<div class="field"><label>📸 PHOTO PACKAGING</label><div style="display:flex;gap:8px;align-items:center">';
     if(p.image)html+='<img src="'+p.image+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #c9a84c44">';
     html+='<label style="flex:1;background:#0a0f1a;border:2px dashed #c9a84c44;color:#c9a84c;padding:10px;border-radius:8px;font-size:12px;font-weight:600;text-align:center;cursor:pointer">📷 '+(p.image?'Changer':'Ajouter photo')+'<input type="file" accept="image/*" style="display:none" onchange="uploadImageProduit('+i+',this)"></label></div></div>';
-    html+='<div class="field"><label>🎥 VIDÉO (lien YouTube...)</label><input value="'+(p.video||'')+'" oninput="updateProduitTemp('+i+',\'video\',this.value)" placeholder="https://youtube.com/..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
+    html+='<div class="field"><label>🎥 VIDÉO (lien YouTube...)</label><input id="p-video-'+i+'" value="'+(p.video||'')+'" oninput="updateProduitTemp('+i+',\'video\',this.value)" placeholder="https://youtube.com/..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px"></div>';
     html+='</div>';
   });
   list.innerHTML=html;
@@ -5461,12 +5485,22 @@ function uploadImageProduit(i,input){
 }
 
 function sauvegarderCatalogue(){
+  sauverProduitsAvantAction();
   var titre=document.getElementById("cat-titre").value.trim();
   if(!titre){showToast("⚠️ Titre obligatoire !");return;}
+  var produits=window._catProduitsTemp||[];
+  if(produits.length===0){showToast("⚠️ Ajoutez au moins un produit !");return;}
   var cats=getCatalogues();
-  cats.push({titre:titre,description:document.getElementById("cat-desc").value.trim(),date:new Date().toLocaleDateString("fr-FR"),publie:false,produits:JSON.parse(JSON.stringify(window._catProduitsTemp||[]))});
+  var catData={titre:titre,description:document.getElementById("cat-desc").value.trim(),date:new Date().toLocaleDateString("fr-FR"),publie:false,produits:JSON.parse(JSON.stringify(produits))};
+  if(window._catEditIndex!==undefined){
+    catData.publie=cats[window._catEditIndex].publie;
+    cats[window._catEditIndex]=catData;
+    window._catEditIndex=undefined;
+  } else {
+    cats.push(catData);
+  }
   saveCatalogues(cats);
-  showToast("✅ Catalogue sauvegardé !");
+  showToast("✅ Catalogue sauvegardé avec "+produits.length+" produit(s) !");
   openTab("catalogue");
 }
 
