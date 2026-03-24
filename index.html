@@ -5383,7 +5383,31 @@ document.getElementById("login-code").addEventListener("keydown", function(e){
 ═══════════════════════════════════════ -->
 <script>
 function getCatalogues(){try{return JSON.parse(localStorage.getItem('mf_catalogues')||'[]');}catch(e){return[];}}
-function saveCatalogues(arr){localStorage.setItem('mf_catalogues',JSON.stringify(arr));}
+function saveCatalogues(arr){
+  try{
+    localStorage.setItem('mf_catalogues',JSON.stringify(arr));
+  }catch(e){
+    // localStorage plein - compresser les images encore plus
+    showToast('⚠️ Photos trop lourdes, compression en cours...');
+    var compressed=arr.map(function(cat){
+      return Object.assign({},cat,{
+        produits:(cat.produits||[]).map(function(p){
+          if(p.image&&p.image.length>50000){
+            var img=new Image();
+            var canvas=document.createElement('canvas');
+            img.src=p.image;
+            canvas.width=300;canvas.height=300;
+            var ctx=canvas.getContext('2d');
+            ctx.drawImage(img,0,0,300,300);
+            return Object.assign({},p,{image:canvas.toDataURL('image/jpeg',0.3)});
+          }
+          return p;
+        })
+      });
+    });
+    localStorage.setItem('mf_catalogues',JSON.stringify(compressed));
+  }
+}
 
 function renderTabCatalogue(el){
   var cats=getCatalogues();
@@ -5481,37 +5505,58 @@ function supprimerProduitTemp(i){window._catProduitsTemp.splice(i,1);renderProdu
 
 function uploadImageProduit(i,input){
   var file=input.files[0]; if(!file)return;
+  // Compresser l'image avant stockage
   var reader=new FileReader();
-  reader.onload=function(e){window._catProduitsTemp[i].image=e.target.result;renderProduitsTemp();};
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement('canvas');
+      var MAX=600; // max 600px
+      var w=img.width, h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      canvas.width=w; canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      var compressed=canvas.toDataURL('image/jpeg',0.6); // qualité 60%
+      window._catProduitsTemp[i].image=compressed;
+      renderProduitsTemp();
+      showToast('📸 Photo ajoutée ('+Math.round(compressed.length/1024)+'Ko)');
+    };
+    img.src=e.target.result;
+  };
   reader.readAsDataURL(file);
 }
 
 function sauvegarderCatalogue(){
   var titre=document.getElementById("cat-titre");
   var desc=document.getElementById("cat-desc");
-  if(!titre||!titre.value.trim()){showToast("⚠️ Titre obligatoire !");return;}
   
-  // Lire directement tous les inputs du DOM
+  if(!titre){showToast("⚠️ Erreur: titre introuvable");return;}
+  if(!titre.value.trim()){showToast("⚠️ Remplissez le titre du catalogue !");return;}
+  
+  // Lire tous les produits directement depuis le DOM
   var produits=[];
   var n=window._catProduitsTemp?window._catProduitsTemp.length:0;
+  
   for(var i=0;i<n;i++){
-    var nom=document.getElementById('p-nom-'+i);
-    var px=document.getElementById('p-prix-'+i);
-    var pr=document.getElementById('p-promo-'+i);
-    var dc=document.getElementById('p-desc-'+i);
-    var vi=document.getElementById('p-video-'+i);
-    var img=window._catProduitsTemp[i]?window._catProduitsTemp[i].image||'':'';
+    var nomEl=document.getElementById('p-nom-'+i);
+    var prixEl=document.getElementById('p-prix-'+i);
+    var promoEl=document.getElementById('p-promo-'+i);
+    var descEl=document.getElementById('p-desc-'+i);
+    var videoEl=document.getElementById('p-video-'+i);
+    var img=(window._catProduitsTemp[i]&&window._catProduitsTemp[i].image)||'';
     produits.push({
-      nom:nom?nom.value.trim():(window._catProduitsTemp[i]?window._catProduitsTemp[i].nom||'':''),
-      prix:px?px.value.trim():(window._catProduitsTemp[i]?window._catProduitsTemp[i].prix||'':''),
-      promo:pr?pr.value.trim():(window._catProduitsTemp[i]?window._catProduitsTemp[i].promo||'':''),
-      description:dc?dc.value.trim():(window._catProduitsTemp[i]?window._catProduitsTemp[i].description||'':''),
-      video:vi?vi.value.trim():(window._catProduitsTemp[i]?window._catProduitsTemp[i].video||'':''),
+      nom:nomEl?nomEl.value.trim():window._catProduitsTemp[i].nom||'',
+      prix:prixEl?prixEl.value.trim():window._catProduitsTemp[i].prix||'',
+      promo:promoEl?promoEl.value.trim():window._catProduitsTemp[i].promo||'',
+      description:descEl?descEl.value.trim():window._catProduitsTemp[i].description||'',
+      video:videoEl?videoEl.value.trim():window._catProduitsTemp[i].video||'',
       image:img
     });
   }
   
-  if(produits.length===0){showToast("⚠️ Ajoutez au moins un produit !");return;}
+  if(n===0){showToast("⚠️ Ajoutez au moins un produit !");return;}
   
   var cats=getCatalogues();
   var catData={
@@ -5521,17 +5566,24 @@ function sauvegarderCatalogue(){
     publie:false,
     produits:produits
   };
-  if(window._catEditIndex!==undefined&&window._catEditIndex>=0){
-    catData.publie=cats[window._catEditIndex]?cats[window._catEditIndex].publie:false;
+  
+  if(window._catEditIndex!==undefined&&window._catEditIndex>=0&&cats[window._catEditIndex]){
+    catData.publie=cats[window._catEditIndex].publie||false;
     cats[window._catEditIndex]=catData;
     window._catEditIndex=undefined;
   } else {
     cats.push(catData);
   }
-  saveCatalogues(cats);
-  showToast("✅ "+produits.length+" produit(s) sauvegardé(s) !");
-  openTab("catalogue");
+  
+  try{
+    saveCatalogues(cats);
+    showToast("✅ "+produits.length+" produit(s) sauvegardé(s) !");
+    openTab("catalogue");
+  }catch(e){
+    showToast("❌ Erreur: "+e.message);
+  }
 }
+
 
 function togglePublieCatalogue(i){
   var cats=getCatalogues(); cats[i].publie=!cats[i].publie; saveCatalogues(cats);
