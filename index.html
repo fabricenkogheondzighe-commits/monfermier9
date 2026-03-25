@@ -589,62 +589,90 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 </div>
 
 
-<script>
+<script type="module">
 // ═══════════════════════════════════════
-// CONFIG FIREBASE (même projet)
+// SDK FIREBASE (vrai SDK — cloud)
 // ═══════════════════════════════════════
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDemo",
+  apiKey: "AIzaSyD_chYBtxQ2rGKbGakNRM-ydAy8YYelkeI",
+  authDomain: "mon-fermier-sarl.firebaseapp.com",
   projectId: "mon-fermier-sarl",
+  storageBucket: "mon-fermier-sarl.firebasestorage.app",
+  messagingSenderId: "430649297941",
   appId: "1:430649297941:web:66da6d7fabd6acfcac921c"
 };
 
-// Firebase stub (sera remplacé par le vrai SDK)
-const db = {
+const _app = initializeApp(FIREBASE_CONFIG);
+const _firestore = getFirestore(_app);
+window._auth = getAuth(_app);
+
+// Wrapper db compatible avec le code existant
+window.db = {
   collection: function(name) {
+    const colRef = collection(_firestore, name);
     return {
-      orderBy: function() { return this; },
-      onSnapshot: function(cb, err) {
-        try {
-          var data = JSON.parse(localStorage.getItem('mf_'+name) || '[]');
-          cb({ forEach: function(fn) { data.forEach(function(d){ fn({id:d.id, data:function(){return d;}}); }); }, docs:[] });
-        } catch(e) { if(err) err(e); }
-        return function(){};
+      onSnapshot: function(cb, errCb) {
+        return onSnapshot(colRef, function(snap) {
+          cb({ forEach: function(fn) { snap.docs.forEach(function(d){ fn({id:d.id, data:function(){return d.data();}}); }); } });
+        }, errCb || function(){});
       },
       add: function(data) {
-        var id = 'loc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-        var arr = JSON.parse(localStorage.getItem('mf_'+name)||'[]');
-        arr.push({id:id,...data});
-        localStorage.setItem('mf_'+name, JSON.stringify(arr));
-        return Promise.resolve({id:id});
+        return addDoc(colRef, data).then(function(ref){ return {id: ref.id}; });
       },
       doc: function(id) {
+        const docRef = doc(_firestore, name, id);
         return {
-          set: function(data) {
-            var arr = JSON.parse(localStorage.getItem('mf_'+name)||'[]');
-            var idx = arr.findIndex(function(x){return x.id===id;});
-            if(idx>=0) arr[idx]={id:id,...data}; else arr.push({id:id,...data});
-            localStorage.setItem('mf_'+name, JSON.stringify(arr));
-            return Promise.resolve();
-          },
-          update: function(data) {
-            var arr = JSON.parse(localStorage.getItem('mf_'+name)||'[]');
-            var idx = arr.findIndex(function(x){return x.id===id;});
-            if(idx>=0) Object.assign(arr[idx], data);
-            localStorage.setItem('mf_'+name, JSON.stringify(arr));
-            return Promise.resolve();
-          },
-          delete: function() {
-            var arr = JSON.parse(localStorage.getItem('mf_'+name)||'[]');
-            arr = arr.filter(function(x){return x.id!==id;});
-            localStorage.setItem('mf_'+name, JSON.stringify(arr));
-            return Promise.resolve();
-          }
+          set: function(data) { return setDoc(docRef, data); },
+          update: function(data) { return updateDoc(docRef, data); },
+          delete: function() { return deleteDoc(docRef); }
         };
       }
     };
   }
 };
+
+// ═══════════════════════════════════════
+// FIREBASE AUTH — connexion vendeurs/admin
+// ═══════════════════════════════════════
+window._firebaseLoginVendor = async function(email, password) {
+  return signInWithEmailAndPassword(window._auth, email, password);
+};
+window._firebaseLogout = function() {
+  return signOut(window._auth);
+};
+
+// Créer un compte vendeur dans Firebase Auth
+// (On se déconnecte puis reconnecte l'admin après)
+window._createVendorAuthAccount = async function(email, password) {
+  const { createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+  // Sauvegarder les infos admin
+  var adminCode = window._currentAdminCode;
+  var adminPass = window._currentAdminPass;
+  // Créer le compte vendeur (cette action déconnecte l'admin momentanément)
+  await createUserWithEmailAndPassword(window._auth, email, password);
+  // Reconnecter l'admin immédiatement
+  if(adminCode && adminPass) {
+    try { await signInWithEmailAndPassword(window._auth, "admin@monfermier.app", adminPass); } catch(e) {}
+  }
+};
+
+// Exposer les fonctions globales au module
+window.loadAll = loadAll;
+window.doLogin = doLogin;
+window.doLogout = doLogout;
+
+</script>
+
+<script>
+// Attendre que le module Firebase soit prêt
+function _waitForFirebase(cb) {
+  if(window.db && window._auth) { cb(); }
+  else { setTimeout(function(){ _waitForFirebase(cb); }, 50); }
+}
 
 // ═══════════════════════════════════════
 // CONSTANTES
@@ -792,24 +820,72 @@ function doLogin() {
 
   if(!code || !pass) { err.textContent="Remplissez tous les champs"; err.style.display="block"; return; }
 
-  // Admin
-  if(code === ADMIN_CODE && pass === ADMIN_PASSWORD) {
-    currentUser = {code:"ADMIN", name:"Administrateur", role:"admin"};
-    onLogin();
+  // Admin — connexion par email Firebase Auth
+  if(code === ADMIN_CODE) {
+    var adminEmail = "admin@monfermier.app";
+    window._firebaseLoginVendor(adminEmail, pass).then(function() {
+      window._currentAdminPass = pass; // sauvegarder pour reconnexion après création vendeur
+      currentUser = {code:"ADMIN", name:"Administrateur", role:"admin"};
+      onLogin();
+    }).catch(function() {
+      err.textContent = "Mot de passe admin incorrect";
+      err.style.display = "block";
+    });
     return;
   }
 
-  // Vendeur
-  var vendor = vendors.find(function(v){ return v.code===code && v.password===pass; });
-  if(vendor) {
-    if(vendor.suspended) { err.innerHTML="⛔ Compte suspendu. Contactez la direction."; err.style.display="block"; err.style.padding="10px"; err.style.borderRadius="8px"; err.style.background="#2e050533"; err.style.border="1px solid #c9202066"; return; }
-    currentUser = {code:vendor.code, name:vendor.name, role:"vendor", vendorId:vendor.id};
-    onLogin();
-    return;
+  // Vendeur — d'abord chercher dans la liste chargée de Firestore
+  function tryVendorLogin() {
+    var vendor = vendors.find(function(v){ return v.code===code; });
+    if(!vendor) {
+      err.textContent = "Code vendeur introuvable";
+      err.style.display = "block";
+      return;
+    }
+    // Connexion Firebase Auth avec email du vendeur
+    var vendorEmail = vendor.code.toLowerCase().replace(/[^a-z0-9]/g,"")+"-"+vendor.id.slice(-4)+"@monfermier.app";
+    window._firebaseLoginVendor(vendorEmail, pass).then(function() {
+      if(vendor.suspended) {
+        window._firebaseLogout();
+        err.innerHTML="⛔ Compte suspendu. Contactez la direction.";
+        err.style.display="block";
+        err.style.padding="10px"; err.style.borderRadius="8px";
+        err.style.background="#2e050533"; err.style.border="1px solid #c9202066";
+        return;
+      }
+      currentUser = {code:vendor.code, name:vendor.name, role:"vendor", vendorId:vendor.id};
+      onLogin();
+    }).catch(function() {
+      // Fallback : vérifier le mot de passe local (migration)
+      if(vendor.password === pass) {
+        if(vendor.suspended) {
+          err.innerHTML="⛔ Compte suspendu. Contactez la direction.";
+          err.style.display="block";
+          err.style.padding="10px"; err.style.borderRadius="8px";
+          err.style.background="#2e050533"; err.style.border="1px solid #c9202066";
+          return;
+        }
+        currentUser = {code:vendor.code, name:vendor.name, role:"vendor", vendorId:vendor.id};
+        onLogin();
+      } else {
+        err.textContent = "Code ou mot de passe incorrect";
+        err.style.display = "block";
+      }
+    });
   }
 
-  err.textContent = "Code ou mot de passe incorrect";
-  err.style.display = "block";
+  // Attendre que les vendors soient chargés si besoin
+  if(vendors.length > 0) {
+    tryVendorLogin();
+  } else {
+    // Attendre 2s que Firebase charge
+    var btn = document.querySelector(".btn-login");
+    if(btn) btn.textContent = "Connexion...";
+    setTimeout(function(){
+      if(btn) btn.textContent = "Se connecter";
+      tryVendorLogin();
+    }, 2000);
+  }
 }
 
 function onLogin() {
@@ -4655,6 +4731,8 @@ async function saveNewVendor() {
   }
 
   // MODE CRÉATION
+  showToast("⏳ Création du compte en cours...");
+
   var vendor = {
     firstName:firstName, lastName:lastName,
     name:firstName+" "+lastName,
@@ -4676,13 +4754,37 @@ async function saveNewVendor() {
     createdAt:new Date().toLocaleDateString("fr-FR")
   };
 
+  // 1. Sauvegarder dans Firestore d'abord pour obtenir l'ID
+  var newId;
   try {
     var ref = await db.collection("vendors").add(vendor);
-    vendor.id = ref.id;
+    newId = ref.id;
+    vendor.id = newId;
     vendors.push(vendor);
-  } catch(e) { vendor.id = "loc_"+Date.now(); vendors.push(vendor); }
+  } catch(e) {
+    newId = "loc_"+Date.now();
+    vendor.id = newId;
+    vendors.push(vendor);
+    showToast("✅ Vendeur "+vendor.name+" créé !");
+    showPage("page-admin");
+    openTab("vendors");
+    return;
+  }
 
-  showToast("✅ Vendeur "+vendor.name+" créé !");
+  // 2. Créer le compte Firebase Auth pour ce vendeur
+  // L'email est construit à partir du code et de l'ID (unique, pas visible par le vendeur)
+  var vendorEmail = avGeneratedCode.toLowerCase().replace(/[^a-z0-9]/g,"")+"-"+newId.slice(-4)+"@monfermier.app";
+
+  try {
+    // Utiliser la Cloud Function ou l'API Admin pour créer le compte
+    // Méthode alternative : créer via signInWithEmailAndPassword en utilisant un compte temporaire
+    await window._createVendorAuthAccount(vendorEmail, avGeneratedPass);
+    showToast("✅ Vendeur "+vendor.name+" créé avec compte cloud !");
+  } catch(e) {
+    // Pas grave si ça échoue — le fallback mot de passe local fonctionne
+    showToast("✅ Vendeur "+vendor.name+" créé ! (connexion locale)");
+  }
+
   showPage("page-admin");
   openTab("vendors");
 }
@@ -5147,9 +5249,11 @@ updateOffline();
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
-loadAll();
-showPage("page-login");
-startLoginClock();
+_waitForFirebase(function() {
+  loadAll();
+  showPage("page-login");
+  startLoginClock();
+});
 
 // Pré-remplir le règlement avec le contenu par défaut si jamais enregistré
 (function initReglement() {
