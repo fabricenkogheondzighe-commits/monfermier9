@@ -4766,34 +4766,33 @@ async function saveNewVendor() {
     createdAt:new Date().toLocaleDateString("fr-FR")
   };
 
-  // 1. Sauvegarder dans Firestore d'abord pour obtenir l'ID
+  // 1. Sauvegarder dans Firestore — erreur visible si ça échoue (plus de fallback silencieux)
   var newId;
   try {
+    // Inclure authEmail dans le doc dès la création
+    var vendorEmail = avGeneratedCode.toLowerCase().replace(/[^a-z0-9]/g,"")+"@monfermier.app";
+    vendor.authEmail = vendorEmail;
     var ref = await db.collection("vendors").add(vendor);
     newId = ref.id;
     vendor.id = newId;
     vendors.push(vendor);
+    console.log("✅ Vendeur sauvegardé Firestore, ID:", newId);
   } catch(e) {
-    newId = "loc_"+Date.now();
-    vendor.id = newId;
-    vendors.push(vendor);
-    showToast("✅ Vendeur "+vendor.name+" créé !");
-    showPage("page-admin");
-    openTab("vendors");
-    return;
+    console.error("❌ ERREUR Firestore saveNewVendor:", e && e.code, e && e.message, e);
+    showToast("❌ Erreur Firestore: "+(e&&e.code||e&&e.message||"inconnue")+" — voir console F12", true);
+    return; // Pas de fallback silencieux
   }
 
   // 2. Créer le compte Firebase Auth pour ce vendeur
-  // L'email est construit à partir du code et de l'ID (unique, pas visible par le vendeur)
-  var vendorEmail = avGeneratedCode.toLowerCase().replace(/[^a-z0-9]/g,"")+"-"+newId.slice(-4)+"@monfermier.app";
-
+  var vendorEmail = vendor.authEmail;
   try {
     await window._createVendorAuthAccount(vendorEmail, avGeneratedPass);
-    await db.collection("vendors").doc(newId).update({ authEmail: vendorEmail });
+    console.log("✅ Compte Auth créé:", vendorEmail);
     showToast("✅ Vendeur "+vendor.name+" créé avec compte cloud !");
   } catch(e) {
-    console.error("Erreur Auth vendeur:", e && e.code, e && e.message);
-    showToast("⚠️ Erreur création compte: "+(e&&e.code||"inconnue"), true);
+    console.error("⚠️ Erreur Auth vendeur:", e && e.code, e && e.message);
+    // Vendeur déjà dans Firestore, pas bloquant
+    showToast("⚠️ Vendeur créé mais erreur Auth: "+(e&&e.code||"inconnue"), true);
   }
 
   showPage("page-admin");
