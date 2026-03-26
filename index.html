@@ -825,6 +825,7 @@ function doLogin() {
     var adminEmail = "admin@monfermier.app";
     window._firebaseLoginVendor(adminEmail, pass).then(function() {
       window._currentAdminPass = pass; // sauvegarder pour reconnexion après création vendeur
+      window._currentAdminCode = code; // sauvegarder le code admin
       currentUser = {code:"ADMIN", name:"Administrateur", role:"admin"};
       onLogin();
     }).catch(function() {
@@ -4787,13 +4788,12 @@ async function saveNewVendor() {
   var vendorEmail = avGeneratedCode.toLowerCase().replace(/[^a-z0-9]/g,"")+"-"+newId.slice(-4)+"@monfermier.app";
 
   try {
-    // Utiliser la Cloud Function ou l'API Admin pour créer le compte
-    // Méthode alternative : créer via signInWithEmailAndPassword en utilisant un compte temporaire
     await window._createVendorAuthAccount(vendorEmail, avGeneratedPass);
+    await db.collection("vendors").doc(newId).update({ authEmail: vendorEmail });
     showToast("✅ Vendeur "+vendor.name+" créé avec compte cloud !");
   } catch(e) {
-    // Pas grave si ça échoue — le fallback mot de passe local fonctionne
-    showToast("✅ Vendeur "+vendor.name+" créé ! (connexion locale)");
+    console.error("Erreur Auth vendeur:", e && e.code, e && e.message);
+    showToast("⚠️ Erreur création compte: "+(e&&e.code||"inconnue"), true);
   }
 
   showPage("page-admin");
