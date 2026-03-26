@@ -878,13 +878,24 @@ function doLogin() {
   if(vendors.length > 0) {
     tryVendorLogin();
   } else {
-    // Attendre 2s que Firebase charge
+    // Attendre que Firebase charge avec retries (max 10s)
     var btn = document.querySelector(".btn-login");
-    if(btn) btn.textContent = "Connexion...";
-    setTimeout(function(){
-      if(btn) btn.textContent = "Se connecter";
-      tryVendorLogin();
-    }, 2000);
+    if(btn) { btn.textContent = "Connexion..."; btn.disabled = true; }
+    var attempts = 0;
+    var maxAttempts = 20; // 20 x 500ms = 10 secondes max
+    var interval = setInterval(function() {
+      attempts++;
+      if(vendors.length > 0) {
+        clearInterval(interval);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        tryVendorLogin();
+      } else if(attempts >= maxAttempts) {
+        clearInterval(interval);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        // Dernier essai même si vendors vide
+        tryVendorLogin();
+      }
+    }, 500);
   }
 }
 
