@@ -328,8 +328,8 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 .offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#2e0a0a;border-bottom:1px solid #c97a7a44;color:#c97a7a;text-align:center;padding:8px;font-size:12px;font-weight:600}
 </style>
 <script>
-// Horloge démarrée immédiatement dès que le DOM est prêt
 document.addEventListener("DOMContentLoaded", function() {
+  // --- Horloge login ---
   function tickLogin() {
     var now = new Date();
     var h = String(now.getHours()).padStart(2,"0");
@@ -342,13 +342,25 @@ document.addEventListener("DOMContentLoaded", function() {
     if(cl) cl.textContent = h+":"+m;
     if(cs) { cs.textContent = ":"+s; cs.style.opacity = parseInt(s)%2===0?"1":"0.4"; }
     if(dl) dl.textContent = now.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).toUpperCase();
-    if(wl) {
-      var gr = now.getHours()<12?"Bonjour":now.getHours()<18?"Bon après-midi":"Bonsoir";
-      wl.textContent = gr+" M. Nkoghe 👋";
-    }
+    if(wl) { var gr=now.getHours()<12?"Bonjour":now.getHours()<18?"Bon après-midi":"Bonsoir"; wl.textContent=gr+" M. Nkoghe 👋"; }
   }
   tickLogin();
   setInterval(tickLogin, 1000);
+
+  // --- Bouton connexion fiable ---
+  var btnLogin = document.getElementById("btn-login-main");
+  if(btnLogin) {
+    btnLogin.addEventListener("click", function() {
+      if(typeof doLogin === "function") { doLogin(); }
+      else { setTimeout(function(){ if(typeof doLogin==="function") doLogin(); }, 300); }
+    });
+  }
+
+  // --- Enter key ---
+  var passInput = document.getElementById("login-password");
+  var codeInput = document.getElementById("login-code");
+  if(passInput) passInput.addEventListener("keydown", function(e){ if(e.key==="Enter" && typeof doLogin==="function") doLogin(); });
+  if(codeInput) codeInput.addEventListener("keydown", function(e){ if(e.key==="Enter"){ var p=document.getElementById("login-password"); if(p) p.focus(); } });
 });
 </script>
 </head>
@@ -412,7 +424,7 @@ document.addEventListener("DOMContentLoaded", function() {
         <button onclick="togglePassword()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;color:#8a8070;font-size:16px;padding:4px" id="toggle-pass-btn">👁</button>
       </div>
     </div>
-    <button class="btn-login" onclick="doLogin()">Se connecter</button>
+    <button class="btn-login" id="btn-login-main">Se connecter</button>
     <div id="login-error"></div>
   </div>
 </div>
@@ -686,8 +698,7 @@ window._createVendorAuthAccount = async function(email, password) {
 
 // Exposer les fonctions globales au module
 window.loadAll = loadAll;
-
-
+// doLogin et doLogout sont dans le script principal
 
 </script>
 
@@ -5338,30 +5349,6 @@ function generatePDFReport() {
   .footer{margin-top:30px;padding-top:10px;border-top:1px solid #ccc;font-size:11px;color:#888;text-align:center}
   @media print{body{padding:0}}
 </style>
-<script>
-// Horloge démarrée immédiatement dès que le DOM est prêt
-document.addEventListener("DOMContentLoaded", function() {
-  function tickLogin() {
-    var now = new Date();
-    var h = String(now.getHours()).padStart(2,"0");
-    var m = String(now.getMinutes()).padStart(2,"0");
-    var s = String(now.getSeconds()).padStart(2,"0");
-    var cl = document.getElementById("login-clock-hm");
-    var cs = document.getElementById("login-clock-s");
-    var dl = document.getElementById("login-date");
-    var wl = document.getElementById("login-welcome");
-    if(cl) cl.textContent = h+":"+m;
-    if(cs) { cs.textContent = ":"+s; cs.style.opacity = parseInt(s)%2===0?"1":"0.4"; }
-    if(dl) dl.textContent = now.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).toUpperCase();
-    if(wl) {
-      var gr = now.getHours()<12?"Bonjour":now.getHours()<18?"Bon après-midi":"Bonsoir";
-      wl.textContent = gr+" M. Nkoghe 👋";
-    }
-  }
-  tickLogin();
-  setInterval(tickLogin, 1000);
-});
-</script>
 </head>
 <body>
 <h1>🌾 Mon Fermier</h1>
@@ -5505,8 +5492,6 @@ updateOffline();
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
-startLoginClock();
-
 _waitForFirebase(function() {
   loadAll();
   showPage("page-login");
@@ -5521,15 +5506,9 @@ _waitForFirebase(function() {
   }
 })();
 
-// Enter key sur login
-document.getElementById("login-password").addEventListener("keydown", function(e){
-  if(e.key==="Enter") doLogin();
-});
-document.getElementById("login-code").addEventListener("keydown", function(e){
-  if(e.key==="Enter") document.getElementById("login-password").focus();
-});
+// Enter key géré dans DOMContentLoaded du head
 
-// Exposer doLogin et doLogout globalement DEPUIS le script principal (pas le module)
+// Exposer doLogin globalement depuis le script principal
 window.doLogin = doLogin;
 window.doLogout = doLogout;
 </script>
