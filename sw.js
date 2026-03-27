@@ -1,4 +1,4 @@
-var CACHE = 'monfermier-v20260327';
+var CACHE = 'monfermier-v20260328';
 var FILES = ['./', './index.html', './manifest.json', './icone-192.png', './icone-512.png'];
 
 self.addEventListener('install', function(e) {
