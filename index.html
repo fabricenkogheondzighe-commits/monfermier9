@@ -662,8 +662,8 @@ window._createVendorAuthAccount = async function(email, password) {
 
 // Exposer les fonctions globales au module
 window.loadAll = loadAll;
-window.doLogin = doLogin;
-window.doLogout = doLogout;
+// NOTE: doLogin et doLogout sont définies dans le script principal (non-module)
+// Ne pas les écraser ici
 
 </script>
 
@@ -5457,10 +5457,12 @@ updateOffline();
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
+// Démarrer l'horloge immédiatement (pas besoin d'attendre Firebase)
+startLoginClock();
+
 _waitForFirebase(function() {
   loadAll();
   showPage("page-login");
-  startLoginClock();
 });
 
 // Pré-remplir le règlement avec le contenu par défaut si jamais enregistré
