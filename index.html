@@ -347,20 +347,6 @@ document.addEventListener("DOMContentLoaded", function() {
   tickLogin();
   setInterval(tickLogin, 1000);
 
-  // --- Bouton connexion fiable ---
-  var btnLogin = document.getElementById("btn-login-main");
-  if(btnLogin) {
-    btnLogin.addEventListener("click", function() {
-      if(typeof doLogin === "function") { doLogin(); }
-      else { setTimeout(function(){ if(typeof doLogin==="function") doLogin(); }, 300); }
-    });
-  }
-
-  // --- Enter key ---
-  var passInput = document.getElementById("login-password");
-  var codeInput = document.getElementById("login-code");
-  if(passInput) passInput.addEventListener("keydown", function(e){ if(e.key==="Enter" && typeof doLogin==="function") doLogin(); });
-  if(codeInput) codeInput.addEventListener("keydown", function(e){ if(e.key==="Enter"){ var p=document.getElementById("login-password"); if(p) p.focus(); } });
 });
 </script>
 </head>
@@ -5511,6 +5497,23 @@ _waitForFirebase(function() {
 // Exposer doLogin globalement depuis le script principal
 window.doLogin = doLogin;
 window.doLogout = doLogout;
+
+// Attacher le bouton connexion ici où doLogin est garantie disponible
+(function attachLoginBtn() {
+  var btn = document.getElementById("btn-login-main");
+  if(btn) {
+    btn.addEventListener("click", function() { doLogin(); });
+  } else {
+    // Le DOM n'est peut-être pas encore prêt, réessayer
+    setTimeout(attachLoginBtn, 50);
+  }
+})();
+
+// Enter key sur les champs login
+var _lp = document.getElementById("login-password");
+var _lc = document.getElementById("login-code");
+if(_lp) _lp.addEventListener("keydown", function(e){ if(e.key==="Enter") doLogin(); });
+if(_lc) _lc.addEventListener("keydown", function(e){ if(e.key==="Enter"){ var p=document.getElementById("login-password"); if(p) p.focus(); } });
 </script>
 
 
