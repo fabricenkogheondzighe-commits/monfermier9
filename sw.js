@@ -1,5 +1,6 @@
-var CACHE = 'monfermier-v20260329';
-var FILES = ['./', './index.html', './manifest.json', './icone-192.png', './icone-512.png'];
+var CACHE = 'monfermier-v20260330';
+// On ne cache PAS index.html pour toujours avoir la version fraîche
+var FILES = ['./manifest.json', './icone-192.png', './icone-512.png'];
 
 self.addEventListener('install', function(e) {
   e.waitUntil(
@@ -14,7 +15,7 @@ self.addEventListener('activate', function(e) {
       return Promise.all(
         keys.filter(function(k){ return k !== CACHE; })
           .map(function(k){ return caches.delete(k); })
-      )
+      );
     })
   );
   self.clients.claim();
@@ -22,6 +23,20 @@ self.addEventListener('activate', function(e) {
 
 self.addEventListener('fetch', function(e) {
   if(e.request.method !== 'GET') return;
+  
+  var url = e.request.url;
+  
+  // Pour index.html : toujours réseau, jamais le cache
+  if(url.endsWith('/') || url.includes('index.html')) {
+    e.respondWith(
+      fetch(e.request).catch(function(){
+        return caches.match(e.request);
+      })
+    );
+    return;
+  }
+  
+  // Pour les autres fichiers : réseau d'abord, cache en fallback
   e.respondWith(
     fetch(e.request).then(function(res){
       var clone = res.clone();
