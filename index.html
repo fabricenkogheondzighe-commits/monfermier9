@@ -359,21 +359,31 @@ document.addEventListener("DOMContentLoaded", function() {
   setInterval(tickLogin, 1000);
 });
 
+
+// Fonction œil mot de passe - disponible immédiatement
+function togglePassword() {
+  var inp = document.getElementById("login-password");
+  var btn = document.getElementById("toggle-pass-btn");
+  if(!inp) return;
+  if(inp.type === "password") { inp.type = "text"; if(btn) btn.textContent = "🙈"; }
+  else { inp.type = "password"; if(btn) btn.textContent = "👁"; }
+}
+
 // Fonction proxy pour le bouton connexion
 function tryLogin() {
   var btn = document.getElementById("btn-login-main");
-  if(window._firebaseLoginVendor && typeof window._doLogin === "function") {
+  if(typeof window._doLogin === "function") {
     window._doLogin();
   } else {
     if(btn) { btn.textContent = "Chargement..."; btn.disabled = true; }
     var n = 0;
     var t = setInterval(function(){
       n++;
-      if(window._firebaseLoginVendor && typeof window._doLogin === "function") {
+      if(typeof window._doLogin === "function") {
         clearInterval(t);
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
         window._doLogin();
-      } else if(n > 80) {
+      } else if(n > 300) {
         clearInterval(t);
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
         var e = document.getElementById("login-error");
@@ -976,6 +986,9 @@ function doLogin() {
     }, 500);
   }
 }
+
+// Exposer doLogin immédiatement après sa définition
+window._doLogin = doLogin;
 
 function onLogin() {
   var badge = document.getElementById("user-badge");
@@ -5534,8 +5547,6 @@ document.getElementById("login-code").addEventListener("keydown", function(e){
   if(e.key==="Enter") document.getElementById("login-password").focus();
 });
 
-// Exposer doLogin via window._doLogin pour que tryLogin() y accede
-window._doLogin = doLogin;
 window._doLogout = doLogout;
 </script>
 
