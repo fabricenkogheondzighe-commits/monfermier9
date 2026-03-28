@@ -410,7 +410,7 @@ document.addEventListener("DOMContentLoaded", function() {
         <button onclick="togglePassword()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;color:#8a8070;font-size:16px;padding:4px" id="toggle-pass-btn">👁</button>
       </div>
     </div>
-    <button class="btn-login" id="btn-login-main">Se connecter</button>
+    <button class="btn-login" id="btn-login-main" onclick="tryLogin()">Se connecter</button>
     <div id="login-error"></div>
   </div>
 </div>
@@ -855,6 +855,23 @@ function goHome() {
 // ═══════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════
+// Fonction proxy appelée par le bouton — attend que doLogin soit prête
+function tryLogin() {
+  if(typeof doLogin === "function") {
+    doLogin();
+  } else {
+    var btn = document.getElementById("btn-login-main");
+    if(btn) btn.textContent = "Chargement...";
+    var t = setInterval(function() {
+      if(typeof doLogin === "function") {
+        clearInterval(t);
+        if(btn) btn.textContent = "Se connecter";
+        doLogin();
+      }
+    }, 100);
+  }
+}
+
 function doLogin() {
   var code = document.getElementById("login-code").value.trim().toUpperCase();
   var pass = document.getElementById("login-password").value.trim();
