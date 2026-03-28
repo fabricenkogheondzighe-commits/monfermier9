@@ -855,18 +855,32 @@ function goHome() {
 // ═══════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════
-// Fonction proxy appelée par le bouton — attend que doLogin soit prête
+// Fonction proxy appelée par le bouton — attend que Firebase et doLogin soient prêts
 function tryLogin() {
-  if(typeof doLogin === "function") {
+  var btn = document.getElementById("btn-login-main");
+  
+  // Vérifier si Firebase est prêt
+  var firebaseReady = window.db && window._auth && window._firebaseLoginVendor;
+  var doLoginReady = typeof doLogin === "function";
+  
+  if(doLoginReady && firebaseReady) {
     doLogin();
   } else {
-    var btn = document.getElementById("btn-login-main");
-    if(btn) btn.textContent = "Chargement...";
+    // Montrer un indicateur de chargement
+    if(btn) { btn.textContent = "⏳ Connexion..."; btn.disabled = true; }
+    var attempts = 0;
     var t = setInterval(function() {
-      if(typeof doLogin === "function") {
+      attempts++;
+      var ready = window.db && window._auth && window._firebaseLoginVendor && typeof doLogin === "function";
+      if(ready) {
         clearInterval(t);
-        if(btn) btn.textContent = "Se connecter";
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
         doLogin();
+      } else if(attempts > 60) { // 6 secondes max
+        clearInterval(t);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        var err = document.getElementById("login-error");
+        if(err) { err.textContent = "Connexion lente, réessayez"; err.style.display = "block"; }
       }
     }, 100);
   }
@@ -6172,10 +6186,18 @@ function renderMonEvaluation(){
 <script>
 // ── 1. Enregistrement du Service Worker ───────────────────────────────────
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
+  // Désinstaller tous les anciens SW d'abord, puis enregistrer le nouveau
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(reg) { reg.unregister(); });
+    // Vider tous les caches
+    caches.keys().then(function(keys) {
+      keys.forEach(function(k) { caches.delete(k); });
+    });
+  }).then(function() {
     navigator.serviceWorker.register('./sw.js', { scope: './' })
       .then(function(reg) {
         console.log('[PWA] Service Worker enregistré :', reg.scope);
+        reg.update();
       })
       .catch(function(err) {
         console.warn('[PWA] Échec SW :', err);
