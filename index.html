@@ -327,9 +327,20 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-7px)}100%{transform:translateY(0)}}
 .offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#2e0a0a;border-bottom:1px solid #c97a7a44;color:#c97a7a;text-align:center;padding:8px;font-size:12px;font-weight:600}
 </style>
+
 <script>
+// Détruire tous les anciens service workers immédiatement
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){ r.unregister(); });
+  });
+  caches.keys().then(function(keys){
+    keys.forEach(function(k){ caches.delete(k); });
+  });
+}
+
+// Horloge login - démarre immédiatement
 document.addEventListener("DOMContentLoaded", function() {
-  // --- Horloge login ---
   function tickLogin() {
     var now = new Date();
     var h = String(now.getHours()).padStart(2,"0");
@@ -342,12 +353,35 @@ document.addEventListener("DOMContentLoaded", function() {
     if(cl) cl.textContent = h+":"+m;
     if(cs) { cs.textContent = ":"+s; cs.style.opacity = parseInt(s)%2===0?"1":"0.4"; }
     if(dl) dl.textContent = now.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).toUpperCase();
-    if(wl) { var gr=now.getHours()<12?"Bonjour":now.getHours()<18?"Bon après-midi":"Bonsoir"; wl.textContent=gr+" M. Nkoghe 👋"; }
+    if(wl) { var gr=now.getHours()<12?"Bonjour":now.getHours()<18?"Bon apres-midi":"Bonsoir"; wl.textContent=gr+" M. Nkoghe"; }
   }
   tickLogin();
   setInterval(tickLogin, 1000);
-
 });
+
+// Fonction proxy pour le bouton connexion
+function tryLogin() {
+  var btn = document.getElementById("btn-login-main");
+  if(window._firebaseLoginVendor && typeof window._doLogin === "function") {
+    window._doLogin();
+  } else {
+    if(btn) { btn.textContent = "Chargement..."; btn.disabled = true; }
+    var n = 0;
+    var t = setInterval(function(){
+      n++;
+      if(window._firebaseLoginVendor && typeof window._doLogin === "function") {
+        clearInterval(t);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        window._doLogin();
+      } else if(n > 80) {
+        clearInterval(t);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        var e = document.getElementById("login-error");
+        if(e) { e.textContent = "Connexion lente, reessayez"; e.style.display = "block"; }
+      }
+    }, 100);
+  }
+}
 </script>
 </head>
 <body>
@@ -684,7 +718,7 @@ window._createVendorAuthAccount = async function(email, password) {
 
 // Exposer les fonctions globales au module
 window.loadAll = loadAll;
-// doLogin et doLogout sont dans le script principal
+// doLogin/doLogout dans le script principal
 
 </script>
 
@@ -855,37 +889,6 @@ function goHome() {
 // ═══════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════
-// Fonction proxy appelée par le bouton — attend que Firebase et doLogin soient prêts
-function tryLogin() {
-  var btn = document.getElementById("btn-login-main");
-  
-  // Vérifier si Firebase est prêt
-  var firebaseReady = window.db && window._auth && window._firebaseLoginVendor;
-  var doLoginReady = typeof doLogin === "function";
-  
-  if(doLoginReady && firebaseReady) {
-    doLogin();
-  } else {
-    // Montrer un indicateur de chargement
-    if(btn) { btn.textContent = "⏳ Connexion..."; btn.disabled = true; }
-    var attempts = 0;
-    var t = setInterval(function() {
-      attempts++;
-      var ready = window.db && window._auth && window._firebaseLoginVendor && typeof doLogin === "function";
-      if(ready) {
-        clearInterval(t);
-        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        doLogin();
-      } else if(attempts > 60) { // 6 secondes max
-        clearInterval(t);
-        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        var err = document.getElementById("login-error");
-        if(err) { err.textContent = "Connexion lente, réessayez"; err.style.display = "block"; }
-      }
-    }, 100);
-  }
-}
-
 function doLogin() {
   var code = document.getElementById("login-code").value.trim().toUpperCase();
   var pass = document.getElementById("login-password").value.trim();
@@ -5523,28 +5526,17 @@ _waitForFirebase(function() {
   }
 })();
 
-// Enter key géré dans DOMContentLoaded du head
+// Enter key sur login
+document.getElementById("login-password").addEventListener("keydown", function(e){
+  if(e.key==="Enter") doLogin();
+});
+document.getElementById("login-code").addEventListener("keydown", function(e){
+  if(e.key==="Enter") document.getElementById("login-password").focus();
+});
 
-// Exposer doLogin globalement depuis le script principal
-window.doLogin = doLogin;
-window.doLogout = doLogout;
-
-// Attacher le bouton connexion ici où doLogin est garantie disponible
-(function attachLoginBtn() {
-  var btn = document.getElementById("btn-login-main");
-  if(btn) {
-    btn.addEventListener("click", function() { doLogin(); });
-  } else {
-    // Le DOM n'est peut-être pas encore prêt, réessayer
-    setTimeout(attachLoginBtn, 50);
-  }
-})();
-
-// Enter key sur les champs login
-var _lp = document.getElementById("login-password");
-var _lc = document.getElementById("login-code");
-if(_lp) _lp.addEventListener("keydown", function(e){ if(e.key==="Enter") doLogin(); });
-if(_lc) _lc.addEventListener("keydown", function(e){ if(e.key==="Enter"){ var p=document.getElementById("login-password"); if(p) p.focus(); } });
+// Exposer doLogin via window._doLogin pour que tryLogin() y accede
+window._doLogin = doLogin;
+window._doLogout = doLogout;
 </script>
 
 
@@ -6186,18 +6178,10 @@ function renderMonEvaluation(){
 <script>
 // ── 1. Enregistrement du Service Worker ───────────────────────────────────
 if ('serviceWorker' in navigator) {
-  // Désinstaller tous les anciens SW d'abord, puis enregistrer le nouveau
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(reg) { reg.unregister(); });
-    // Vider tous les caches
-    caches.keys().then(function(keys) {
-      keys.forEach(function(k) { caches.delete(k); });
-    });
-  }).then(function() {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js?v=20260328', { scope: './' })
       .then(function(reg) {
         console.log('[PWA] Service Worker enregistré :', reg.scope);
-        reg.update();
       })
       .catch(function(err) {
         console.warn('[PWA] Échec SW :', err);
