@@ -687,9 +687,7 @@ window._createVendorAuthAccount = async function(email, password) {
   }
 };
 
-// Exposer les fonctions globales au module
-window.loadAll = loadAll;
-// doLogin et doLogout sont dans le script principal
+// Firebase prêt — _waitForFirebase dans le script principal détectera window.db et window._auth
 
 </script>
 
@@ -871,6 +869,14 @@ function doLogin() {
   err.style.display = "none";
 
   if(!code || !pass) { err.textContent="Remplissez tous les champs"; err.style.display="block"; return; }
+
+  // Attendre que Firebase soit prêt
+  if(!window._auth || !window.db) {
+    err.textContent = "⏳ Connexion en cours, réessayez dans 2 secondes...";
+    err.style.display = "block";
+    setTimeout(function(){ err.style.display="none"; }, 3000);
+    return;
+  }
 
   // Admin — connexion par email Firebase Auth
   if(code === ADMIN_CODE) {
@@ -2895,7 +2901,171 @@ function generateVendorReport() {
     reportHtml += '</div>';
   });
 
-  reportHtml += '<div class="footer">Mon Fermier — Rapport vendeurs généré le '+now.toLocaleString("fr-FR")+'</div></body></html>';
+  reportHtml += '<div class="footer">Mon Fermier — Rapport vendeurs généré le '+now.toLocaleString("fr-FR")+'</div>
+<textarea id="mf-default-reglement" style="display:none">MON FERMIER
+Production & Distribution de Piment — Qualité & Hygiène Alimentaire
+
+RÈGLEMENT INTÉRIEUR
+ET CODE DE CONDUITE
+
+Version 1.0 — 2025
+Applicable à tous les employés et vendeurs
+Directeur Général : M. Fabrice NKOGHE
+
+PRÉAMBULE
+
+Le présent règlement intérieur est établi conformément aux dispositions légales en vigueur et aux valeurs fondatrices de Mon Fermier. Il s'applique à l'ensemble du personnel, sans exception, dès la signature du contrat de travail ou d'accord commercial.
+
+Mon Fermier est une entreprise spécialisée dans la production et la distribution de piment en pâte et en poudre. Notre activité touche directement à la santé alimentaire des consommateurs. C'est pourquoi les règles d'hygiène et de qualité constituent le socle absolu de notre fonctionnement.
+
+AVERTISSEMENT : Le non-respect de ce règlement expose son auteur à des sanctions pouvant aller jusqu'au licenciement immédiat sans préavis ni indemnité.
+
+---
+CHAPITRE I — HYGIÈNE & SÉCURITÉ ALIMENTAIRE
+---
+
+La protection de la santé du consommateur est une priorité absolue. Tout manquement aux règles d'hygiène constitue une faute grave.
+
+Article 1 — Tenue de travail et propreté personnelle
+
+- Le port d'une tenue de travail propre et adaptée est obligatoire lors de toute manipulation des produits.
+- Les mains doivent être lavées et désinfectées avant chaque prise de poste, après chaque pause, et après tout contact avec des surfaces souillées.
+- Les ongles doivent être coupés courts et propres. Le vernis à ongles est interdit lors des manipulations alimentaires.
+- Le port de bijoux (bagues, bracelets, montres) est strictement interdit lors des manipulations de produits alimentaires.
+- Les cheveux doivent être couverts (bonnet, filet) lors de toute manipulation de piment en pâte ou en poudre.
+- Il est interdit de tousser, éternuer ou cracher à proximité des produits sans se couvrir la bouche et se désinfecter immédiatement après.
+
+Article 2 — Manipulation et conservation des produits
+
+- Tout produit tombé à terre ou entré en contact avec une surface non désinfectée est considéré comme impropre à la vente et doit être mis à l'écart immédiatement.
+- Les contenants (seaux, sachets, bocaux) doivent être hermétiquement fermés après chaque utilisation.
+- Il est formellement interdit de goûter les produits avec les doigts ou un ustensile non propre.
+- La chaîne du froid ou les conditions de conservation prescrites doivent être respectées en tout temps.
+- Tout signe de détérioration, de moisissure ou d'odeur anormale doit être signalé immédiatement à la direction.
+- Les produits périmés ou dégradés ne peuvent en aucun cas être vendus ou remis à un client.
+
+Article 3 — Propreté des espaces de travail
+
+- Chaque employé est responsable de la propreté de son poste de travail. Un poste sale en fin de journée constitue une faute.
+- Le nettoyage et la désinfection des surfaces de travail doivent être effectués au minimum en début et en fin de chaque journée de travail.
+- Les déchets de production doivent être éliminés dans les poubelles prévues à cet effet et ne doivent jamais s'accumuler.
+- Les zones de stockage doivent être maintenues ordonnées, sèches et protégées de toute contamination extérieure.
+- Il est interdit de manger, boire ou fumer dans les zones de production, de stockage ou de conditionnement des produits.
+
+TOLÉRANCE ZÉRO : Toute vente délibérée de produit périmé, contaminé ou altéré constitue une faute grave passible de licenciement immédiat et de poursuites judiciaires.
+
+---
+CHAPITRE II — DISCIPLINE & COMPORTEMENT PROFESSIONNEL
+---
+
+Article 4 — Ponctualité et assiduité
+
+- Tout employé est tenu d'être présent à son poste à l'heure fixée dans son contrat ou accord commercial.
+- Tout retard doit être signalé avant la prise de poste par appel téléphonique. Trois retards non justifiés dans le mois constituent une faute sérieuse.
+- Toute absence doit être justifiée dans les 24 heures. Une absence injustifiée de plus de 2 jours consécutifs peut entraîner la rupture du contrat.
+- L'abandon de poste sans avertissement préalable est considéré comme une faute grave.
+
+Article 5 — Respect et relations professionnelles
+
+- Le respect mutuel entre collègues, supérieurs et clients est une obligation non négociable.
+- Tout acte d'insubordination, d'insulte, de harcèlement ou de violence verbale ou physique entraîne une sanction immédiate.
+- Les conflits entre employés doivent être portés à la connaissance de la direction.
+- Il est interdit de tenir des propos désobligeants ou diffamatoires sur l'entreprise, ses produits ou sa direction, que ce soit en public ou sur les réseaux sociaux.
+- La politesse et la cordialité sont exigées en permanence avec les clients, partenaires et fournisseurs.
+
+Article 6 — Usage des outils et équipements de l'entreprise
+
+- Les équipements mis à disposition sont strictement réservés à l'usage professionnel.
+- Tout dommage causé par négligence ou mauvais usage sera imputé à l'employé concerné.
+- Il est interdit d'emporter des outils, équipements ou produits de l'entreprise sans autorisation écrite de la direction.
+- Le téléphone personnel doit rester en mode silencieux pendant les heures de travail.
+
+---
+CHAPITRE III — INTÉGRITÉ, HONNÊTETÉ & CONFIDENTIALITÉ
+---
+
+Article 7 — Interdiction stricte de vol, fraude et détournement
+
+TOLÉRANCE ZÉRO : Tout vol, détournement de fonds ou de marchandise, falsification de données de vente ou dissimulation d'invendus entraîne un licenciement immédiat et des poursuites judiciaires.
+
+- Il est formellement interdit de prélever des fonds, produits ou marchandises appartenant à l'entreprise, quelle qu'en soit la valeur.
+- Toute recette collectée lors d'une vente doit être intégralement remise à la direction dans les délais convenus, sans exception.
+- Il est interdit de falsifier les quantités vendues, les prix de vente ou les rapports de stock.
+- Tout écart entre les produits remis et les fonds reçus doit être signalé immédiatement. Tout écart non signalé est présumé frauduleux.
+
+Article 8 — Confidentialité et secret professionnel
+
+- Toutes les informations relatives à l'entreprise (recettes, prix d'achat, clientèle, fournisseurs, stratégies commerciales) sont strictement confidentielles.
+- Il est interdit de divulguer ces informations à des tiers, concurrents, ou toute personne étrangère à l'entreprise.
+- Cette obligation de confidentialité s'applique pendant la durée du contrat et pendant une période de deux (2) ans après sa fin.
+
+Article 9 — Loyauté et non-concurrence
+
+- Il est interdit d'exercer, directement ou indirectement, une activité concurrente à celle de Mon Fermier sans autorisation préalable écrite.
+- Il est interdit de démarcher les clients de l'entreprise à des fins personnelles ou au profit d'un concurrent.
+
+---
+CHAPITRE IV — RÈGLES SPÉCIFIQUES AUX VENDEURS
+---
+
+Article 10 — Gestion des produits et du stock
+
+- Chaque vendeur reçoit ses produits en début de journée et doit en signer la réception. Cette signature vaut engagement de responsabilité.
+- En fin de journée, le vendeur doit remettre les invendus ET la totalité des fonds correspondant aux ventes effectuées.
+- Il est interdit de stocker des produits de l'entreprise à son domicile sans autorisation écrite.
+- Toute perte, casse ou vol de produit doit être signalé immédiatement avec un rapport circonstancié. Les pertes non justifiées seront imputées au vendeur.
+- Les vendeurs n'ont pas le droit de modifier les prix de vente fixés par la direction, ni d'accorder des remises sans autorisation préalable.
+
+Article 11 — Présentation et comportement lors des ventes
+
+- Le vendeur doit être propre, correctement habillé et porter les équipements d'hygiène lors de la manipulation des produits devant les clients.
+- Il est interdit de vendre dans un état d'ivresse ou sous l'influence de substances quelconques.
+- Le vendeur représente l'image de Mon Fermier. Tout comportement déplacé, agressif ou malhonnête envers un client sera sanctionné.
+- Les plaintes des clients doivent être remontées à la direction dans les 24 heures.
+
+Article 12 — Compte-rendu et communication
+
+- Chaque vendeur est tenu de rendre compte de ses activités quotidiennement via l'application Mon Fermier ou par tout moyen convenu avec la direction.
+- Tout problème rencontré (client difficile, produit dégradé, accident) doit être signalé le jour même.
+- L'absence de communication de plus de 48 heures sans justification valable est considérée comme un abandon de poste.
+
+---
+CHAPITRE V — SANCTIONS DISCIPLINAIRES
+---
+
+Article 13 — Échelle des sanctions
+
+- Niveau 1 — Mineur : Avertissement oral (retard non signalé, poste non nettoyé, usage du téléphone en service).
+- Niveau 2 — Sérieux : Avertissement écrit + retenue sur salaire/commission (récidive, absence injustifiée, insubordination légère, non-respect des règles d'hygiène).
+- Niveau 3 — Grave : Licenciement avec préavis (manipulation de produits périmés, insubordination grave, violence verbale, abandon de poste).
+- Niveau 4 — FAUTE GRAVE : Licenciement immédiat + poursuites judiciaires (vol, fraude, détournement, vente de produits contaminés, violence physique).
+
+---
+CHAPITRE VI — DISPOSITIONS GÉNÉRALES
+---
+
+Article 14 — Entrée en vigueur et diffusion
+
+- Le présent règlement entre en vigueur à la date de sa signature par la direction et s'applique immédiatement à l'ensemble du personnel.
+- Chaque employé ou vendeur recevra un exemplaire et devra signer la page d'engagement jointe.
+- L'ignorance du présent règlement ne peut être invoquée comme motif d'excuse.
+
+Article 15 — Révision du règlement
+
+- La direction se réserve le droit de modifier le présent règlement à tout moment. Toute modification sera communiquée au personnel avec un préavis de 15 jours.
+
+Article 16 — Droit de recours
+
+- Tout employé qui s'estime injustement sanctionné peut adresser un recours écrit à la direction dans un délai de 7 jours suivant la sanction.
+- La direction s'engage à examiner tout recours dans un délai de 15 jours ouvrables.
+
+Article 17 — Engagement collectif
+
+- Chaque membre de l'équipe Mon Fermier est ambassadeur de la marque et de ses valeurs : qualité, honnêteté, hygiène et excellence.
+- L'entreprise s'engage en contrepartie à fournir les équipements nécessaires, à former son personnel et à traiter chacun avec respect et équité.
+
+Mon Fermier — Qualité, Hygiène & Excellence — 2025</textarea>
+</body></html>';
 
   var win = window.open("","_blank");
   if(win){ win.document.write(reportHtml); win.document.close(); setTimeout(function(){win.print();},500); }
@@ -5353,71 +5523,73 @@ function generatePDFReport() {
   var totalRev = totalPaid+totalUnpaid+totalDelivery;
 
   // Générer le HTML du rapport
-  var reportHtml = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Rapport Mon Fermier - ${monthLabel}</title>
-<style>
-  body{font-family:Georgia,serif;color:#1a1a1a;max-width:800px;margin:0 auto;padding:20px}
-  h1{color:#8a6a00;border-bottom:3px solid #c9a84c;padding-bottom:10px}
-  h2{color:#5a4a00;margin-top:24px;border-left:4px solid #c9a84c;padding-left:10px}
-  table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
-  th{background:#c9a84c;color:#0a0906;padding:8px 12px;text-align:left}
-  td{padding:7px 12px;border-bottom:1px solid #e0d8c0}
-  tr:nth-child(even){background:#fdf8ec}
-  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-  .kpi{background:#fdf8ec;border:1px solid #c9a84c44;border-radius:8px;padding:12px;text-align:center}
-  .kpi-val{font-size:20px;font-weight:700;color:#8a6a00}
-  .kpi-lbl{font-size:11px;color:#6a5a40;margin-top:4px}
-  .paid{color:#2a7a2a} .unpaid{color:#c92020} .delivery{color:#8a6a00}
-  .footer{margin-top:30px;padding-top:10px;border-top:1px solid #ccc;font-size:11px;color:#888;text-align:center}
-  @media print{body{padding:0}}
-</style>
-</head>
-<body>
-<h1>🌾 Mon Fermier</h1>
-<p style="color:#666;margin-top:-10px">Rapport mensuel — <strong>${monthLabel}</strong> — Généré le ${now.toLocaleDateString("fr-FR")}</p>
-
-<h2>Bilan financier</h2>
-<div class="kpi-grid">
-  <div class="kpi"><div class="kpi-val">${fmtPrice(totalRev)}</div><div class="kpi-lbl">CA TOTAL</div></div>
-  <div class="kpi"><div class="kpi-val paid">${fmtPrice(totalPaid)}</div><div class="kpi-lbl">✅ PAYÉ</div></div>
-  <div class="kpi"><div class="kpi-val unpaid">${fmtPrice(totalUnpaid)}</div><div class="kpi-lbl">❌ NON PAYÉ</div></div>
-  <div class="kpi"><div class="kpi-val delivery">${fmtPrice(totalDelivery)}</div><div class="kpi-lbl">🚚 LIVRAISON</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:#6a3da8">${fmtPrice(totalComm)}</div><div class="kpi-lbl">COMMISSIONS</div></div>
-  <div class="kpi"><div class="kpi-val">${fmtPrice(totalPaid-totalComm)}</div><div class="kpi-lbl">NET</div></div>
-</div>
-
-<h2>Ventes par produit</h2>
-<table>
-  <tr><th>Produit</th><th>Quantité</th><th>CA</th></tr>
-  ${Object.entries(prodStats).sort(function(a,b){return b[1].rev-a[1].rev;}).map(function(e){
-    return "<tr><td>"+e[0]+"</td><td>"+e[1].qty+" u.</td><td>"+fmtPrice(e[1].rev)+"</td></tr>";
-  }).join("")}
-</table>
-
-<h2>Commissions par vendeur</h2>
-<table>
-  <tr><th>Vendeur</th><th>Commission</th></tr>
-  ${Object.entries(commByVendor).map(function(e){
-    return "<tr><td>"+e[0]+"</td><td style='color:#6a3da8;font-weight:700'>"+fmtPrice(e[1])+"</td></tr>";
-  }).join("")}
-</table>
-
-<h2>Détail des transactions (${salesList.length})</h2>
-<table>
-  <tr><th>Client</th><th>Date</th><th>Montant</th><th>Paiement</th><th>Statut</th><th>Vendeur</th></tr>
-  ${salesList.map(function(s){
-    var sc = s.status==="unpaid"?"unpaid":s.status==="delivery"?"delivery":"paid";
-    var sl = s.status==="unpaid"?"Non payé":s.status==="delivery"?"Livraison":"Payé";
-    return "<tr><td>"+s.client+"</td><td>"+s.date+"</td><td>"+fmtPrice(s.amount)+"</td><td>"+s.payment+"</td><td class='"+sc+"'>"+sl+"</td><td>"+s.vendeur+"</td></tr>";
-  }).join("")}
-</table>
-
-<div class="footer">Mon Fermier — Rapport généré automatiquement — ${now.toLocaleString("fr-FR")}</div>
-</body>
-</html>`;
+  var reportHtml = ''
+    + '<!DOCTYPE html>\n'
+    + '<html lang="fr">\n'
+    + '<head>\n'
+    + '<meta charset="UTF-8">\n'
+    + '<title>Rapport Mon Fermier - '+ (monthLabel) +'</title>\n'
+    + '<style>\n'
+    + '  body{font-family:Georgia,serif;color:#1a1a1a;max-width:800px;margin:0 auto;padding:20px}\n'
+    + '  h1{color:#8a6a00;border-bottom:3px solid #c9a84c;padding-bottom:10px}\n'
+    + '  h2{color:#5a4a00;margin-top:24px;border-left:4px solid #c9a84c;padding-left:10px}\n'
+    + '  table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}\n'
+    + '  th{background:#c9a84c;color:#0a0906;padding:8px 12px;text-align:left}\n'
+    + '  td{padding:7px 12px;border-bottom:1px solid #e0d8c0}\n'
+    + '  tr:nth-child(even){background:#fdf8ec}\n'
+    + '  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}\n'
+    + '  .kpi{background:#fdf8ec;border:1px solid #c9a84c44;border-radius:8px;padding:12px;text-align:center}\n'
+    + '  .kpi-val{font-size:20px;font-weight:700;color:#8a6a00}\n'
+    + '  .kpi-lbl{font-size:11px;color:#6a5a40;margin-top:4px}\n'
+    + '  .paid{color:#2a7a2a} .unpaid{color:#c92020} .delivery{color:#8a6a00}\n'
+    + '  .footer{margin-top:30px;padding-top:10px;border-top:1px solid #ccc;font-size:11px;color:#888;text-align:center}\n'
+    + '  @media print{body{padding:0}}\n'
+    + '</style>\n'
+    + '</head>\n'
+    + '<body>\n'
+    + '<h1>🌾 Mon Fermier</h1>\n'
+    + '<p style="color:#666;margin-top:-10px">Rapport mensuel — <strong>'+ (monthLabel) +'</strong> — Généré le '+ (now.toLocaleDateString("fr-FR")) +'</p>\n'
+    + '\n'
+    + '<h2>Bilan financier</h2>\n'
+    + '<div class="kpi-grid">\n'
+    + '  <div class="kpi"><div class="kpi-val">'+ (fmtPrice(totalRev)) +'</div><div class="kpi-lbl">CA TOTAL</div></div>\n'
+    + '  <div class="kpi"><div class="kpi-val paid">'+ (fmtPrice(totalPaid)) +'</div><div class="kpi-lbl">✅ PAYÉ</div></div>\n'
+    + '  <div class="kpi"><div class="kpi-val unpaid">'+ (fmtPrice(totalUnpaid)) +'</div><div class="kpi-lbl">❌ NON PAYÉ</div></div>\n'
+    + '  <div class="kpi"><div class="kpi-val delivery">'+ (fmtPrice(totalDelivery)) +'</div><div class="kpi-lbl">🚚 LIVRAISON</div></div>\n'
+    + '  <div class="kpi"><div class="kpi-val" style="color:#6a3da8">'+ (fmtPrice(totalComm)) +'</div><div class="kpi-lbl">COMMISSIONS</div></div>\n'
+    + '  <div class="kpi"><div class="kpi-val">'+ (fmtPrice(totalPaid-totalComm)) +'</div><div class="kpi-lbl">NET</div></div>\n'
+    + '</div>\n'
+    + '\n'
+    + '<h2>Ventes par produit</h2>\n'
+    + '<table>\n'
+    + '  <tr><th>Produit</th><th>Quantité</th><th>CA</th></tr>\n'
+    + '  '+ (Object.entries(prodStats).sort(function(a,b){return b[1].rev-a[1].rev;) +').map(function(e){\n'
+    + '    return "<tr><td>"+e[0]+"</td><td>"+e[1].qty+" u.</td><td>"+fmtPrice(e[1].rev)+"</td></tr>";\n'
+    + '  }).join("")}\n'
+    + '</table>\n'
+    + '\n'
+    + '<h2>Commissions par vendeur</h2>\n'
+    + '<table>\n'
+    + '  <tr><th>Vendeur</th><th>Commission</th></tr>\n'
+    + '  '+ (Object.entries(commByVendor).map(function(e){\n'
+    + '    return "<tr><td>"+e[0]+"</td><td style=\'color:#6a3da8;font-weight:700\'>"+fmtPrice(e[1])+"</td></tr>";\n'
+    + '  ) +').join("")}\n'
+    + '</table>\n'
+    + '\n'
+    + '<h2>Détail des transactions ('+ (salesList.length) +')</h2>\n'
+    + '<table>\n'
+    + '  <tr><th>Client</th><th>Date</th><th>Montant</th><th>Paiement</th><th>Statut</th><th>Vendeur</th></tr>\n'
+    + '  '+ (salesList.map(function(s){\n'
+    + '    var sc = s.status==="unpaid"?"unpaid":s.status==="delivery"?"delivery":"paid";\n'
+    + '    var sl = s.status==="unpaid"?"Non payé":s.status==="delivery"?"Livraison":"Payé";\n'
+    + '    return "<tr><td>"+s.client+"</td><td>"+s.date+"</td><td>"+fmtPrice(s.amount)+"</td><td>"+s.payment+"</td><td class=\'"+sc+"\'>"+sl+"</td><td>"+s.vendeur+"</td></tr>";\n'
+    + '  ) +').join("")}\n'
+    + '</table>\n'
+    + '\n'
+    + '<div class="footer">Mon Fermier — Rapport généré automatiquement — '+ (now.toLocaleString("fr-FR")) +'</div>\n'
+    + '</body>\n'
+    + '</html>\n'
+  ;
 
   // Ouvrir dans un nouvel onglet et imprimer
   var win = window.open("", "_blank");
@@ -5520,13 +5692,14 @@ updateOffline();
 _waitForFirebase(function() {
   loadAll();
   showPage("page-login");
+  console.log("[MF] Firebase prêt, app démarrée");
 });
 
 // Pré-remplir le règlement avec le contenu par défaut si jamais enregistré
 (function initReglement() {
   var existing = _reglementCache && _reglementCache.contenu;
   if(!existing) {
-    var defaultReglement = `MON FERMIER\nProduction & Distribution de Piment — Qualité & Hygiène Alimentaire\n\nRÈGLEMENT INTÉRIEUR\nET CODE DE CONDUITE\n\nVersion 1.0 — 2025\nApplicable à tous les employés et vendeurs\nDirecteur Général : M. Fabrice NKOGHE\n\nPRÉAMBULE\n\nLe présent règlement intérieur est établi conformément aux dispositions légales en vigueur et aux valeurs fondatrices de Mon Fermier. Il s'applique à l'ensemble du personnel, sans exception, dès la signature du contrat de travail ou d'accord commercial.\n\nMon Fermier est une entreprise spécialisée dans la production et la distribution de piment en pâte et en poudre. Notre activité touche directement à la santé alimentaire des consommateurs. C'est pourquoi les règles d'hygiène et de qualité constituent le socle absolu de notre fonctionnement.\n\nAVERTISSEMENT : Le non-respect de ce règlement expose son auteur à des sanctions pouvant aller jusqu'au licenciement immédiat sans préavis ni indemnité.\n\n---\nCHAPITRE I — HYGIÈNE & SÉCURITÉ ALIMENTAIRE\n---\n\nLa protection de la santé du consommateur est une priorité absolue. Tout manquement aux règles d'hygiène constitue une faute grave.\n\nArticle 1 — Tenue de travail et propreté personnelle\n\n- Le port d'une tenue de travail propre et adaptée est obligatoire lors de toute manipulation des produits.\n- Les mains doivent être lavées et désinfectées avant chaque prise de poste, après chaque pause, et après tout contact avec des surfaces souillées.\n- Les ongles doivent être coupés courts et propres. Le vernis à ongles est interdit lors des manipulations alimentaires.\n- Le port de bijoux (bagues, bracelets, montres) est strictement interdit lors des manipulations de produits alimentaires.\n- Les cheveux doivent être couverts (bonnet, filet) lors de toute manipulation de piment en pâte ou en poudre.\n- Il est interdit de tousser, éternuer ou cracher à proximité des produits sans se couvrir la bouche et se désinfecter immédiatement après.\n\nArticle 2 — Manipulation et conservation des produits\n\n- Tout produit tombé à terre ou entré en contact avec une surface non désinfectée est considéré comme impropre à la vente et doit être mis à l'écart immédiatement.\n- Les contenants (seaux, sachets, bocaux) doivent être hermétiquement fermés après chaque utilisation.\n- Il est formellement interdit de goûter les produits avec les doigts ou un ustensile non propre.\n- La chaîne du froid ou les conditions de conservation prescrites doivent être respectées en tout temps.\n- Tout signe de détérioration, de moisissure ou d'odeur anormale doit être signalé immédiatement à la direction.\n- Les produits périmés ou dégradés ne peuvent en aucun cas être vendus ou remis à un client.\n\nArticle 3 — Propreté des espaces de travail\n\n- Chaque employé est responsable de la propreté de son poste de travail. Un poste sale en fin de journée constitue une faute.\n- Le nettoyage et la désinfection des surfaces de travail doivent être effectués au minimum en début et en fin de chaque journée de travail.\n- Les déchets de production doivent être éliminés dans les poubelles prévues à cet effet et ne doivent jamais s'accumuler.\n- Les zones de stockage doivent être maintenues ordonnées, sèches et protégées de toute contamination extérieure.\n- Il est interdit de manger, boire ou fumer dans les zones de production, de stockage ou de conditionnement des produits.\n\nTOLÉRANCE ZÉRO : Toute vente délibérée de produit périmé, contaminé ou altéré constitue une faute grave passible de licenciement immédiat et de poursuites judiciaires.\n\n---\nCHAPITRE II — DISCIPLINE & COMPORTEMENT PROFESSIONNEL\n---\n\nArticle 4 — Ponctualité et assiduité\n\n- Tout employé est tenu d'être présent à son poste à l'heure fixée dans son contrat ou accord commercial.\n- Tout retard doit être signalé avant la prise de poste par appel téléphonique. Trois retards non justifiés dans le mois constituent une faute sérieuse.\n- Toute absence doit être justifiée dans les 24 heures. Une absence injustifiée de plus de 2 jours consécutifs peut entraîner la rupture du contrat.\n- L'abandon de poste sans avertissement préalable est considéré comme une faute grave.\n\nArticle 5 — Respect et relations professionnelles\n\n- Le respect mutuel entre collègues, supérieurs et clients est une obligation non négociable.\n- Tout acte d'insubordination, d'insulte, de harcèlement ou de violence verbale ou physique entraîne une sanction immédiate.\n- Les conflits entre employés doivent être portés à la connaissance de la direction.\n- Il est interdit de tenir des propos désobligeants ou diffamatoires sur l'entreprise, ses produits ou sa direction, que ce soit en public ou sur les réseaux sociaux.\n- La politesse et la cordialité sont exigées en permanence avec les clients, partenaires et fournisseurs.\n\nArticle 6 — Usage des outils et équipements de l'entreprise\n\n- Les équipements mis à disposition sont strictement réservés à l'usage professionnel.\n- Tout dommage causé par négligence ou mauvais usage sera imputé à l'employé concerné.\n- Il est interdit d'emporter des outils, équipements ou produits de l'entreprise sans autorisation écrite de la direction.\n- Le téléphone personnel doit rester en mode silencieux pendant les heures de travail.\n\n---\nCHAPITRE III — INTÉGRITÉ, HONNÊTETÉ & CONFIDENTIALITÉ\n---\n\nArticle 7 — Interdiction stricte de vol, fraude et détournement\n\nTOLÉRANCE ZÉRO : Tout vol, détournement de fonds ou de marchandise, falsification de données de vente ou dissimulation d'invendus entraîne un licenciement immédiat et des poursuites judiciaires.\n\n- Il est formellement interdit de prélever des fonds, produits ou marchandises appartenant à l'entreprise, quelle qu'en soit la valeur.\n- Toute recette collectée lors d'une vente doit être intégralement remise à la direction dans les délais convenus, sans exception.\n- Il est interdit de falsifier les quantités vendues, les prix de vente ou les rapports de stock.\n- Tout écart entre les produits remis et les fonds reçus doit être signalé immédiatement. Tout écart non signalé est présumé frauduleux.\n\nArticle 8 — Confidentialité et secret professionnel\n\n- Toutes les informations relatives à l'entreprise (recettes, prix d'achat, clientèle, fournisseurs, stratégies commerciales) sont strictement confidentielles.\n- Il est interdit de divulguer ces informations à des tiers, concurrents, ou toute personne étrangère à l'entreprise.\n- Cette obligation de confidentialité s'applique pendant la durée du contrat et pendant une période de deux (2) ans après sa fin.\n\nArticle 9 — Loyauté et non-concurrence\n\n- Il est interdit d'exercer, directement ou indirectement, une activité concurrente à celle de Mon Fermier sans autorisation préalable écrite.\n- Il est interdit de démarcher les clients de l'entreprise à des fins personnelles ou au profit d'un concurrent.\n\n---\nCHAPITRE IV — RÈGLES SPÉCIFIQUES AUX VENDEURS\n---\n\nArticle 10 — Gestion des produits et du stock\n\n- Chaque vendeur reçoit ses produits en début de journée et doit en signer la réception. Cette signature vaut engagement de responsabilité.\n- En fin de journée, le vendeur doit remettre les invendus ET la totalité des fonds correspondant aux ventes effectuées.\n- Il est interdit de stocker des produits de l'entreprise à son domicile sans autorisation écrite.\n- Toute perte, casse ou vol de produit doit être signalé immédiatement avec un rapport circonstancié. Les pertes non justifiées seront imputées au vendeur.\n- Les vendeurs n'ont pas le droit de modifier les prix de vente fixés par la direction, ni d'accorder des remises sans autorisation préalable.\n\nArticle 11 — Présentation et comportement lors des ventes\n\n- Le vendeur doit être propre, correctement habillé et porter les équipements d'hygiène lors de la manipulation des produits devant les clients.\n- Il est interdit de vendre dans un état d'ivresse ou sous l'influence de substances quelconques.\n- Le vendeur représente l'image de Mon Fermier. Tout comportement déplacé, agressif ou malhonnête envers un client sera sanctionné.\n- Les plaintes des clients doivent être remontées à la direction dans les 24 heures.\n\nArticle 12 — Compte-rendu et communication\n\n- Chaque vendeur est tenu de rendre compte de ses activités quotidiennement via l'application Mon Fermier ou par tout moyen convenu avec la direction.\n- Tout problème rencontré (client difficile, produit dégradé, accident) doit être signalé le jour même.\n- L'absence de communication de plus de 48 heures sans justification valable est considérée comme un abandon de poste.\n\n---\nCHAPITRE V — SANCTIONS DISCIPLINAIRES\n---\n\nArticle 13 — Échelle des sanctions\n\n- Niveau 1 — Mineur : Avertissement oral (retard non signalé, poste non nettoyé, usage du téléphone en service).\n- Niveau 2 — Sérieux : Avertissement écrit + retenue sur salaire/commission (récidive, absence injustifiée, insubordination légère, non-respect des règles d'hygiène).\n- Niveau 3 — Grave : Licenciement avec préavis (manipulation de produits périmés, insubordination grave, violence verbale, abandon de poste).\n- Niveau 4 — FAUTE GRAVE : Licenciement immédiat + poursuites judiciaires (vol, fraude, détournement, vente de produits contaminés, violence physique).\n\n---\nCHAPITRE VI — DISPOSITIONS GÉNÉRALES\n---\n\nArticle 14 — Entrée en vigueur et diffusion\n\n- Le présent règlement entre en vigueur à la date de sa signature par la direction et s'applique immédiatement à l'ensemble du personnel.\n- Chaque employé ou vendeur recevra un exemplaire et devra signer la page d'engagement jointe.\n- L'ignorance du présent règlement ne peut être invoquée comme motif d'excuse.\n\nArticle 15 — Révision du règlement\n\n- La direction se réserve le droit de modifier le présent règlement à tout moment. Toute modification sera communiquée au personnel avec un préavis de 15 jours.\n\nArticle 16 — Droit de recours\n\n- Tout employé qui s'estime injustement sanctionné peut adresser un recours écrit à la direction dans un délai de 7 jours suivant la sanction.\n- La direction s'engage à examiner tout recours dans un délai de 15 jours ouvrables.\n\nArticle 17 — Engagement collectif\n\n- Chaque membre de l'équipe Mon Fermier est ambassadeur de la marque et de ses valeurs : qualité, honnêteté, hygiène et excellence.\n- L'entreprise s'engage en contrepartie à fournir les équipements nécessaires, à former son personnel et à traiter chacun avec respect et équité.\n\nMon Fermier — Qualité, Hygiène & Excellence — 2025`;
+    var defaultReglement = (document.getElementById("mf-default-reglement")||{value:""}).value;
     _reglementCache = { contenu: defaultReglement, dateModif: "", publie: false };
     if(window.db) window.db.collection("app_data").doc("reglement").set({ data: JSON.stringify(_reglementCache) }).catch(function(){});
   }
