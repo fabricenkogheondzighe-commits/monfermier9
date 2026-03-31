@@ -327,9 +327,20 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-7px)}100%{transform:translateY(0)}}
 .offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#2e0a0a;border-bottom:1px solid #c97a7a44;color:#c97a7a;text-align:center;padding:8px;font-size:12px;font-weight:600}
 </style>
+
 <script>
+// Détruire tous les anciens service workers immédiatement
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){ r.unregister(); });
+  });
+  caches.keys().then(function(keys){
+    keys.forEach(function(k){ caches.delete(k); });
+  });
+}
+
+// Horloge login - démarre immédiatement
 document.addEventListener("DOMContentLoaded", function() {
-  // --- Horloge login ---
   function tickLogin() {
     var now = new Date();
     var h = String(now.getHours()).padStart(2,"0");
@@ -342,12 +353,45 @@ document.addEventListener("DOMContentLoaded", function() {
     if(cl) cl.textContent = h+":"+m;
     if(cs) { cs.textContent = ":"+s; cs.style.opacity = parseInt(s)%2===0?"1":"0.4"; }
     if(dl) dl.textContent = now.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).toUpperCase();
-    if(wl) { var gr=now.getHours()<12?"Bonjour":now.getHours()<18?"Bon après-midi":"Bonsoir"; wl.textContent=gr+" M. Nkoghe 👋"; }
+    if(wl) { var gr=now.getHours()<12?"Bonjour":now.getHours()<18?"Bon apres-midi":"Bonsoir"; wl.textContent=gr+" M. Nkoghe"; }
   }
   tickLogin();
   setInterval(tickLogin, 1000);
-
 });
+
+
+// Fonction œil mot de passe - disponible immédiatement
+function togglePassword() {
+  var inp = document.getElementById("login-password");
+  var btn = document.getElementById("toggle-pass-btn");
+  if(!inp) return;
+  if(inp.type === "password") { inp.type = "text"; if(btn) btn.textContent = "🙈"; }
+  else { inp.type = "password"; if(btn) btn.textContent = "👁"; }
+}
+
+// Fonction proxy pour le bouton connexion
+function tryLogin() {
+  var btn = document.getElementById("btn-login-main");
+  if(typeof window._doLogin === "function") {
+    window._doLogin();
+  } else {
+    if(btn) { btn.textContent = "Chargement..."; btn.disabled = true; }
+    var n = 0;
+    var t = setInterval(function(){
+      n++;
+      if(typeof window._doLogin === "function") {
+        clearInterval(t);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        window._doLogin();
+      } else if(n > 300) {
+        clearInterval(t);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        var e = document.getElementById("login-error");
+        if(e) { e.textContent = "Connexion lente, reessayez"; e.style.display = "block"; }
+      }
+    }, 100);
+  }
+}
 </script>
 </head>
 <body>
@@ -410,7 +454,7 @@ document.addEventListener("DOMContentLoaded", function() {
         <button onclick="togglePassword()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;color:#8a8070;font-size:16px;padding:4px" id="toggle-pass-btn">👁</button>
       </div>
     </div>
-    <button class="btn-login" id="btn-login-main">Se connecter</button>
+    <button class="btn-login" id="btn-login-main" onclick="tryLogin()">Se connecter</button>
     <div id="login-error"></div>
   </div>
 </div>
@@ -650,12 +694,7 @@ window.db = {
         return {
           set: function(data) { return setDoc(docRef, data); },
           update: function(data) { return updateDoc(docRef, data); },
-          delete: function() { return deleteDoc(docRef); },
-          onSnapshot: function(cb, errCb) {
-            return onSnapshot(docRef, function(snap) {
-              cb({ data: function(){ return snap.exists() ? snap.data() : null; }, id: snap.id });
-            }, errCb || function(){});
-          }
+          delete: function() { return deleteDoc(docRef); }
         };
       }
     };
@@ -687,7 +726,9 @@ window._createVendorAuthAccount = async function(email, password) {
   }
 };
 
-// Firebase prêt — _waitForFirebase dans le script principal détectera window.db et window._auth
+// Exposer les fonctions globales au module
+window.loadAll = loadAll;
+// doLogin/doLogout dans le script principal
 
 </script>
 
@@ -702,11 +743,7 @@ function _waitForFirebase(cb) {
 // CONSTANTES
 // ═══════════════════════════════════════
 const ADMIN_CODE = "ADMIN";
-var ADMIN_PASSWORD = "Nkogheetmadjinou";
-var _settingsCache = {};
-function _saveSettings() {
-  if(window.db) window.db.collection("app_data").doc("settings").set({ data: JSON.stringify(_settingsCache) }).catch(function(){});
-}
+var ADMIN_PASSWORD = localStorage.getItem("mf_admin_password") || "Nkogheetmadjinou";
 const THRESHOLD_AMOUNT = 50000; // 50 000 FCFA dans le mois
 const THRESHOLD_ORDERS = 2;      // 2 achats minimum dans le mois
 const DISCOUNT = 0.05;
@@ -870,14 +907,6 @@ function doLogin() {
 
   if(!code || !pass) { err.textContent="Remplissez tous les champs"; err.style.display="block"; return; }
 
-  // Attendre que Firebase soit prêt
-  if(!window._auth || !window.db) {
-    err.textContent = "⏳ Connexion en cours, réessayez dans 2 secondes...";
-    err.style.display = "block";
-    setTimeout(function(){ err.style.display="none"; }, 3000);
-    return;
-  }
-
   // Admin — connexion par email Firebase Auth
   if(code === ADMIN_CODE) {
     var adminEmail = "admin@monfermier.app";
@@ -957,6 +986,9 @@ function doLogin() {
     }, 500);
   }
 }
+
+// Exposer doLogin immédiatement après sa définition
+window._doLogin = doLogin;
 
 function onLogin() {
   var badge = document.getElementById("user-badge");
@@ -1077,7 +1109,7 @@ function loadAll() {
       else renderVendorHome();
     }
   }, function(err) {
-    console.warn("clients Firestore error");
+    try { clients = JSON.parse(localStorage.getItem("mf_clients")||"[]"); } catch(e){ clients=[]; }
   });
 
   // Vendors
@@ -1085,36 +1117,7 @@ function loadAll() {
     vendors = [];
     snap.forEach(function(doc) { vendors.push({id:doc.id, ...doc.data()}); });
   }, function(err) {
-    console.warn("vendors:", err);
-  });
-
-  // Toutes les app_data en temps réel
-  var appDocs = ["stock_v2","stock_mvts","stock_journees","messages","reglement","settings","evaluations","catalogues","comm_payments"];
-  appDocs.forEach(function(docName) {
-    db.collection("app_data").doc(docName).onSnapshot(function(snap) {
-      var raw = snap.data ? snap.data() : null;
-      if(!raw) return;
-      try {
-        if(docName==="stock_v2") { _stockDataCache=JSON.parse(raw.data||"{}"); }
-        else if(docName==="stock_mvts") { _stockMvtsCache=JSON.parse(raw.data||"[]"); }
-        else if(docName==="stock_journees") { _stockJourneesCache=JSON.parse(raw.data||"[]"); }
-        else if(docName==="messages") {
-          _messagesCache=JSON.parse(raw.data||"[]");
-          updateMsgBadge(); updateVendorMsgBadge();
-          var el=document.getElementById("admin-content");
-          if(el && currentTab==="messages") renderTabMessages(el);
-        }
-        else if(docName==="reglement") { _reglementCache=JSON.parse(raw.data||"{}"); }
-        else if(docName==="settings") {
-          _settingsCache=JSON.parse(raw.data||"{}");
-          ADMIN_PASSWORD=_settingsCache.admin_password||ADMIN_PASSWORD;
-          if(currentUser&&currentUser.role==="admin") renderHome();
-        }
-        else if(docName==="evaluations") { _evaluationsCache=JSON.parse(raw.data||"[]"); }
-        else if(docName==="catalogues") { _cataloguesCache=JSON.parse(raw.data||"[]"); }
-        else if(docName==="comm_payments") { try{_commPaymentsCache=JSON.parse(raw.data||"{}");}catch(e){} }
-      } catch(e) { console.warn("Parsing "+docName+":", e); }
-    }, function(err) { console.warn("app_data/"+docName+":", err); });
+    try { vendors = JSON.parse(localStorage.getItem("mf_vendors")||"[]"); } catch(e){ vendors=[]; }
   });
 }
 
@@ -1150,7 +1153,7 @@ function renderHome() {
   });
 
   var monthLabel = now.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
-  var obj=parseInt((_settingsCache&&_settingsCache.objectif_ca)||"0");
+  var obj=parseInt(localStorage.getItem("mf_objectif_ca")||"0");
   var objBar="";
   if(obj>0){
     var pct=Math.min(100,Math.round((revMois/obj)*100));
@@ -1161,7 +1164,7 @@ function renderHome() {
   } else {
     objBar='<button onclick="openTab(\"settings\")" style="margin-top:8px;font-size:10px;color:#4a5a7a;background:none;border:1px solid #1a2030;padding:3px 8px;border-radius:6px">Definir un objectif mensuel</button>';
   }
-  var seuil=parseInt((_settingsCache&&_settingsCache.alert_stock)||"10");
+  var seuil=parseInt(localStorage.getItem("mf_alert_stock")||"10");
   var stockSum=getStockSummary();
   var alertsBas=Object.values(stockSum).filter(function(s){return s.disponible>0&&s.disponible<=seuil;});
   var stockAlert="";
@@ -2220,18 +2223,17 @@ function calcKey(k) {
 var stockAlertThreshold = 10;
 var stockFilter = "all"; // all | produit_id
 
-var _stockDataCache = {};
-var _stockMvtsCache = [];
-var _stockJourneesCache = [];
-function getStockData() { return _stockDataCache; }
-function saveStockData(data) {
-  _stockDataCache = data;
-  if(window.db) window.db.collection("app_data").doc("stock_v2").set({ data: JSON.stringify(data) }).catch(function(){});
+function getStockData() {
+  try { return JSON.parse(localStorage.getItem("mf_stock_v2")||"{}"); } catch(e){ return {}; }
 }
-function getStockMvts() { return _stockMvtsCache; }
+function saveStockData(data) {
+  localStorage.setItem("mf_stock_v2", JSON.stringify(data));
+}
+function getStockMvts() {
+  try { return JSON.parse(localStorage.getItem("mf_stock_mvts")||"[]"); } catch(e){ return []; }
+}
 function saveStockMvts(mvts) {
-  _stockMvtsCache = mvts;
-  if(window.db) window.db.collection("app_data").doc("stock_mvts").set({ data: JSON.stringify(mvts) }).catch(function(){});
+  localStorage.setItem("mf_stock_mvts", JSON.stringify(mvts));
 }
 
 function addStockMvt(type, productId, productName, qty, vendorCode, vendorName, note) {
@@ -2493,7 +2495,7 @@ var stockMvtProductId = null;
 
 // ─── STOCK JOURNALIER ───
 function getTodayStr(){ return new Date().toLocaleDateString("fr-FR"); }
-function getStockJournees(){ return _stockJourneesCache; }
+function getStockJournees(){ try{return JSON.parse(localStorage.getItem("mf_stock_journees")||"[]");}catch(e){return[];} }
 function getMvtsToday(){ var t=getTodayStr(); return getStockMvts().filter(function(m){return m.date===t;}); }
 
 function setStockViewG(){ localStorage.setItem("mf_stock_view","general"); openTab("stock"); }
@@ -2523,10 +2525,9 @@ function cloturerJournee(){
   });});
   var journees=getStockJournees();
   journees.unshift({date:today,mvts:mvtsToday,resume:resume,archivedAt:new Date().toISOString()});
-  _stockJourneesCache = journees;
-  if(window.db) window.db.collection("app_data").doc("stock_journees").set({ data: JSON.stringify(journees) }).catch(function(){});
+  localStorage.setItem("mf_stock_journees",JSON.stringify(journees));
   var allMvts=getStockMvts().filter(function(m){return m.date!==today;});
-  saveStockMvts(allMvts);
+  localStorage.setItem("mf_stock_mvts",JSON.stringify(allMvts));
   showToast("Journee du "+today+" cloturee !");
   openTab("stock");
 }
@@ -2901,171 +2902,7 @@ function generateVendorReport() {
     reportHtml += '</div>';
   });
 
-  reportHtml += '<div class="footer">Mon Fermier — Rapport vendeurs généré le '+now.toLocaleString("fr-FR")+'</div>
-<textarea id="mf-default-reglement" style="display:none">MON FERMIER
-Production & Distribution de Piment — Qualité & Hygiène Alimentaire
-
-RÈGLEMENT INTÉRIEUR
-ET CODE DE CONDUITE
-
-Version 1.0 — 2025
-Applicable à tous les employés et vendeurs
-Directeur Général : M. Fabrice NKOGHE
-
-PRÉAMBULE
-
-Le présent règlement intérieur est établi conformément aux dispositions légales en vigueur et aux valeurs fondatrices de Mon Fermier. Il s'applique à l'ensemble du personnel, sans exception, dès la signature du contrat de travail ou d'accord commercial.
-
-Mon Fermier est une entreprise spécialisée dans la production et la distribution de piment en pâte et en poudre. Notre activité touche directement à la santé alimentaire des consommateurs. C'est pourquoi les règles d'hygiène et de qualité constituent le socle absolu de notre fonctionnement.
-
-AVERTISSEMENT : Le non-respect de ce règlement expose son auteur à des sanctions pouvant aller jusqu'au licenciement immédiat sans préavis ni indemnité.
-
----
-CHAPITRE I — HYGIÈNE & SÉCURITÉ ALIMENTAIRE
----
-
-La protection de la santé du consommateur est une priorité absolue. Tout manquement aux règles d'hygiène constitue une faute grave.
-
-Article 1 — Tenue de travail et propreté personnelle
-
-- Le port d'une tenue de travail propre et adaptée est obligatoire lors de toute manipulation des produits.
-- Les mains doivent être lavées et désinfectées avant chaque prise de poste, après chaque pause, et après tout contact avec des surfaces souillées.
-- Les ongles doivent être coupés courts et propres. Le vernis à ongles est interdit lors des manipulations alimentaires.
-- Le port de bijoux (bagues, bracelets, montres) est strictement interdit lors des manipulations de produits alimentaires.
-- Les cheveux doivent être couverts (bonnet, filet) lors de toute manipulation de piment en pâte ou en poudre.
-- Il est interdit de tousser, éternuer ou cracher à proximité des produits sans se couvrir la bouche et se désinfecter immédiatement après.
-
-Article 2 — Manipulation et conservation des produits
-
-- Tout produit tombé à terre ou entré en contact avec une surface non désinfectée est considéré comme impropre à la vente et doit être mis à l'écart immédiatement.
-- Les contenants (seaux, sachets, bocaux) doivent être hermétiquement fermés après chaque utilisation.
-- Il est formellement interdit de goûter les produits avec les doigts ou un ustensile non propre.
-- La chaîne du froid ou les conditions de conservation prescrites doivent être respectées en tout temps.
-- Tout signe de détérioration, de moisissure ou d'odeur anormale doit être signalé immédiatement à la direction.
-- Les produits périmés ou dégradés ne peuvent en aucun cas être vendus ou remis à un client.
-
-Article 3 — Propreté des espaces de travail
-
-- Chaque employé est responsable de la propreté de son poste de travail. Un poste sale en fin de journée constitue une faute.
-- Le nettoyage et la désinfection des surfaces de travail doivent être effectués au minimum en début et en fin de chaque journée de travail.
-- Les déchets de production doivent être éliminés dans les poubelles prévues à cet effet et ne doivent jamais s'accumuler.
-- Les zones de stockage doivent être maintenues ordonnées, sèches et protégées de toute contamination extérieure.
-- Il est interdit de manger, boire ou fumer dans les zones de production, de stockage ou de conditionnement des produits.
-
-TOLÉRANCE ZÉRO : Toute vente délibérée de produit périmé, contaminé ou altéré constitue une faute grave passible de licenciement immédiat et de poursuites judiciaires.
-
----
-CHAPITRE II — DISCIPLINE & COMPORTEMENT PROFESSIONNEL
----
-
-Article 4 — Ponctualité et assiduité
-
-- Tout employé est tenu d'être présent à son poste à l'heure fixée dans son contrat ou accord commercial.
-- Tout retard doit être signalé avant la prise de poste par appel téléphonique. Trois retards non justifiés dans le mois constituent une faute sérieuse.
-- Toute absence doit être justifiée dans les 24 heures. Une absence injustifiée de plus de 2 jours consécutifs peut entraîner la rupture du contrat.
-- L'abandon de poste sans avertissement préalable est considéré comme une faute grave.
-
-Article 5 — Respect et relations professionnelles
-
-- Le respect mutuel entre collègues, supérieurs et clients est une obligation non négociable.
-- Tout acte d'insubordination, d'insulte, de harcèlement ou de violence verbale ou physique entraîne une sanction immédiate.
-- Les conflits entre employés doivent être portés à la connaissance de la direction.
-- Il est interdit de tenir des propos désobligeants ou diffamatoires sur l'entreprise, ses produits ou sa direction, que ce soit en public ou sur les réseaux sociaux.
-- La politesse et la cordialité sont exigées en permanence avec les clients, partenaires et fournisseurs.
-
-Article 6 — Usage des outils et équipements de l'entreprise
-
-- Les équipements mis à disposition sont strictement réservés à l'usage professionnel.
-- Tout dommage causé par négligence ou mauvais usage sera imputé à l'employé concerné.
-- Il est interdit d'emporter des outils, équipements ou produits de l'entreprise sans autorisation écrite de la direction.
-- Le téléphone personnel doit rester en mode silencieux pendant les heures de travail.
-
----
-CHAPITRE III — INTÉGRITÉ, HONNÊTETÉ & CONFIDENTIALITÉ
----
-
-Article 7 — Interdiction stricte de vol, fraude et détournement
-
-TOLÉRANCE ZÉRO : Tout vol, détournement de fonds ou de marchandise, falsification de données de vente ou dissimulation d'invendus entraîne un licenciement immédiat et des poursuites judiciaires.
-
-- Il est formellement interdit de prélever des fonds, produits ou marchandises appartenant à l'entreprise, quelle qu'en soit la valeur.
-- Toute recette collectée lors d'une vente doit être intégralement remise à la direction dans les délais convenus, sans exception.
-- Il est interdit de falsifier les quantités vendues, les prix de vente ou les rapports de stock.
-- Tout écart entre les produits remis et les fonds reçus doit être signalé immédiatement. Tout écart non signalé est présumé frauduleux.
-
-Article 8 — Confidentialité et secret professionnel
-
-- Toutes les informations relatives à l'entreprise (recettes, prix d'achat, clientèle, fournisseurs, stratégies commerciales) sont strictement confidentielles.
-- Il est interdit de divulguer ces informations à des tiers, concurrents, ou toute personne étrangère à l'entreprise.
-- Cette obligation de confidentialité s'applique pendant la durée du contrat et pendant une période de deux (2) ans après sa fin.
-
-Article 9 — Loyauté et non-concurrence
-
-- Il est interdit d'exercer, directement ou indirectement, une activité concurrente à celle de Mon Fermier sans autorisation préalable écrite.
-- Il est interdit de démarcher les clients de l'entreprise à des fins personnelles ou au profit d'un concurrent.
-
----
-CHAPITRE IV — RÈGLES SPÉCIFIQUES AUX VENDEURS
----
-
-Article 10 — Gestion des produits et du stock
-
-- Chaque vendeur reçoit ses produits en début de journée et doit en signer la réception. Cette signature vaut engagement de responsabilité.
-- En fin de journée, le vendeur doit remettre les invendus ET la totalité des fonds correspondant aux ventes effectuées.
-- Il est interdit de stocker des produits de l'entreprise à son domicile sans autorisation écrite.
-- Toute perte, casse ou vol de produit doit être signalé immédiatement avec un rapport circonstancié. Les pertes non justifiées seront imputées au vendeur.
-- Les vendeurs n'ont pas le droit de modifier les prix de vente fixés par la direction, ni d'accorder des remises sans autorisation préalable.
-
-Article 11 — Présentation et comportement lors des ventes
-
-- Le vendeur doit être propre, correctement habillé et porter les équipements d'hygiène lors de la manipulation des produits devant les clients.
-- Il est interdit de vendre dans un état d'ivresse ou sous l'influence de substances quelconques.
-- Le vendeur représente l'image de Mon Fermier. Tout comportement déplacé, agressif ou malhonnête envers un client sera sanctionné.
-- Les plaintes des clients doivent être remontées à la direction dans les 24 heures.
-
-Article 12 — Compte-rendu et communication
-
-- Chaque vendeur est tenu de rendre compte de ses activités quotidiennement via l'application Mon Fermier ou par tout moyen convenu avec la direction.
-- Tout problème rencontré (client difficile, produit dégradé, accident) doit être signalé le jour même.
-- L'absence de communication de plus de 48 heures sans justification valable est considérée comme un abandon de poste.
-
----
-CHAPITRE V — SANCTIONS DISCIPLINAIRES
----
-
-Article 13 — Échelle des sanctions
-
-- Niveau 1 — Mineur : Avertissement oral (retard non signalé, poste non nettoyé, usage du téléphone en service).
-- Niveau 2 — Sérieux : Avertissement écrit + retenue sur salaire/commission (récidive, absence injustifiée, insubordination légère, non-respect des règles d'hygiène).
-- Niveau 3 — Grave : Licenciement avec préavis (manipulation de produits périmés, insubordination grave, violence verbale, abandon de poste).
-- Niveau 4 — FAUTE GRAVE : Licenciement immédiat + poursuites judiciaires (vol, fraude, détournement, vente de produits contaminés, violence physique).
-
----
-CHAPITRE VI — DISPOSITIONS GÉNÉRALES
----
-
-Article 14 — Entrée en vigueur et diffusion
-
-- Le présent règlement entre en vigueur à la date de sa signature par la direction et s'applique immédiatement à l'ensemble du personnel.
-- Chaque employé ou vendeur recevra un exemplaire et devra signer la page d'engagement jointe.
-- L'ignorance du présent règlement ne peut être invoquée comme motif d'excuse.
-
-Article 15 — Révision du règlement
-
-- La direction se réserve le droit de modifier le présent règlement à tout moment. Toute modification sera communiquée au personnel avec un préavis de 15 jours.
-
-Article 16 — Droit de recours
-
-- Tout employé qui s'estime injustement sanctionné peut adresser un recours écrit à la direction dans un délai de 7 jours suivant la sanction.
-- La direction s'engage à examiner tout recours dans un délai de 15 jours ouvrables.
-
-Article 17 — Engagement collectif
-
-- Chaque membre de l'équipe Mon Fermier est ambassadeur de la marque et de ses valeurs : qualité, honnêteté, hygiène et excellence.
-- L'entreprise s'engage en contrepartie à fournir les équipements nécessaires, à former son personnel et à traiter chacun avec respect et équité.
-
-Mon Fermier — Qualité, Hygiène & Excellence — 2025</textarea>
-</body></html>';
+  reportHtml += '<div class="footer">Mon Fermier — Rapport vendeurs généré le '+now.toLocaleString("fr-FR")+'</div></body></html>';
 
   var win = window.open("","_blank");
   if(win){ win.document.write(reportHtml); win.document.close(); setTimeout(function(){win.print();},500); }
@@ -3104,9 +2941,9 @@ function exportVentesCSV(){
 
 function exportBackup(){
   var data={clients:clients,vendors:vendors,
-    stock:JSON.stringify(_stockDataCache),
-    stockMvts:JSON.stringify(_stockMvtsCache),
-    journees:JSON.stringify(_stockJourneesCache),
+    stock:localStorage.getItem("mf_stock_v2"),
+    stockMvts:localStorage.getItem("mf_stock_mvts"),
+    journees:localStorage.getItem("mf_stock_journees"),
     exportDate:new Date().toISOString()};
   var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   var url=URL.createObjectURL(blob);var a=document.createElement("a");
@@ -3122,11 +2959,11 @@ function importBackup(){
     reader.onload=function(ev){
       try{
         var data=JSON.parse(ev.target.result);
-        if(data.clients){clients=data.clients; if(window.db){data.clients.forEach(function(c){if(c.id){var id=c.id;var d=Object.assign({},c);delete d.id;window.db.collection("clients").doc(id).set(d).catch(function(){});}});}}
-        if(data.vendors){vendors=data.vendors; if(window.db){data.vendors.forEach(function(v){if(v.id){var id=v.id;var d=Object.assign({},v);delete d.id;window.db.collection("vendors").doc(id).set(d).catch(function(){});}});}}
-        if(data.stock){try{_stockDataCache=JSON.parse(data.stock);}catch(e){} saveStockData(_stockDataCache);}
-        if(data.stockMvts){try{_stockMvtsCache=JSON.parse(data.stockMvts);}catch(e){} saveStockMvts(_stockMvtsCache);}
-        if(data.journees){try{_stockJourneesCache=JSON.parse(data.journees);}catch(e){} if(window.db) window.db.collection("app_data").doc("stock_journees").set({data:data.journees}).catch(function(){});}
+        if(data.clients){clients=data.clients;localStorage.setItem("mf_clients",JSON.stringify(clients));}
+        if(data.vendors){vendors=data.vendors;localStorage.setItem("mf_vendors",JSON.stringify(vendors));}
+        if(data.stock)localStorage.setItem("mf_stock_v2",data.stock);
+        if(data.stockMvts)localStorage.setItem("mf_stock_mvts",data.stockMvts);
+        if(data.journees)localStorage.setItem("mf_stock_journees",data.journees);
         showToast("Donnees importees !");openTab("clients");
       }catch(err){showToast("Fichier invalide",true);}
     };reader.readAsText(file);
@@ -3137,8 +2974,8 @@ function importBackup(){
 // ONGLET PARAMÈTRES
 // ═══════════════════════════════════════
 function renderTabSettings(el){
-  var obj=(_settingsCache&&_settingsCache.objectif_ca)||"";
-  var seuil=(_settingsCache&&_settingsCache.alert_stock)||"10";
+  var obj=localStorage.getItem("mf_objectif_ca")||"";
+  var seuil=localStorage.getItem("mf_alert_stock")||"10";
   var html='';
   // Objectif CA
   html+='<div class="acard"><div class="acard-title">🎯 Objectif CA mensuel</div>';
@@ -3180,11 +3017,11 @@ function renderTabSettings(el){
 // ONGLET RÈGLEMENT INTÉRIEUR
 // ═══════════════════════════════════════
 
-var _reglementCache = {};
-function getReglement() { return _reglementCache; }
+function getReglement() {
+  try { return JSON.parse(localStorage.getItem("mf_reglement")||"{}"); } catch(e) { return {}; }
+}
 function saveReglementData(data) {
-  _reglementCache = data;
-  if(window.db) window.db.collection("app_data").doc("reglement").set({ data: JSON.stringify(data) }).catch(function(){});
+  localStorage.setItem("mf_reglement", JSON.stringify(data));
 }
 
 function renderTabReglement(el) {
@@ -3674,13 +3511,13 @@ function envoyerMessageVendeur() {
 function saveObjectif(){
   var val=parseInt(document.getElementById("set-objectif").value);
   if(!val||val<=0){showToast("Montant invalide",true);return;}
-  _settingsCache.objectif_ca = val; _saveSettings();
+  localStorage.setItem("mf_objectif_ca",val);
   showToast("Objectif : "+fmtPrice(val));
 }
 function saveAlertStock(){
   var val=parseInt(document.getElementById("set-alert-stock").value);
   if(!val||val<=0){showToast("Seuil invalide",true);return;}
-  _settingsCache.alert_stock = val; _saveSettings();
+  localStorage.setItem("mf_alert_stock",val);
   showToast("Alerte stock : moins de "+val+" unites");
 }
 function changeAdminPwd(){
@@ -3691,7 +3528,8 @@ function changeAdminPwd(){
   if(old!==ADMIN_PASSWORD){showToast("Mot de passe incorrect",true);return;}
   if(!n||n.length<6){showToast("Nouveau mot de passe trop court (min 6)",true);return;}
   if(n!==n2){showToast("Les mots de passe ne correspondent pas",true);return;}
-  ADMIN_PASSWORD=n; _settingsCache.admin_password = n; _saveSettings();
+  localStorage.setItem("mf_admin_password",n);
+  ADMIN_PASSWORD=n;
   document.getElementById("set-old-pwd").value="";
   document.getElementById("set-new-pwd").value="";
   document.getElementById("set-new-pwd2").value="";
@@ -3713,9 +3551,9 @@ function stockAction(type) {
   var qty = parseInt(prompt("Quantité ?"));
   if(isNaN(qty) || qty <= 0) return;
   var stockData = {};
-  stockData = getStockData();
+  try { stockData = JSON.parse(localStorage.getItem("mf_stock")||"{}"); } catch(e){}
   stockData[prod.id] = Math.max(0, (stockData[prod.id]||0) + (type==="entree" ? qty : -qty));
-  saveStockData(stockData);
+  localStorage.setItem("mf_stock", JSON.stringify(stockData));
   showToast((type==="entree"?"✅ Entrée":"📤 Sortie")+" : "+qty+"× "+prod.name);
   openTab("stock");
 }
@@ -4469,11 +4307,11 @@ function toggleReglementVendeur() {
 // ═══════════════════════════════════════
 // PAIEMENT COMMISSIONS VENDEUR
 // ═══════════════════════════════════════
-var _commPaymentsCache = {};
-function getVendorPayments(vendorId) { return _commPaymentsCache[vendorId] || []; }
+function getVendorPayments(vendorId) {
+  try { return JSON.parse(localStorage.getItem("mf_comm_payments_"+vendorId)||"[]"); } catch(e){ return []; }
+}
 function saveVendorPayments(vendorId, payments) {
-  _commPaymentsCache[vendorId] = payments;
-  if(window.db) window.db.collection("app_data").doc("comm_payments").set({ data: JSON.stringify(_commPaymentsCache) }).catch(function(){});
+  localStorage.setItem("mf_comm_payments_"+vendorId, JSON.stringify(payments));
 }
 
 function payVendorCommissions() {
@@ -5523,73 +5361,71 @@ function generatePDFReport() {
   var totalRev = totalPaid+totalUnpaid+totalDelivery;
 
   // Générer le HTML du rapport
-  var reportHtml = ''
-    + '<!DOCTYPE html>\n'
-    + '<html lang="fr">\n'
-    + '<head>\n'
-    + '<meta charset="UTF-8">\n'
-    + '<title>Rapport Mon Fermier - '+ (monthLabel) +'</title>\n'
-    + '<style>\n'
-    + '  body{font-family:Georgia,serif;color:#1a1a1a;max-width:800px;margin:0 auto;padding:20px}\n'
-    + '  h1{color:#8a6a00;border-bottom:3px solid #c9a84c;padding-bottom:10px}\n'
-    + '  h2{color:#5a4a00;margin-top:24px;border-left:4px solid #c9a84c;padding-left:10px}\n'
-    + '  table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}\n'
-    + '  th{background:#c9a84c;color:#0a0906;padding:8px 12px;text-align:left}\n'
-    + '  td{padding:7px 12px;border-bottom:1px solid #e0d8c0}\n'
-    + '  tr:nth-child(even){background:#fdf8ec}\n'
-    + '  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}\n'
-    + '  .kpi{background:#fdf8ec;border:1px solid #c9a84c44;border-radius:8px;padding:12px;text-align:center}\n'
-    + '  .kpi-val{font-size:20px;font-weight:700;color:#8a6a00}\n'
-    + '  .kpi-lbl{font-size:11px;color:#6a5a40;margin-top:4px}\n'
-    + '  .paid{color:#2a7a2a} .unpaid{color:#c92020} .delivery{color:#8a6a00}\n'
-    + '  .footer{margin-top:30px;padding-top:10px;border-top:1px solid #ccc;font-size:11px;color:#888;text-align:center}\n'
-    + '  @media print{body{padding:0}}\n'
-    + '</style>\n'
-    + '</head>\n'
-    + '<body>\n'
-    + '<h1>🌾 Mon Fermier</h1>\n'
-    + '<p style="color:#666;margin-top:-10px">Rapport mensuel — <strong>'+ (monthLabel) +'</strong> — Généré le '+ (now.toLocaleDateString("fr-FR")) +'</p>\n'
-    + '\n'
-    + '<h2>Bilan financier</h2>\n'
-    + '<div class="kpi-grid">\n'
-    + '  <div class="kpi"><div class="kpi-val">'+ (fmtPrice(totalRev)) +'</div><div class="kpi-lbl">CA TOTAL</div></div>\n'
-    + '  <div class="kpi"><div class="kpi-val paid">'+ (fmtPrice(totalPaid)) +'</div><div class="kpi-lbl">✅ PAYÉ</div></div>\n'
-    + '  <div class="kpi"><div class="kpi-val unpaid">'+ (fmtPrice(totalUnpaid)) +'</div><div class="kpi-lbl">❌ NON PAYÉ</div></div>\n'
-    + '  <div class="kpi"><div class="kpi-val delivery">'+ (fmtPrice(totalDelivery)) +'</div><div class="kpi-lbl">🚚 LIVRAISON</div></div>\n'
-    + '  <div class="kpi"><div class="kpi-val" style="color:#6a3da8">'+ (fmtPrice(totalComm)) +'</div><div class="kpi-lbl">COMMISSIONS</div></div>\n'
-    + '  <div class="kpi"><div class="kpi-val">'+ (fmtPrice(totalPaid-totalComm)) +'</div><div class="kpi-lbl">NET</div></div>\n'
-    + '</div>\n'
-    + '\n'
-    + '<h2>Ventes par produit</h2>\n'
-    + '<table>\n'
-    + '  <tr><th>Produit</th><th>Quantité</th><th>CA</th></tr>\n'
-    + '  '+ (Object.entries(prodStats).sort(function(a,b){return b[1].rev-a[1].rev;) +').map(function(e){\n'
-    + '    return "<tr><td>"+e[0]+"</td><td>"+e[1].qty+" u.</td><td>"+fmtPrice(e[1].rev)+"</td></tr>";\n'
-    + '  }).join("")}\n'
-    + '</table>\n'
-    + '\n'
-    + '<h2>Commissions par vendeur</h2>\n'
-    + '<table>\n'
-    + '  <tr><th>Vendeur</th><th>Commission</th></tr>\n'
-    + '  '+ (Object.entries(commByVendor).map(function(e){\n'
-    + '    return "<tr><td>"+e[0]+"</td><td style=\'color:#6a3da8;font-weight:700\'>"+fmtPrice(e[1])+"</td></tr>";\n'
-    + '  ) +').join("")}\n'
-    + '</table>\n'
-    + '\n'
-    + '<h2>Détail des transactions ('+ (salesList.length) +')</h2>\n'
-    + '<table>\n'
-    + '  <tr><th>Client</th><th>Date</th><th>Montant</th><th>Paiement</th><th>Statut</th><th>Vendeur</th></tr>\n'
-    + '  '+ (salesList.map(function(s){\n'
-    + '    var sc = s.status==="unpaid"?"unpaid":s.status==="delivery"?"delivery":"paid";\n'
-    + '    var sl = s.status==="unpaid"?"Non payé":s.status==="delivery"?"Livraison":"Payé";\n'
-    + '    return "<tr><td>"+s.client+"</td><td>"+s.date+"</td><td>"+fmtPrice(s.amount)+"</td><td>"+s.payment+"</td><td class=\'"+sc+"\'>"+sl+"</td><td>"+s.vendeur+"</td></tr>";\n'
-    + '  ) +').join("")}\n'
-    + '</table>\n'
-    + '\n'
-    + '<div class="footer">Mon Fermier — Rapport généré automatiquement — '+ (now.toLocaleString("fr-FR")) +'</div>\n'
-    + '</body>\n'
-    + '</html>\n'
-  ;
+  var reportHtml = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Rapport Mon Fermier - ${monthLabel}</title>
+<style>
+  body{font-family:Georgia,serif;color:#1a1a1a;max-width:800px;margin:0 auto;padding:20px}
+  h1{color:#8a6a00;border-bottom:3px solid #c9a84c;padding-bottom:10px}
+  h2{color:#5a4a00;margin-top:24px;border-left:4px solid #c9a84c;padding-left:10px}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
+  th{background:#c9a84c;color:#0a0906;padding:8px 12px;text-align:left}
+  td{padding:7px 12px;border-bottom:1px solid #e0d8c0}
+  tr:nth-child(even){background:#fdf8ec}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .kpi{background:#fdf8ec;border:1px solid #c9a84c44;border-radius:8px;padding:12px;text-align:center}
+  .kpi-val{font-size:20px;font-weight:700;color:#8a6a00}
+  .kpi-lbl{font-size:11px;color:#6a5a40;margin-top:4px}
+  .paid{color:#2a7a2a} .unpaid{color:#c92020} .delivery{color:#8a6a00}
+  .footer{margin-top:30px;padding-top:10px;border-top:1px solid #ccc;font-size:11px;color:#888;text-align:center}
+  @media print{body{padding:0}}
+</style>
+</head>
+<body>
+<h1>🌾 Mon Fermier</h1>
+<p style="color:#666;margin-top:-10px">Rapport mensuel — <strong>${monthLabel}</strong> — Généré le ${now.toLocaleDateString("fr-FR")}</p>
+
+<h2>Bilan financier</h2>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-val">${fmtPrice(totalRev)}</div><div class="kpi-lbl">CA TOTAL</div></div>
+  <div class="kpi"><div class="kpi-val paid">${fmtPrice(totalPaid)}</div><div class="kpi-lbl">✅ PAYÉ</div></div>
+  <div class="kpi"><div class="kpi-val unpaid">${fmtPrice(totalUnpaid)}</div><div class="kpi-lbl">❌ NON PAYÉ</div></div>
+  <div class="kpi"><div class="kpi-val delivery">${fmtPrice(totalDelivery)}</div><div class="kpi-lbl">🚚 LIVRAISON</div></div>
+  <div class="kpi"><div class="kpi-val" style="color:#6a3da8">${fmtPrice(totalComm)}</div><div class="kpi-lbl">COMMISSIONS</div></div>
+  <div class="kpi"><div class="kpi-val">${fmtPrice(totalPaid-totalComm)}</div><div class="kpi-lbl">NET</div></div>
+</div>
+
+<h2>Ventes par produit</h2>
+<table>
+  <tr><th>Produit</th><th>Quantité</th><th>CA</th></tr>
+  ${Object.entries(prodStats).sort(function(a,b){return b[1].rev-a[1].rev;}).map(function(e){
+    return "<tr><td>"+e[0]+"</td><td>"+e[1].qty+" u.</td><td>"+fmtPrice(e[1].rev)+"</td></tr>";
+  }).join("")}
+</table>
+
+<h2>Commissions par vendeur</h2>
+<table>
+  <tr><th>Vendeur</th><th>Commission</th></tr>
+  ${Object.entries(commByVendor).map(function(e){
+    return "<tr><td>"+e[0]+"</td><td style='color:#6a3da8;font-weight:700'>"+fmtPrice(e[1])+"</td></tr>";
+  }).join("")}
+</table>
+
+<h2>Détail des transactions (${salesList.length})</h2>
+<table>
+  <tr><th>Client</th><th>Date</th><th>Montant</th><th>Paiement</th><th>Statut</th><th>Vendeur</th></tr>
+  ${salesList.map(function(s){
+    var sc = s.status==="unpaid"?"unpaid":s.status==="delivery"?"delivery":"paid";
+    var sl = s.status==="unpaid"?"Non payé":s.status==="delivery"?"Livraison":"Payé";
+    return "<tr><td>"+s.client+"</td><td>"+s.date+"</td><td>"+fmtPrice(s.amount)+"</td><td>"+s.payment+"</td><td class='"+sc+"'>"+sl+"</td><td>"+s.vendeur+"</td></tr>";
+  }).join("")}
+</table>
+
+<div class="footer">Mon Fermier — Rapport généré automatiquement — ${now.toLocaleString("fr-FR")}</div>
+</body>
+</html>`;
 
   // Ouvrir dans un nouvel onglet et imprimer
   var win = window.open("", "_blank");
@@ -5692,41 +5528,26 @@ updateOffline();
 _waitForFirebase(function() {
   loadAll();
   showPage("page-login");
-  console.log("[MF] Firebase prêt, app démarrée");
 });
 
 // Pré-remplir le règlement avec le contenu par défaut si jamais enregistré
 (function initReglement() {
-  var existing = _reglementCache && _reglementCache.contenu;
+  var existing = localStorage.getItem("mf_reglement");
   if(!existing) {
-    var defaultReglement = (document.getElementById("mf-default-reglement")||{value:""}).value;
-    _reglementCache = { contenu: defaultReglement, dateModif: "", publie: false };
-    if(window.db) window.db.collection("app_data").doc("reglement").set({ data: JSON.stringify(_reglementCache) }).catch(function(){});
+    var defaultReglement = `MON FERMIER\nProduction & Distribution de Piment — Qualité & Hygiène Alimentaire\n\nRÈGLEMENT INTÉRIEUR\nET CODE DE CONDUITE\n\nVersion 1.0 — 2025\nApplicable à tous les employés et vendeurs\nDirecteur Général : M. Fabrice NKOGHE\n\nPRÉAMBULE\n\nLe présent règlement intérieur est établi conformément aux dispositions légales en vigueur et aux valeurs fondatrices de Mon Fermier. Il s'applique à l'ensemble du personnel, sans exception, dès la signature du contrat de travail ou d'accord commercial.\n\nMon Fermier est une entreprise spécialisée dans la production et la distribution de piment en pâte et en poudre. Notre activité touche directement à la santé alimentaire des consommateurs. C'est pourquoi les règles d'hygiène et de qualité constituent le socle absolu de notre fonctionnement.\n\nAVERTISSEMENT : Le non-respect de ce règlement expose son auteur à des sanctions pouvant aller jusqu'au licenciement immédiat sans préavis ni indemnité.\n\n---\nCHAPITRE I — HYGIÈNE & SÉCURITÉ ALIMENTAIRE\n---\n\nLa protection de la santé du consommateur est une priorité absolue. Tout manquement aux règles d'hygiène constitue une faute grave.\n\nArticle 1 — Tenue de travail et propreté personnelle\n\n- Le port d'une tenue de travail propre et adaptée est obligatoire lors de toute manipulation des produits.\n- Les mains doivent être lavées et désinfectées avant chaque prise de poste, après chaque pause, et après tout contact avec des surfaces souillées.\n- Les ongles doivent être coupés courts et propres. Le vernis à ongles est interdit lors des manipulations alimentaires.\n- Le port de bijoux (bagues, bracelets, montres) est strictement interdit lors des manipulations de produits alimentaires.\n- Les cheveux doivent être couverts (bonnet, filet) lors de toute manipulation de piment en pâte ou en poudre.\n- Il est interdit de tousser, éternuer ou cracher à proximité des produits sans se couvrir la bouche et se désinfecter immédiatement après.\n\nArticle 2 — Manipulation et conservation des produits\n\n- Tout produit tombé à terre ou entré en contact avec une surface non désinfectée est considéré comme impropre à la vente et doit être mis à l'écart immédiatement.\n- Les contenants (seaux, sachets, bocaux) doivent être hermétiquement fermés après chaque utilisation.\n- Il est formellement interdit de goûter les produits avec les doigts ou un ustensile non propre.\n- La chaîne du froid ou les conditions de conservation prescrites doivent être respectées en tout temps.\n- Tout signe de détérioration, de moisissure ou d'odeur anormale doit être signalé immédiatement à la direction.\n- Les produits périmés ou dégradés ne peuvent en aucun cas être vendus ou remis à un client.\n\nArticle 3 — Propreté des espaces de travail\n\n- Chaque employé est responsable de la propreté de son poste de travail. Un poste sale en fin de journée constitue une faute.\n- Le nettoyage et la désinfection des surfaces de travail doivent être effectués au minimum en début et en fin de chaque journée de travail.\n- Les déchets de production doivent être éliminés dans les poubelles prévues à cet effet et ne doivent jamais s'accumuler.\n- Les zones de stockage doivent être maintenues ordonnées, sèches et protégées de toute contamination extérieure.\n- Il est interdit de manger, boire ou fumer dans les zones de production, de stockage ou de conditionnement des produits.\n\nTOLÉRANCE ZÉRO : Toute vente délibérée de produit périmé, contaminé ou altéré constitue une faute grave passible de licenciement immédiat et de poursuites judiciaires.\n\n---\nCHAPITRE II — DISCIPLINE & COMPORTEMENT PROFESSIONNEL\n---\n\nArticle 4 — Ponctualité et assiduité\n\n- Tout employé est tenu d'être présent à son poste à l'heure fixée dans son contrat ou accord commercial.\n- Tout retard doit être signalé avant la prise de poste par appel téléphonique. Trois retards non justifiés dans le mois constituent une faute sérieuse.\n- Toute absence doit être justifiée dans les 24 heures. Une absence injustifiée de plus de 2 jours consécutifs peut entraîner la rupture du contrat.\n- L'abandon de poste sans avertissement préalable est considéré comme une faute grave.\n\nArticle 5 — Respect et relations professionnelles\n\n- Le respect mutuel entre collègues, supérieurs et clients est une obligation non négociable.\n- Tout acte d'insubordination, d'insulte, de harcèlement ou de violence verbale ou physique entraîne une sanction immédiate.\n- Les conflits entre employés doivent être portés à la connaissance de la direction.\n- Il est interdit de tenir des propos désobligeants ou diffamatoires sur l'entreprise, ses produits ou sa direction, que ce soit en public ou sur les réseaux sociaux.\n- La politesse et la cordialité sont exigées en permanence avec les clients, partenaires et fournisseurs.\n\nArticle 6 — Usage des outils et équipements de l'entreprise\n\n- Les équipements mis à disposition sont strictement réservés à l'usage professionnel.\n- Tout dommage causé par négligence ou mauvais usage sera imputé à l'employé concerné.\n- Il est interdit d'emporter des outils, équipements ou produits de l'entreprise sans autorisation écrite de la direction.\n- Le téléphone personnel doit rester en mode silencieux pendant les heures de travail.\n\n---\nCHAPITRE III — INTÉGRITÉ, HONNÊTETÉ & CONFIDENTIALITÉ\n---\n\nArticle 7 — Interdiction stricte de vol, fraude et détournement\n\nTOLÉRANCE ZÉRO : Tout vol, détournement de fonds ou de marchandise, falsification de données de vente ou dissimulation d'invendus entraîne un licenciement immédiat et des poursuites judiciaires.\n\n- Il est formellement interdit de prélever des fonds, produits ou marchandises appartenant à l'entreprise, quelle qu'en soit la valeur.\n- Toute recette collectée lors d'une vente doit être intégralement remise à la direction dans les délais convenus, sans exception.\n- Il est interdit de falsifier les quantités vendues, les prix de vente ou les rapports de stock.\n- Tout écart entre les produits remis et les fonds reçus doit être signalé immédiatement. Tout écart non signalé est présumé frauduleux.\n\nArticle 8 — Confidentialité et secret professionnel\n\n- Toutes les informations relatives à l'entreprise (recettes, prix d'achat, clientèle, fournisseurs, stratégies commerciales) sont strictement confidentielles.\n- Il est interdit de divulguer ces informations à des tiers, concurrents, ou toute personne étrangère à l'entreprise.\n- Cette obligation de confidentialité s'applique pendant la durée du contrat et pendant une période de deux (2) ans après sa fin.\n\nArticle 9 — Loyauté et non-concurrence\n\n- Il est interdit d'exercer, directement ou indirectement, une activité concurrente à celle de Mon Fermier sans autorisation préalable écrite.\n- Il est interdit de démarcher les clients de l'entreprise à des fins personnelles ou au profit d'un concurrent.\n\n---\nCHAPITRE IV — RÈGLES SPÉCIFIQUES AUX VENDEURS\n---\n\nArticle 10 — Gestion des produits et du stock\n\n- Chaque vendeur reçoit ses produits en début de journée et doit en signer la réception. Cette signature vaut engagement de responsabilité.\n- En fin de journée, le vendeur doit remettre les invendus ET la totalité des fonds correspondant aux ventes effectuées.\n- Il est interdit de stocker des produits de l'entreprise à son domicile sans autorisation écrite.\n- Toute perte, casse ou vol de produit doit être signalé immédiatement avec un rapport circonstancié. Les pertes non justifiées seront imputées au vendeur.\n- Les vendeurs n'ont pas le droit de modifier les prix de vente fixés par la direction, ni d'accorder des remises sans autorisation préalable.\n\nArticle 11 — Présentation et comportement lors des ventes\n\n- Le vendeur doit être propre, correctement habillé et porter les équipements d'hygiène lors de la manipulation des produits devant les clients.\n- Il est interdit de vendre dans un état d'ivresse ou sous l'influence de substances quelconques.\n- Le vendeur représente l'image de Mon Fermier. Tout comportement déplacé, agressif ou malhonnête envers un client sera sanctionné.\n- Les plaintes des clients doivent être remontées à la direction dans les 24 heures.\n\nArticle 12 — Compte-rendu et communication\n\n- Chaque vendeur est tenu de rendre compte de ses activités quotidiennement via l'application Mon Fermier ou par tout moyen convenu avec la direction.\n- Tout problème rencontré (client difficile, produit dégradé, accident) doit être signalé le jour même.\n- L'absence de communication de plus de 48 heures sans justification valable est considérée comme un abandon de poste.\n\n---\nCHAPITRE V — SANCTIONS DISCIPLINAIRES\n---\n\nArticle 13 — Échelle des sanctions\n\n- Niveau 1 — Mineur : Avertissement oral (retard non signalé, poste non nettoyé, usage du téléphone en service).\n- Niveau 2 — Sérieux : Avertissement écrit + retenue sur salaire/commission (récidive, absence injustifiée, insubordination légère, non-respect des règles d'hygiène).\n- Niveau 3 — Grave : Licenciement avec préavis (manipulation de produits périmés, insubordination grave, violence verbale, abandon de poste).\n- Niveau 4 — FAUTE GRAVE : Licenciement immédiat + poursuites judiciaires (vol, fraude, détournement, vente de produits contaminés, violence physique).\n\n---\nCHAPITRE VI — DISPOSITIONS GÉNÉRALES\n---\n\nArticle 14 — Entrée en vigueur et diffusion\n\n- Le présent règlement entre en vigueur à la date de sa signature par la direction et s'applique immédiatement à l'ensemble du personnel.\n- Chaque employé ou vendeur recevra un exemplaire et devra signer la page d'engagement jointe.\n- L'ignorance du présent règlement ne peut être invoquée comme motif d'excuse.\n\nArticle 15 — Révision du règlement\n\n- La direction se réserve le droit de modifier le présent règlement à tout moment. Toute modification sera communiquée au personnel avec un préavis de 15 jours.\n\nArticle 16 — Droit de recours\n\n- Tout employé qui s'estime injustement sanctionné peut adresser un recours écrit à la direction dans un délai de 7 jours suivant la sanction.\n- La direction s'engage à examiner tout recours dans un délai de 15 jours ouvrables.\n\nArticle 17 — Engagement collectif\n\n- Chaque membre de l'équipe Mon Fermier est ambassadeur de la marque et de ses valeurs : qualité, honnêteté, hygiène et excellence.\n- L'entreprise s'engage en contrepartie à fournir les équipements nécessaires, à former son personnel et à traiter chacun avec respect et équité.\n\nMon Fermier — Qualité, Hygiène & Excellence — 2025`;
+    localStorage.setItem("mf_reglement", JSON.stringify({ contenu: defaultReglement, dateModif: "", publie: false }));
   }
 })();
 
-// Enter key géré dans DOMContentLoaded du head
+// Enter key sur login
+document.getElementById("login-password").addEventListener("keydown", function(e){
+  if(e.key==="Enter") doLogin();
+});
+document.getElementById("login-code").addEventListener("keydown", function(e){
+  if(e.key==="Enter") document.getElementById("login-password").focus();
+});
 
-// Exposer doLogin globalement depuis le script principal
-window.doLogin = doLogin;
-window.doLogout = doLogout;
-
-// Attacher le bouton connexion ici où doLogin est garantie disponible
-(function attachLoginBtn() {
-  var btn = document.getElementById("btn-login-main");
-  if(btn) {
-    btn.addEventListener("click", function() { doLogin(); });
-  } else {
-    // Le DOM n'est peut-être pas encore prêt, réessayer
-    setTimeout(attachLoginBtn, 50);
-  }
-})();
-
-// Enter key sur les champs login
-var _lp = document.getElementById("login-password");
-var _lc = document.getElementById("login-code");
-if(_lp) _lp.addEventListener("keydown", function(e){ if(e.key==="Enter") doLogin(); });
-if(_lc) _lc.addEventListener("keydown", function(e){ if(e.key==="Enter"){ var p=document.getElementById("login-password"); if(p) p.focus(); } });
+window._doLogout = doLogout;
 </script>
 
 
@@ -5942,12 +5763,10 @@ if(_lc) _lc.addEventListener("keydown", function(e){ if(e.key==="Enter"){ var p=
      SYSTÈME CATALOGUE
 ═══════════════════════════════════════ -->
 <script>
-var _cataloguesCache = [];
-function getCatalogues(){ return _cataloguesCache; }
+function getCatalogues(){try{return JSON.parse(localStorage.getItem('mf_catalogues')||'[]');}catch(e){return[];}}
 function saveCatalogues(arr){
   try{
-    _cataloguesCache = arr;
-    if(window.db) window.db.collection("app_data").doc("catalogues").set({ data: JSON.stringify(arr) }).catch(function(){});
+    localStorage.setItem('mf_catalogues',JSON.stringify(arr));
   }catch(e){
     // localStorage plein - compresser les images encore plus
     showToast('⚠️ Photos trop lourdes, compression en cours...');
@@ -5967,8 +5786,7 @@ function saveCatalogues(arr){
         })
       });
     });
-    _cataloguesCache = compressed;
-    if(window.db) window.db.collection("app_data").doc("catalogues").set({ data: JSON.stringify(compressed) }).catch(function(){});
+    localStorage.setItem('mf_catalogues',JSON.stringify(compressed));
   }
 }
 
@@ -6250,12 +6068,8 @@ function modifierCatalogue(i){
   renderProduitsTemp();
 }
 
-var _evaluationsCache = [];
-function getEvaluations(){ return _evaluationsCache; }
-function saveEvaluations(arr){
-  _evaluationsCache = arr;
-  if(window.db) window.db.collection("app_data").doc("evaluations").set({ data: JSON.stringify(arr) }).catch(function(){});
-}
+function getEvaluations(){try{return JSON.parse(localStorage.getItem('mf_evaluations')||'[]');}catch(e){return[];}}
+function saveEvaluations(arr){localStorage.setItem('mf_evaluations',JSON.stringify(arr));}
 function getNoteLabel(val){return ['','Insuffisant','A ameliorer','Correct','Bien','Excellent'][val]||'';}
 
 function ouvrirEvaluationVendeur(vendorCode){
@@ -6376,7 +6190,7 @@ function renderMonEvaluation(){
 // ── 1. Enregistrement du Service Worker ───────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
+    navigator.serviceWorker.register('./sw.js?v=20260328', { scope: './' })
       .then(function(reg) {
         console.log('[PWA] Service Worker enregistré :', reg.scope);
       })
