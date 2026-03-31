@@ -872,6 +872,27 @@ function doLogin() {
 
   if(!code || !pass) { err.textContent="Remplissez tous les champs"; err.style.display="block"; return; }
 
+  // Attendre que Firebase Auth soit prêt
+  if(!window._firebaseLoginVendor) {
+    var btn = document.querySelector(".btn-login");
+    if(btn) { btn.textContent = "Chargement..."; btn.disabled = true; }
+    var waitAttempts = 0;
+    var waitInterval = setInterval(function() {
+      waitAttempts++;
+      if(window._firebaseLoginVendor) {
+        clearInterval(waitInterval);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        doLogin();
+      } else if(waitAttempts >= 40) {
+        clearInterval(waitInterval);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        err.textContent = "Erreur : Firebase non disponible. Vérifiez votre connexion.";
+        err.style.display = "block";
+      }
+    }, 250);
+    return;
+  }
+
   // Admin — connexion par email Firebase Auth
   if(code === ADMIN_CODE) {
     var adminEmail = "admin@monfermier.app";
