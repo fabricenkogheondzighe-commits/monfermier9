@@ -367,36 +367,6 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 
 @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-7px)}100%{transform:translateY(0)}}
 .offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#2e0a0a;border-bottom:1px solid #c97a7a44;color:#c97a7a;text-align:center;padding:8px;font-size:12px;font-weight:600}
-
-/* ── ALERTE STOCK CLIGNOTANTE ── */
-@keyframes stockBlink {
-  0%, 100% { background: linear-gradient(135deg,#2a0a0a,#3d0d0d); border-color: #c92020; box-shadow: 0 0 0 0 rgba(201,32,32,0); }
-  50% { background: linear-gradient(135deg,#3d0d0d,#5a1010); border-color: #ff3333; box-shadow: 0 0 16px 4px rgba(255,50,50,0.4); }
-}
-.stock-blink-alert {
-  animation: stockBlink 0.8s ease-in-out infinite;
-  cursor: pointer;
-  border-radius: 10px;
-  border: 2px solid #c92020;
-  padding: 10px;
-  margin-top: 8px;
-  position: relative;
-}
-.stock-blink-alert::before {
-  content: '🔴 CLIQUEZ POUR ACQUITTER';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #c92020;
-  color: #fff;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  white-space: nowrap;
-}
 </style>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -562,9 +532,6 @@ document.addEventListener("DOMContentLoaded", function() {
     <button class="admin-tab" id="tab-messages" onclick="openTab('messages')" style="position:relative">
       <span class="tab-icon">💬</span>Messages
       <span id="msg-badge-admin" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">0</span>
-    </button>
-    <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')">
-      <span class="tab-icon">📢</span>Annonces
     </button>
   </div>
   <div id="admin-content"></div>
@@ -830,7 +797,6 @@ const COMMISSIONS = [
 // ═══════════════════════════════════════
 let currentUser = null;
 let clients = [];
-var _annoncesCache = [];
 let vendors = [];
 let currentClient = null;
 let cart = [];
@@ -1234,22 +1200,6 @@ function loadAll() {
     }, function(err) { console.warn("app_data/"+docName+":", err); });
   });
 
-  // Écoute des annonces
-  db.collection("annonces").onSnapshot(function(snap) {
-    _annoncesCache = [];
-    snap.forEach(function(doc) {
-      var d = doc.data();
-      d._docId = doc.id;
-      _annoncesCache.push(d);
-    });
-    // Notifier les vendeurs des nouvelles annonces
-    if(currentUser && currentUser.role !== "admin") {
-      _checkNouvellesAnnonces();
-    }
-    var content = document.getElementById("admin-content");
-    if(content && currentTab === "annonces") renderTabAnnonces(content);
-  }, function(err) { console.warn("annonces:", err); });
-
   // Écoute des alertes de vente vendeur (notifie l'admin en temps réel)
   var _lastVenteAlertTs = 0;
   db.collection("app_data").doc("alerte_vente").onSnapshot(function(snap) {
@@ -1284,6 +1234,8 @@ function loadAll() {
     } catch(e) {}
   }, function(err) { console.warn("alerte_nouveau_client:", err); });
 
+  // Écoute des alertes de connexion vendeur (notifie l'admin en temps réel)
+  var _lastConnAlertTs = 0;
   // Écoute des alertes stock bas remontées par les vendeurs
   var _lastStockBasAlertTs = 0;
   db.collection("app_data").doc("alerte_stock_bas").onSnapshot(function(snap) {
@@ -1296,7 +1248,6 @@ function loadAll() {
         if((Date.now() - alerte.timestamp) < 60000) {
           var prodNoms = (alerte.produits||[]).join(", ");
           showNotif("stock", "⚠️ Stock bas — vente de " + (alerte.vendorName||"vendeur"), prodNoms);
-          // Reset acquittement pour forcer le clignotement
           if(window._stockAlertKey) localStorage.removeItem(window._stockAlertKey);
           renderHome();
         }
@@ -1314,12 +1265,10 @@ function loadAll() {
       if(alerte.timestamp && alerte.timestamp !== _lastAnnonceAlertTs) {
         _lastAnnonceAlertTs = alerte.timestamp;
         if((Date.now() - alerte.timestamp) < 30000) {
-          // Vérifier si cette annonce me concerne
           var vcode = currentUser.code;
           var destOk = !alerte.destinataires || alerte.destinataires.length === 0 || alerte.destinataires.indexOf(vcode) >= 0;
           if(destOk) {
             showNotif("message", "📢 Annonce — " + (alerte.titre||"Nouvelle annonce"), "Appuyez pour lire");
-            // Refresh vendor home si affiché
             if(currentUser.role !== "admin") renderVendorHome();
           }
         }
@@ -1327,8 +1276,6 @@ function loadAll() {
     } catch(e) {}
   }, function(err) { console.warn("alerte_annonce:", err); });
 
-  // Écoute des alertes de connexion vendeur (notifie l'admin en temps réel)
-  var _lastConnAlertTs = 0;
   db.collection("app_data").doc("alerte_connexion").onSnapshot(function(snap) {
     var raw = snap.data ? snap.data() : null;
     if(!raw || !currentUser || currentUser.role !== "admin") return;
@@ -2010,7 +1957,6 @@ function openTab(tab) {
     case "reglement": renderTabReglement(content); break;
     case "messages":  renderTabMessages(content); break;
     case "catalogue": renderTabCatalogue(content); break;
-    case "annonces":  renderTabAnnonces(content);  break;
   }
 }
 
@@ -3589,216 +3535,6 @@ function getUnreadCount(forRole, vendorCode) {
     return msgs.filter(function(m){ return m.to === vendorCode && m.from === "admin" && !m.readByVendor; }).length;
   }
 }
-// ─── ACQUITTEMENT ALERTE STOCK ───
-function acquitterAlerteStock() {
-  var key = window._stockAlertKey;
-  if(key) localStorage.setItem(key, "1");
-  // Retirer le clignotement
-  var box = document.getElementById("stock-alert-box");
-  if(box) {
-    box.classList.remove("stock-blink-alert");
-    box.style.borderColor = "#6a2020";
-    box.style.borderRadius = "8px";
-    box.style.animation = "none";
-    var lbl = box.querySelector("div");
-    if(lbl) lbl.textContent = "⚠️ Stock bas — Acquitté";
-    box.onclick = null;
-    box.style.cursor = "default";
-  }
-  showToast("✅ Alerte stock acquittée");
-}
-
-// ─── ONGLET ANNONCES ADMIN ───
-
-function renderTabAnnonces(el) {
-  var annonces = _annoncesCache.slice().sort(function(a,b){ return (b.timestamp||0)-(a.timestamp||0); });
-  var html = '';
-
-  // Formulaire de création d'annonce
-  html += '<div class="acard">';
-  html += '<div class="acard-title">📢 NOUVELLE ANNONCE</div>';
-  html += '<div class="field"><label>TITRE DE L'ANNONCE</label>';
-  html += '<input id="annonce-titre" placeholder="Ex: Réunion vendeurs vendredi 18h" style="width:100%"></div>';
-  html += '<div class="field"><label>TYPE</label>';
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px">';
-  html += '<button id="annonce-type-info" onclick="setAnnonceType('info')" style="padding:9px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid #3a5a9a;background:linear-gradient(135deg,#0d1525,#1a2a40);color:#7aaad5">ℹ️ Info</button>';
-  html += '<button id="annonce-type-urgent" onclick="setAnnonceType('urgent')" style="padding:9px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid #1a2030;background:#0a0f1a;color:#8a8070">🚨 Urgent</button>';
-  html += '<button id="annonce-type-formation" onclick="setAnnonceType('formation')" style="padding:9px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid #1a2030;background:#0a0f1a;color:#8a8070">📚 Formation</button>';
-  html += '<button id="annonce-type-promo" onclick="setAnnonceType('promo')" style="padding:9px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid #1a2030;background:#0a0f1a;color:#8a8070">🎉 Promo</button>';
-  html += '<button id="annonce-type-reunion" onclick="setAnnonceType('reunion')" style="padding:9px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid #1a2030;background:#0a0f1a;color:#8a8070">📅 Réunion</button>';
-  html += '<button id="annonce-type-objectif" onclick="setAnnonceType('objectif')" style="padding:9px;border-radius:8px;font-size:11px;font-weight:700;border:2px solid #1a2030;background:#0a0f1a;color:#8a8070">🎯 Objectif</button>';
-  html += '</div></div>';
-  html += '<div class="field"><label>MESSAGE</label>';
-  html += '<textarea id="annonce-message" placeholder="Rédigez votre annonce ici..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:12px;border-radius:8px;font-size:14px;min-height:90px;resize:vertical"></textarea></div>';
-  html += '<div class="field"><label>DESTINATAIRES</label>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
-  html += '<button id="annonce-dest-tous" onclick="setAnnonceDest('tous')" style="padding:9px;border-radius:8px;font-size:12px;font-weight:700;border:2px solid #c9a84c;background:linear-gradient(135deg,#b8860b,#c9a84c);color:#0a0906">👥 Tous les vendeurs</button>';
-  html += '<button id="annonce-dest-select" onclick="setAnnonceDest('select')" style="padding:9px;border-radius:8px;font-size:12px;font-weight:700;border:2px solid #1a2030;background:#0a0f1a;color:#8a8070">👤 Sélection</button>';
-  html += '</div>';
-  html += '<div id="annonce-dest-select-list" style="display:none;background:#0a0f1a;border:1px solid #1a2030;border-radius:8px;padding:10px;margin-top:8px">';
-  vendors.filter(function(v){return !v.suspended;}).forEach(function(v){
-    html += '<label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1a2030;cursor:pointer">';
-    html += '<input type="checkbox" class="annonce-vendor-check" data-vcode="'+v.code+'" data-vname="'+v.name+'" style="width:18px;height:18px;accent-color:#c9a84c">';
-    html += '<span style="font-size:13px;color:#e8e0d0">'+v.name+'</span>';
-    html += '<span style="font-size:11px;color:#4a5a7a;font-family:monospace">'+v.code+'</span>';
-    html += '</label>';
-  });
-  html += '</div></div>';
-  html += '<div style="display:flex;gap:8px;margin-top:4px">';
-  html += '<button onclick="publierAnnonce()" class="btn-gold" style="flex:1;padding:13px;border-radius:10px;font-size:14px;font-weight:700">📢 Publier l'annonce</button>';
-  html += '</div></div>';
-
-  // Liste des annonces publiées
-  if(annonces.length === 0) {
-    html += '<div class="empty-state"><div class="es-icon">📢</div><p>Aucune annonce publiée pour l'instant</p></div>';
-  } else {
-    html += '<div class="acard"><div class="acard-title">📋 ANNONCES PUBLIÉES ('+annonces.length+')</div>';
-    html += annonces.map(function(a) {
-      var typeConfig = {
-        info:      { icon: 'ℹ️', color: '#7aaad5', bg: '#0d1525', border: '#3a5a9a55' },
-        urgent:    { icon: '🚨', color: '#ff8080', bg: '#2a0505', border: '#c9202055' },
-        formation: { icon: '📚', color: '#a87ac9', bg: '#1a0a2e', border: '#6a2a9a55' },
-        promo:     { icon: '🎉', color: '#c9a84c', bg: '#2a1f0a', border: '#c9a84c55' },
-        reunion:   { icon: '📅', color: '#7ac9a8', bg: '#0a2a1e', border: '#2a9a7055' },
-        objectif:  { icon: '🎯', color: '#ff9966', bg: '#2a1a0a', border: '#c9602055' },
-      };
-      var tc = typeConfig[a.type] || typeConfig.info;
-      var destLabel = a.destinataires && a.destinataires.length > 0 ? 
-        a.destinataires.join(', ') : 'Tous les vendeurs';
-      var dateStr = a.date || '';
-      return '<div style="background:'+tc.bg+';border:1px solid '+tc.border+';border-radius:10px;padding:14px;margin-bottom:8px">'+
-        '<div style="display:flex;align-items:flex-start;gap:10px">'+
-        '<div style="font-size:26px;flex-shrink:0">'+tc.icon+'</div>'+
-        '<div style="flex:1;min-width:0">'+
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'+
-        '<div style="font-size:14px;font-weight:700;color:'+tc.color+'">'+escapeHtml(a.titre||'Annonce')+'</div>'+
-        '<div style="font-size:10px;color:#4a5a7a;flex-shrink:0;margin-left:8px">'+dateStr+'</div>'+
-        '</div>'+
-        '<div style="font-size:13px;color:#e8e0d0;line-height:1.6;margin-bottom:6px;white-space:pre-wrap">'+escapeHtml(a.message||'')+'</div>'+
-        '<div style="font-size:10px;color:#4a5a7a">👥 '+escapeHtml(destLabel)+' · '+
-        '<span style="color:'+(a.lus&&a.lus.length>0?'#7ac97a':'#4a5a7a')+'">'+
-        (a.lus&&a.lus.length>0?a.lus.length+' lu(s)':'Non lu')+'</span></div>'+
-        '</div>'+
-        '<button onclick="supprimerAnnonce(''+a._docId+'')" style="background:none;border:1px solid #2e0505;color:#ff6666;padding:5px 8px;border-radius:6px;font-size:11px;flex-shrink:0">🗑️</button>'+
-        '</div></div>';
-    }).join('');
-    html += '</div>';
-  }
-
-  el.innerHTML = html;
-  // Initialiser le type et destinataires par défaut
-  window._annonceType = window._annonceType || 'info';
-  window._annonceDest = window._annonceDest || 'tous';
-  setAnnonceType(window._annonceType);
-  setAnnonceDest(window._annonceDest);
-}
-
-function setAnnonceType(type) {
-  window._annonceType = type;
-  var types = ['info','urgent','formation','promo','reunion','objectif'];
-  var configs = {
-    info:      { border: '#3a5a9a', bg: 'linear-gradient(135deg,#0d1525,#1a2a40)', color: '#7aaad5' },
-    urgent:    { border: '#c92020', bg: 'linear-gradient(135deg,#2e0505,#4a0a0a)', color: '#ff8080' },
-    formation: { border: '#6a2a9a', bg: 'linear-gradient(135deg,#1a0a2e,#2a1050)', color: '#c39bd3' },
-    promo:     { border: '#c9a84c', bg: 'linear-gradient(135deg,#2a1f0a,#3d2e10)', color: '#c9a84c' },
-    reunion:   { border: '#2a9a70', bg: 'linear-gradient(135deg,#0a2a1e,#1a4a34)', color: '#7ac9a8' },
-    objectif:  { border: '#c96020', bg: 'linear-gradient(135deg,#2a1a0a,#3d2a0a)', color: '#ff9966' },
-  };
-  types.forEach(function(t) {
-    var btn = document.getElementById('annonce-type-' + t);
-    if(!btn) return;
-    if(t === type) {
-      var c = configs[t];
-      btn.style.borderColor = c.border;
-      btn.style.background = c.bg;
-      btn.style.color = c.color;
-    } else {
-      btn.style.borderColor = '#1a2030';
-      btn.style.background = '#0a0f1a';
-      btn.style.color = '#8a8070';
-    }
-  });
-}
-
-function setAnnonceDest(dest) {
-  window._annonceDest = dest;
-  var btnTous = document.getElementById('annonce-dest-tous');
-  var btnSelect = document.getElementById('annonce-dest-select');
-  var listSel = document.getElementById('annonce-dest-select-list');
-  if(dest === 'tous') {
-    if(btnTous) { btnTous.style.borderColor='#c9a84c'; btnTous.style.background='linear-gradient(135deg,#b8860b,#c9a84c)'; btnTous.style.color='#0a0906'; }
-    if(btnSelect) { btnSelect.style.borderColor='#1a2030'; btnSelect.style.background='#0a0f1a'; btnSelect.style.color='#8a8070'; }
-    if(listSel) listSel.style.display='none';
-  } else {
-    if(btnTous) { btnTous.style.borderColor='#1a2030'; btnTous.style.background='#0a0f1a'; btnTous.style.color='#8a8070'; }
-    if(btnSelect) { btnSelect.style.borderColor='#c9a84c'; btnSelect.style.background='linear-gradient(135deg,#b8860b,#c9a84c)'; btnSelect.style.color='#0a0906'; }
-    if(listSel) listSel.style.display='block';
-  }
-}
-
-async function publierAnnonce() {
-  var titre = (document.getElementById('annonce-titre')||{}).value || '';
-  var message = (document.getElementById('annonce-message')||{}).value || '';
-  if(!titre.trim()) { showToast('⚠️ Veuillez saisir un titre', true); return; }
-  if(!message.trim()) { showToast('⚠️ Veuillez saisir un message', true); return; }
-
-  var destinataires = [];
-  if(window._annonceDest === 'select') {
-    document.querySelectorAll('.annonce-vendor-check:checked').forEach(function(cb) {
-      destinataires.push(cb.getAttribute('data-vcode'));
-    });
-    if(destinataires.length === 0) { showToast('⚠️ Sélectionnez au moins un vendeur', true); return; }
-  }
-
-  var now = new Date();
-  var annonce = {
-    titre: titre.trim(),
-    message: message.trim(),
-    type: window._annonceType || 'info',
-    destinataires: destinataires, // vide = tous
-    date: now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
-    timestamp: Date.now(),
-    lus: [],
-    auteur: 'Admin'
-  };
-
-  try {
-    await db.collection('annonces').add(annonce);
-    // Notifier les vendeurs via Firestore
-    await db.collection('app_data').doc('alerte_annonce').set({
-      data: JSON.stringify({
-        titre: annonce.titre,
-        type: annonce.type,
-        destinataires: destinataires,
-        timestamp: Date.now()
-      }),
-      updatedAt: Date.now()
-    });
-    showToast('📢 Annonce publiée avec succès !');
-    // Reset form
-    var ti = document.getElementById('annonce-titre'); if(ti) ti.value = '';
-    var mi = document.getElementById('annonce-message'); if(mi) mi.value = '';
-    // Refresh tab
-    var content = document.getElementById('admin-content');
-    if(content) renderTabAnnonces(content);
-  } catch(e) {
-    showToast('❌ Erreur lors de la publication', true);
-    console.error(e);
-  }
-}
-
-async function supprimerAnnonce(docId) {
-  if(!docId) return;
-  try {
-    await db.collection('annonces').doc(docId).delete();
-    showToast('🗑️ Annonce supprimée');
-    var content = document.getElementById('admin-content');
-    if(content && currentTab === 'annonces') renderTabAnnonces(content);
-  } catch(e) {
-    showToast('❌ Erreur suppression', true);
-  }
-}
-
 function updateMsgBadge() {
   var badge = document.getElementById("msg-badge-admin");
   if(!badge) return;
@@ -4831,7 +4567,7 @@ async function processSale() {
         updatedAt: Date.now()
       }).catch(function(){});
     } catch(e) {}
-    // Vérifier stock bas et alerter admin
+    // Vérifier stock bas et alerter admin via Firestore
     try {
       var seuil2 = parseInt((_settingsCache&&_settingsCache.alert_stock)||"10");
       var stockSum2 = typeof getStockSummary === "function" ? getStockSummary() : {};
@@ -4862,7 +4598,6 @@ function _checkStockAfterSale() {
     var key = "mf_stock_alert_ack_" + alertsBas.map(function(s){return s.id+":"+s.disponible;}).join(",");
     localStorage.removeItem(key); // Reset acquittement — nouvelle alerte
     window._stockAlertKey = key;
-    // Forcer le rechargement du home si admin
     if(currentUser && currentUser.role === "admin") {
       renderHome();
       showNotif("stock", "⚠️ Stock bas après vente", alertsBas.map(function(s){return s.name+"("+s.disponible+"u)";}).join(", "));
@@ -4955,98 +4690,6 @@ function printTicket() {
 // ═══════════════════════════════════════
 // VENDOR HOME
 // ═══════════════════════════════════════
-function _checkNouvellesAnnonces() {
-  if(!currentUser || currentUser.role === "admin") return;
-  var vcode = currentUser.code;
-  var derniereVue = parseInt(localStorage.getItem("mf_annonces_vu_" + vcode) || "0");
-  var nouvelles = _annoncesCache.filter(function(a) {
-    var destOk = !a.destinataires || a.destinataires.length === 0 || a.destinataires.indexOf(vcode) >= 0;
-    return destOk && (a.timestamp || 0) > derniereVue;
-  });
-  if(nouvelles.length > 0) {
-    nouvelles.forEach(function(a) {
-      showNotif("message", "📢 Annonce — " + (a.titre||""), a.message ? a.message.substring(0,60) : "");
-    });
-    // Badge sur le bouton annonces vendeur si affiché
-    var badge = document.getElementById("vendor-annonce-badge");
-    if(badge) { badge.textContent = nouvelles.length; badge.style.display = "inline-block"; }
-  }
-}
-
-function marquerAnnoncesLues() {
-  if(!currentUser) return;
-  var vcode = currentUser.code;
-  localStorage.setItem("mf_annonces_vu_" + vcode, Date.now().toString());
-  var badge = document.getElementById("vendor-annonce-badge");
-  if(badge) badge.style.display = "none";
-  // Marquer lu dans Firestore
-  _annoncesCache.forEach(function(a) {
-    var destOk = !a.destinataires || a.destinataires.length === 0 || a.destinataires.indexOf(vcode) >= 0;
-    if(destOk && a._docId && (!a.lus || a.lus.indexOf(vcode) < 0)) {
-      var newLus = (a.lus||[]).concat([vcode]);
-      db.collection("annonces").doc(a._docId).update({lus: newLus}).catch(function(){});
-    }
-  });
-}
-
-function openVendorAnnonces() {
-  marquerAnnoncesLues();
-  var vcode = currentUser ? currentUser.code : "";
-  var annonces = _annoncesCache.filter(function(a) {
-    return !a.destinataires || a.destinataires.length === 0 || a.destinataires.indexOf(vcode) >= 0;
-  }).sort(function(a,b){ return (b.timestamp||0)-(a.timestamp||0); });
-
-  var modal = document.getElementById("modal-vendor-annonces");
-  if(!modal) {
-    modal = document.createElement("div");
-    modal.id = "modal-vendor-annonces";
-    modal.className = "modal";
-    document.body.appendChild(modal);
-  }
-
-  var typeConfig = {
-    info:      { icon: 'ℹ️', color: '#7aaad5', bg: 'linear-gradient(135deg,#0d1525,#1a2a40)', border: '#3a5a9a55' },
-    urgent:    { icon: '🚨', color: '#ff8080', bg: 'linear-gradient(135deg,#2a0505,#4a0a0a)', border: '#c9202055' },
-    formation: { icon: '📚', color: '#a87ac9', bg: 'linear-gradient(135deg,#1a0a2e,#2a1050)', border: '#6a2a9a55' },
-    promo:     { icon: '🎉', color: '#c9a84c', bg: 'linear-gradient(135deg,#2a1f0a,#3d2e10)', border: '#c9a84c55' },
-    reunion:   { icon: '📅', color: '#7ac9a8', bg: 'linear-gradient(135deg,#0a2a1e,#1a4a34)', border: '#2a9a7055' },
-    objectif:  { icon: '🎯', color: '#ff9966', bg: 'linear-gradient(135deg,#2a1a0a,#3d2a0a)', border: '#c96020aa' },
-  };
-
-  var html = '<div class="modal-box" style="max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden;max-width:480px">';
-  html += '<div style="padding:16px 20px;background:linear-gradient(135deg,#0d1525,#1a2540);border-bottom:1px solid #c9a84c22;display:flex;align-items:center;gap:12px">';
-  html += '<span style="font-size:24px">📢</span>';
-  html += '<div style="flex:1"><div style="font-size:15px;font-weight:700;color:#c9a84c">Annonces de la direction</div>';
-  html += '<div style="font-size:11px;color:#4a5a7a">' + annonces.length + ' annonce(s)</div></div>';
-  html += '<button onclick="closeModal('modal-vendor-annonces')" style="background:none;color:#8a8070;font-size:20px;padding:4px 8px;border:none">✕</button>';
-  html += '</div>';
-  html += '<div style="flex:1;overflow-y:auto;padding:14px;background:#060d18">';
-
-  if(annonces.length === 0) {
-    html += '<div style="text-align:center;padding:40px;color:#4a5a7a"><div style="font-size:40px;margin-bottom:12px">📭</div><div>Aucune annonce pour vous</div></div>';
-  } else {
-    html += annonces.map(function(a) {
-      var tc = typeConfig[a.type] || typeConfig.info;
-      var isLu = a.lus && a.lus.indexOf(vcode) >= 0;
-      return '<div style="background:'+tc.bg+';border:1px solid '+tc.border+';border-radius:12px;padding:14px;margin-bottom:10px">' +
-        '<div style="display:flex;align-items:flex-start;gap:10px">' +
-        '<div style="font-size:28px;flex-shrink:0">'+tc.icon+'</div>' +
-        '<div style="flex:1">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
-        '<div style="font-size:14px;font-weight:700;color:'+tc.color+'">'+escapeHtml(a.titre||'Annonce')+'</div>' +
-        (isLu ? '<span style="font-size:9px;color:#7ac97a;border:1px solid #3d6a3d;border-radius:10px;padding:2px 6px">✓ Lu</span>' : '<span style="font-size:9px;color:#c9a84c;border:1px solid #c9a84c44;border-radius:10px;padding:2px 6px">● Nouveau</span>') +
-        '</div>' +
-        '<div style="font-size:13px;color:#e8e0d0;line-height:1.7;margin-bottom:6px;white-space:pre-wrap">'+escapeHtml(a.message||'')+'</div>' +
-        '<div style="font-size:10px;color:#4a5a7a">'+escapeHtml(a.date||'')+'</div>' +
-        '</div></div></div>';
-    }).join('');
-  }
-
-  html += '</div></div>';
-  modal.innerHTML = html;
-  modal.classList.add("open");
-}
-
 function renderVendorHome() {
   if(!currentUser || currentUser.role !== "vendor") return;
   var vendor = vendors.find(function(v){ return v.code===currentUser.code; });
@@ -5101,24 +4744,6 @@ function renderVendorHome() {
     '<button onclick="renderMonEvaluation()" style="padding:12px;background:#0a0f1a;border:1px solid #c9a84c55;color:#c9a84c;border-radius:10px;font-size:13px;font-weight:600">⭐ Mon évaluation</button>'+
     '<button onclick="renderVendorCatalogues()" style="padding:12px;background:#0a0f1a;border:1px solid #7ac97a44;color:#7ac97a;border-radius:10px;font-size:13px;font-weight:600">🛍️ Catalogues</button>'+
     '</div>';
-  // Bouton Annonces de la direction
-  var vcode2 = currentUser ? currentUser.code : "";
-  var derniereVue2 = parseInt(localStorage.getItem("mf_annonces_vu_" + vcode2) || "0");
-  var nbreNouvelles = _annoncesCache.filter(function(a) {
-    var destOk = !a.destinataires || a.destinataires.length === 0 || a.destinataires.indexOf(vcode2) >= 0;
-    return destOk && (a.timestamp||0) > derniereVue2;
-  }).length;
-  var totalAnnonces = _annoncesCache.filter(function(a) {
-    return !a.destinataires || a.destinataires.length === 0 || a.destinataires.indexOf(vcode2) >= 0;
-  }).length;
-  var annonceBadgeHtml = nbreNouvelles > 0 ? '<span id="vendor-annonce-badge" style="background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:6px">'+nbreNouvelles+' new</span>' : '<span id="vendor-annonce-badge" style="display:none">0</span>';
-  html += '<div style="padding:0 16px 16px">'+
-    '<button onclick="openVendorAnnonces()" style="width:100%;padding:13px;background:'+(nbreNouvelles>0?'linear-gradient(135deg,#2a1f0a,#3d2e10)':'#0a0f1a')+';border:2px solid '+(nbreNouvelles>0?'#c9a84c':'#1a2030')+';color:'+(nbreNouvelles>0?'#c9a84c':'#4a5a7a')+';border-radius:12px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">'+
-    '<span style="font-size:18px">📢</span>'+
-    '<span>Annonces de la direction</span>'+
-    annonceBadgeHtml+
-    '<span style="margin-left:auto;font-size:11px;color:#4a5a7a">('+totalAnnonces+')</span>'+
-    '</button></div>';
   // Bouton Catalogues
   var nbCats = getCatalogues().filter(function(c){return c.publie;}).length;
   html += '<div style="padding:0 16px 8px">'+
@@ -6329,6 +5954,23 @@ function togglePassword() {
   var btn = document.getElementById("toggle-pass-btn");
   if(inp.type === "password") { inp.type = "text"; btn.textContent = "🙈"; }
   else { inp.type = "password"; btn.textContent = "👁"; }
+}
+
+function acquitterAlerteStock() {
+  var key = window._stockAlertKey;
+  if(key) localStorage.setItem(key, "1");
+  var box = document.getElementById("stock-alert-box");
+  if(box) {
+    box.classList.remove("stock-blink-alert");
+    box.style.borderColor = "#6a2020";
+    box.style.borderRadius = "8px";
+    box.style.animation = "none";
+    var lbl = box.querySelector("div");
+    if(lbl) lbl.textContent = "⚠️ Stock bas — Acquitté";
+    box.onclick = null;
+    box.style.cursor = "default";
+  }
+  showToast("✅ Alerte stock acquittée");
 }
 
 function revealAdminPass() {
