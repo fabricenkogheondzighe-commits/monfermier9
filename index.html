@@ -3641,7 +3641,6 @@ function renderTabMessages(el) {
   html += '</div>';
   html += '<textarea id="msg-admin-text" placeholder="Écrivez votre message..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:12px;border-radius:8px;font-size:14px;min-height:80px;resize:vertical"></textarea>';
   html += '</div>';
-  html += '<textarea id="msg-admin-text" placeholder="Écrivez votre message..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:12px;border-radius:8px;font-size:14px;min-height:80px;resize:vertical"></textarea></div>';
   html += '<button onclick="envoyerMessageAdmin()" class="btn-gold btn-full">📤 Envoyer le message</button>';
   html += '</div>';
 
@@ -6941,7 +6940,22 @@ function renderTabAnnonces(el) {
   html += '<div class="acard" style="margin-bottom:16px">';
   html += '<div class="acard-title">📢 ENVOYER UNE ANNONCE AUX VENDEURS</div>';
   html += '<div class="field"><label>TITRE *</label><input id="ann-titre" placeholder="Ex: Réunion vendredi à 14h"></div>';
-  html += '<div class="field"><label>MESSAGE *</label><textarea id="ann-corps" rows="4" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px;resize:vertical" placeholder="Rédigez votre annonce ici…"></textarea></div>';
+  html += '<div class="field">';
+  html += '<label style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">MESSAGE *';
+  html += '<button type="button" onclick="toggleEmojiPanel(\'emoji-panel-ann\')" style="background:none;border:1px solid #c9a84c44;color:#c9a84c;border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer">😊 Emojis</button>';
+  html += '<label for="ann-file-input" style="background:none;border:1px solid #c9a84c44;color:#c9a84c;border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer;margin:0">📎 Fichier</label>';
+  html += '<input type="file" id="ann-file-input" accept=".txt,.md,.pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none" onchange="annoncesAttachFile(this)">';
+  html += '</label>';
+  html += '<div id="ann-file-preview" style="display:none;background:#0a1428;border:1px solid #c9a84c44;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:12px;color:#c9a84c;display:none;align-items:center;gap:8px">';
+  html += '<span id="ann-file-name" style="flex:1"></span>';
+  html += '<button type="button" onclick="annoncesRemoveFile()" style="background:none;border:none;color:#ff6666;font-size:16px;cursor:pointer;padding:0">✕</button>';
+  html += '</div>';
+  html += '<div id="emoji-panel-ann" style="display:none;flex-wrap:wrap;gap:4px;background:#060d18;border:1px solid #1a2030;border-radius:10px;padding:10px;margin-bottom:8px">';
+  var _annEmojis=['😊','😂','🎉','👍','❤️','🙏','💪','🔥','✅','⚠️','📢','📦','💰','🤝','👋','😅','🥳','😔','🙌','⭐','🏆','🚀','👏','💯','😎','🤔','😡','😢','📅','🎯'];
+  _annEmojis.forEach(function(e){ html += '<button type="button" onclick="insertEmoji(\'ann-corps\',\''+e+'\')" style="background:none;border:none;font-size:20px;cursor:pointer;padding:3px;border-radius:4px">'+e+'</button>'; });
+  html += '</div>';
+  html += '<textarea id="ann-corps" rows="4" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px;resize:vertical" placeholder="Rédigez votre annonce ici…"></textarea>';
+  html += '</div>';
   html += '<div class="field-row">';
   html += '<div class="field"><label>TYPE</label><select id="ann-type" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px">';
   html += '<option value="info">ℹ️ Information</option>';
@@ -7016,6 +7030,37 @@ function insertEmoji(textareaId, emoji) {
 }
 
 function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// ─── ANNONCES : gestion pièce jointe ─────────────────────────────────────────
+var _annoncesFile = null;
+
+function annoncesAttachFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  _annoncesFile = file;
+  var preview = document.getElementById('ann-file-preview');
+  var nameEl  = document.getElementById('ann-file-name');
+  if (nameEl)  nameEl.textContent = '📎 ' + file.name + ' (' + (file.size > 1024 ? Math.round(file.size/1024) + ' Ko' : file.size + ' o') + ')';
+  if (preview) { preview.style.display = 'flex'; }
+  // Si c'est un fichier texte, on l'importe dans le textarea
+  if (file.type.startsWith('text/') || file.name.match(/\.(txt|md)$/i)) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var ta = document.getElementById('ann-corps');
+      if (ta && !ta.value.trim()) ta.value = e.target.result.substring(0, 2000);
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+  showToast('📎 Fichier joint : ' + file.name);
+}
+
+function annoncesRemoveFile() {
+  _annoncesFile = null;
+  var input = document.getElementById('ann-file-input');
+  if (input) input.value = '';
+  var preview = document.getElementById('ann-file-preview');
+  if (preview) preview.style.display = 'none';
+}
 
 async function envoyerAnnonce() {
   var titre = (document.getElementById("ann-titre")||{}).value.trim();
