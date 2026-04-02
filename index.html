@@ -683,6 +683,16 @@ window.addEventListener('load', function() {
 </div>
 
 
+<!-- Bibliothèques lecture documents Word + PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  // Configurer le worker PDF.js
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+
 <script type="module">
 // ═══════════════════════════════════════
 // SDK FIREBASE (vrai SDK — cloud)
@@ -3361,11 +3371,15 @@ function renderTabReglement(el) {
   // Éditeur de contenu
   html += '<div class="acard">';
   html += '<div class="acard-title">✏️ CONTENU DU RÈGLEMENT</div>';
-  html += '<p style="font-size:11px;color:#4a5a7a;margin-bottom:10px">Rédigez ou collez le règlement. Vous pouvez aussi importer un fichier texte (.txt, .md).</p>';
-  html += '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">';
-  html += '<label for="reg-file-import" style="display:flex;align-items:center;gap:6px;background:#0a1428;border:1px solid #c9a84c44;color:#c9a84c;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📎 Importer un fichier</label>';
-  html += '<input type="file" id="reg-file-import" accept=".txt,.md,.text,.csv" style="display:none" onchange="importerFichierReglement(this)">';
-  html += '<span id="reg-file-name" style="font-size:11px;color:#4a5a7a;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Aucun fichier sélectionné</span>';
+  html += '<p style="font-size:11px;color:#4a5a7a;margin-bottom:10px">Rédigez le règlement ou importez directement un fichier <strong style="color:#c9a84c">Word (.docx)</strong>, <strong style="color:#7aaad5">PDF</strong> ou texte (.txt). Le texte sera extrait automatiquement.</p>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+  html += '<label for="reg-file-doc" style="display:flex;align-items:center;justify-content:center;gap:6px;background:#0a1428;border:1px solid #c9a84c44;color:#c9a84c;padding:11px 8px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center">📂 Importer un fichier<br><span style="font-size:10px;color:#4a5a7a;font-weight:400">.docx · .pdf · .txt · .md</span></label>';
+  html += '<input type="file" id="reg-file-doc" accept=".txt,.md,.text,.csv,.pdf,.doc,.docx,.odt,.rtf" style="display:none" onchange="importerFichierReglement(this)">';
+  html += '<button type="button" onclick="effacerContenuReglement()" style="display:flex;align-items:center;justify-content:center;gap:6px;background:#2e0505;border:1px solid #c9202044;color:#ff8080;padding:11px 8px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🗑️ Effacer le contenu</button>';
+  html += '</div>';
+  html += '<div id="reg-file-info" style="display:none;background:#0a1428;border:1px solid #c9a84c33;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:11px;color:#c9a84c;align-items:center;gap:8px">';
+  html += '<span id="reg-file-name" style="flex:1"></span>';
+  html += '<button type="button" onclick="annulerFichierReglement()" style="background:none;border:none;color:#ff6666;font-size:16px;cursor:pointer;padding:0;line-height:1">✕ Annuler</button>';
   html += '</div>';
   html += '<textarea id="reg-textarea" style="width:100%;min-height:420px;background:#060d18;border:1px solid #1a2030;color:#e8e0d0;padding:14px;border-radius:10px;font-size:13px;line-height:1.8;resize:vertical;font-family:Georgia,serif" placeholder="Rédigez ici le règlement intérieur...">'+escapeHtml(contenu)+'</textarea>';
   html += '</div>';
@@ -3421,21 +3435,109 @@ function renderReglementView(contenu, compact) {
   return html;
 }
 
-function importerFichierReglement(input) {
+function importerFichierReglement(input, type) {
   var file = input.files[0];
   if (!file) return;
+
   var nameEl = document.getElementById('reg-file-name');
-  if (nameEl) nameEl.textContent = file.name;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var ta = document.getElementById('reg-textarea');
-    if (ta) {
-      ta.value = e.target.result;
-      showToast('✅ Fichier importé : ' + file.name);
+  var infoEl = document.getElementById('reg-file-info');
+  var taille = file.size > 1024 ? Math.round(file.size / 1024) + ' Ko' : file.size + ' o';
+  var ext    = file.name.split('.').pop().toLowerCase();
+
+  if (nameEl) nameEl.textContent = '⏳ Lecture de ' + file.name + '…';
+  if (infoEl) infoEl.style.display = 'flex';
+
+  // ── WORD (.docx) via mammoth ──────────────────────────────────────────
+  if (ext === 'docx' || ext === 'doc') {
+    if (typeof mammoth === 'undefined') {
+      showToast('⚠️ Bibliothèque Word non chargée, réessayez dans quelques secondes', true);
+      return;
     }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      mammoth.extractRawText({ arrayBuffer: e.target.result })
+        .then(function(result) {
+          var ta = document.getElementById('reg-textarea');
+          if (ta) ta.value = result.value;
+          if (nameEl) nameEl.textContent = '📑 ' + file.name + ' (' + taille + ')';
+          showToast('✅ Document Word importé : ' + file.name);
+        })
+        .catch(function(err) {
+          showToast('❌ Erreur lecture Word : ' + err.message, true);
+          if (nameEl) nameEl.textContent = '❌ Erreur : ' + file.name;
+        });
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
+
+  // ── PDF via PDF.js ────────────────────────────────────────────────────
+  if (ext === 'pdf') {
+    if (typeof pdfjsLib === 'undefined') {
+      showToast('⚠️ Bibliothèque PDF non chargée, réessayez dans quelques secondes', true);
+      return;
+    }
+    var reader2 = new FileReader();
+    reader2.onload = function(e) {
+      var loadingTask = pdfjsLib.getDocument({ data: e.target.result });
+      loadingTask.promise.then(function(pdf) {
+        var totalPages = pdf.numPages;
+        var textes = [];
+        var promises = [];
+        for (var i = 1; i <= totalPages; i++) {
+          promises.push(
+            pdf.getPage(i).then(function(page) {
+              return page.getTextContent().then(function(tc) {
+                return tc.items.map(function(item) { return item.str; }).join(' ');
+              });
+            })
+          );
+        }
+        Promise.all(promises).then(function(pages) {
+          var ta = document.getElementById('reg-textarea');
+          if (ta) ta.value = pages.join('\n\n');
+          if (nameEl) nameEl.textContent = '📄 ' + file.name + ' (' + totalPages + ' page(s), ' + taille + ')';
+          showToast('✅ PDF importé : ' + file.name + ' — ' + totalPages + ' page(s)');
+        });
+      }).catch(function(err) {
+        showToast('❌ Erreur lecture PDF : ' + err.message, true);
+        if (nameEl) nameEl.textContent = '❌ Erreur : ' + file.name;
+      });
+    };
+    reader2.readAsArrayBuffer(file);
+    return;
+  }
+
+  // ── Fichier texte brut (.txt, .md, .csv…) ────────────────────────────
+  var reader3 = new FileReader();
+  reader3.onload = function(e) {
+    var ta = document.getElementById('reg-textarea');
+    if (ta) ta.value = e.target.result;
+    if (nameEl) nameEl.textContent = '📄 ' + file.name + ' (' + taille + ')';
+    showToast('✅ Fichier importé : ' + file.name);
   };
-  reader.onerror = function() { showToast('❌ Impossible de lire ce fichier', true); };
-  reader.readAsText(file, 'UTF-8');
+  reader3.onerror = function() { showToast('❌ Impossible de lire ce fichier', true); };
+  reader3.readAsText(file, 'UTF-8');
+}
+
+function annulerFichierReglement() {
+  var docInput = document.getElementById('reg-file-doc');
+  var infoEl   = document.getElementById('reg-file-info');
+  var nameEl   = document.getElementById('reg-file-name');
+  if (docInput) docInput.value = '';
+  if (nameEl)   nameEl.textContent = '';
+  if (infoEl)   infoEl.style.display = 'none';
+  showToast('Fichier retiré');
+}
+
+function effacerContenuReglement() {
+  var ta = document.getElementById('reg-textarea');
+  if (!ta || !ta.value.trim()) { showToast('La zone est déjà vide', true); return; }
+  if (confirm('Effacer tout le contenu du règlement ?')) {
+    ta.value = '';
+    annulerFichierReglement();
+    showToast('🗑️ Contenu effacé');
+  }
 }
 
 function publierReglement() {
