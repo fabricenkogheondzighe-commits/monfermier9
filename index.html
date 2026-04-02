@@ -40,6 +40,8 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-thumb{background:#c9a84c44;border-radius:2px}
 @keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes stockBlink{0%,100%{background:linear-gradient(135deg,#3b0000,#6a0000);border-color:#ff2020;box-shadow:0 0 18px rgba(255,0,0,0.5)}50%{background:linear-gradient(135deg,#6a0000,#aa0000);border-color:#ff5555;box-shadow:0 0 32px rgba(255,50,50,0.8)}}
+.stock-alert-blink{animation:stockBlink 0.8s ease-in-out infinite !important;cursor:pointer !important;}
 
 /* ═══════════════════════════════════════
    PAGES
@@ -532,6 +534,12 @@ document.addEventListener("DOMContentLoaded", function() {
     <button class="admin-tab" id="tab-messages" onclick="openTab('messages')" style="position:relative">
       <span class="tab-icon">💬</span>Messages
       <span id="msg-badge-admin" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">0</span>
+    </button>
+  </div>
+  <!-- ONGLETS RANGÉE 5 -->
+  <div class="admin-tabs-row2" style="grid-template-columns:repeat(1,1fr);padding-top:0">
+    <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')">
+      <span class="tab-icon">📢</span>Annonces aux vendeurs
     </button>
   </div>
   <div id="admin-content"></div>
@@ -1159,7 +1167,7 @@ function loadAll() {
   }, function(err) { console.warn("vendors:", err); });
 
   // Toutes les données en temps réel
-  ["stock_v2","stock_mvts","stock_journees","messages","reglement","settings","evaluations","catalogues","comm_payments"].forEach(function(docName) {
+  ["stock_v2","stock_mvts","stock_journees","messages","reglement","settings","evaluations","catalogues","comm_payments","annonces"].forEach(function(docName) {
     db.collection("app_data").doc(docName).onSnapshot(function(snap) {
       var raw = snap.data ? snap.data() : null;
       if(!raw) return;
@@ -1195,7 +1203,19 @@ function loadAll() {
         }
         else if(docName==="evaluations") _evaluationsCache=JSON.parse(raw.data||"[]");
         else if(docName==="catalogues") _cataloguesCache=JSON.parse(raw.data||"[]");
-        else if(docName==="comm_payments") { try{_commPaymentsCache=JSON.parse(raw.data||"{}");}catch(e){} }
+        else if(docName==="comm_payments") { try{_commPaymentsCache=JSON.parse(raw.data||"{}");} catch(e){} }
+        else if(docName==="annonces") {
+          _annoncesCache=JSON.parse(raw.data||"[]");
+          if(currentUser && currentUser.role==="vendor") {
+            var lastSeen = parseInt(localStorage.getItem("mf_annonces_seen")||"0");
+            var nonLues = _annoncesCache.filter(function(a){ return (a.ts||0) > lastSeen && a.actif!==false; });
+            if(nonLues.length>0) showNotif("message","📢 Annonce direction", nonLues[nonLues.length-1].titre||"Nouveau message");
+          }
+          if(currentUser&&currentUser.role==="admin"&&currentTab==="annonces") {
+            var el=document.getElementById("admin-content");
+            if(el) renderTabAnnonces(el);
+          }
+        }
       } catch(e) { console.warn("Parsing "+docName+":", e); }
     }, function(err) { console.warn("app_data/"+docName+":", err); });
   });
@@ -1236,46 +1256,6 @@ function loadAll() {
 
   // Écoute des alertes de connexion vendeur (notifie l'admin en temps réel)
   var _lastConnAlertTs = 0;
-  // Écoute des alertes stock bas remontées par les vendeurs
-  var _lastStockBasAlertTs = 0;
-  db.collection("app_data").doc("alerte_stock_bas").onSnapshot(function(snap) {
-    var raw = snap.data ? snap.data() : null;
-    if(!raw || !currentUser || currentUser.role !== "admin") return;
-    try {
-      var alerte = JSON.parse(raw.data||"{}");
-      if(alerte.timestamp && alerte.timestamp !== _lastStockBasAlertTs) {
-        _lastStockBasAlertTs = alerte.timestamp;
-        if((Date.now() - alerte.timestamp) < 60000) {
-          var prodNoms = (alerte.produits||[]).join(", ");
-          showNotif("stock", "⚠️ Stock bas — vente de " + (alerte.vendorName||"vendeur"), prodNoms);
-          if(window._stockAlertKey) localStorage.removeItem(window._stockAlertKey);
-          renderHome();
-        }
-      }
-    } catch(e) {}
-  }, function(err) { console.warn("alerte_stock_bas:", err); });
-
-  // Écoute des nouvelles annonces pour les vendeurs
-  var _lastAnnonceAlertTs = 0;
-  db.collection("app_data").doc("alerte_annonce").onSnapshot(function(snap) {
-    var raw = snap.data ? snap.data() : null;
-    if(!raw || !currentUser || currentUser.role === "admin") return;
-    try {
-      var alerte = JSON.parse(raw.data||"{}");
-      if(alerte.timestamp && alerte.timestamp !== _lastAnnonceAlertTs) {
-        _lastAnnonceAlertTs = alerte.timestamp;
-        if((Date.now() - alerte.timestamp) < 30000) {
-          var vcode = currentUser.code;
-          var destOk = !alerte.destinataires || alerte.destinataires.length === 0 || alerte.destinataires.indexOf(vcode) >= 0;
-          if(destOk) {
-            showNotif("message", "📢 Annonce — " + (alerte.titre||"Nouvelle annonce"), "Appuyez pour lire");
-            if(currentUser.role !== "admin") renderVendorHome();
-          }
-        }
-      }
-    } catch(e) {}
-  }, function(err) { console.warn("alerte_annonce:", err); });
-
   db.collection("app_data").doc("alerte_connexion").onSnapshot(function(snap) {
     var raw = snap.data ? snap.data() : null;
     if(!raw || !currentUser || currentUser.role !== "admin") return;
@@ -1349,15 +1329,19 @@ function renderHome() {
       window._lastStockAlertTime = _now;
       showNotif("stock", "⚠️ Stock bas détecté", nomsStock);
     }
-    // Vérifier si l'alerte a été acquittée
-    var _stockAlertKey = "mf_stock_alert_ack_" + alertsBas.map(function(s){return s.id+":"+s.disponible;}).join(",");
-    var _isAcked = localStorage.getItem(_stockAlertKey) === "1";
-    var _blink = !_isAcked ? "stock-blink-alert" : "";
-    stockAlert='<div id="stock-alert-box" class="'+_blink+'" onclick="acquitterAlerteStock()" style="background:#2a0a0a;border:1px solid '+ (!_isAcked?'#c92020':'#6a2020')+';border-radius:'+ (!_isAcked?'10':'8')+'px;padding:10px;margin-top:8px;text-align:left">'+
-      '<div style="font-size:11px;color:#ff8080;font-weight:700;margin-bottom:4px">⚠️ Stock bas — '+ (!_isAcked?'Cliquez pour acquitter':'Acquitté')+'</div>'+
-      alertsBas.map(function(s){return '<div style="font-size:11px;color:#ff9966">'+s.name+' : '+s.disponible+' u.</div>';}).join('')+
+    // Déterminer si l'alerte doit clignoter
+    var doCligno = !isStockAlertAcknowledged();
+    var blinkClass = doCligno ? " stock-alert-blink" : "";
+    var blinkStyle = doCligno ? "cursor:pointer;" : "";
+    var blinkOnClick = doCligno ? "onclick=\"acknowledgeStockAlert()\"" : "";
+    var blinkHint = doCligno
+      ? '<div style="font-size:10px;color:#ff4444;margin-top:6px;animation:none">👆 Touchez pour acquitter l\'alerte</div>'
+      : '<div class="stock-ack-msg" style="font-size:10px;color:#7ac97a;margin-top:6px">✅ Alerte prise en compte</div>';
+    stockAlert='<div id="home-stock-alert-box" class="'+blinkClass.trim()+'" '+blinkOnClick+' style="background:#2a0a0a;border:2px solid #6a2020;border-radius:8px;padding:10px;margin-top:8px;text-align:left;'+blinkStyle+'">'+
+      '<div style="font-size:11px;color:#ff8080;font-weight:700;margin-bottom:4px">⚠️ STOCK BAS — RÉAPPROVISIONNEMENT URGENT :</div>'+
+      alertsBas.map(function(s){return '<div style="font-size:12px;color:#ff9966;font-weight:600">• '+s.name+' : '+s.disponible+' unité(s)</div>';}).join('')+
+      blinkHint+
       '</div>';
-    window._stockAlertKey = _stockAlertKey;
   }
   // Alertes de connexion vendeurs
   var alertesConn = [];
@@ -1957,6 +1941,7 @@ function openTab(tab) {
     case "reglement": renderTabReglement(content); break;
     case "messages":  renderTabMessages(content); break;
     case "catalogue": renderTabCatalogue(content); break;
+    case "annonces":  renderTabAnnonces(content);  break;
   }
 }
 
@@ -4493,6 +4478,8 @@ function confirmPaymentThenSale() {
 
 async function processSale() {
   closeModal("modal-confirm-sale");
+  // Réinitialiser l'acquittement du stock pour forcer re-clignotement si nécessaire
+  if(window._resetStockAck) window._resetStockAck();
   var c = currentClient;
   if(!c) return;
   var total = cartTotal();
@@ -4567,42 +4554,9 @@ async function processSale() {
         updatedAt: Date.now()
       }).catch(function(){});
     } catch(e) {}
-    // Vérifier stock bas et alerter admin via Firestore
-    try {
-      var seuil2 = parseInt((_settingsCache&&_settingsCache.alert_stock)||"10");
-      var stockSum2 = typeof getStockSummary === "function" ? getStockSummary() : {};
-      var stockBas2 = Object.values(stockSum2).filter(function(s){ return s.disponible > 0 && s.disponible <= seuil2; });
-      if(stockBas2.length > 0) {
-        window.db.collection("app_data").doc("alerte_stock_bas").set({
-          data: JSON.stringify({
-            produits: stockBas2.map(function(s){return s.name+"("+s.disponible+"u)";}),
-            vendorName: currentUser.name||currentUser.code,
-            timestamp: Date.now()
-          }),
-          updatedAt: Date.now()
-        }).catch(function(){});
-      }
-    } catch(e) {}
   }
-  // Vérifier le stock après vente et déclencher alerte si stock bas
-  _checkStockAfterSale();
   showPage("page-sale-result");
   setTimeout(function(){ renderSaleResult(); }, 30);
-}
-
-function _checkStockAfterSale() {
-  var seuil = parseInt((_settingsCache&&_settingsCache.alert_stock)||"10");
-  var stockSum = getStockSummary ? getStockSummary() : {};
-  var alertsBas = Object.values(stockSum).filter(function(s){ return s.disponible > 0 && s.disponible <= seuil; });
-  if(alertsBas.length > 0) {
-    var key = "mf_stock_alert_ack_" + alertsBas.map(function(s){return s.id+":"+s.disponible;}).join(",");
-    localStorage.removeItem(key); // Reset acquittement — nouvelle alerte
-    window._stockAlertKey = key;
-    if(currentUser && currentUser.role === "admin") {
-      renderHome();
-      showNotif("stock", "⚠️ Stock bas après vente", alertsBas.map(function(s){return s.name+"("+s.disponible+"u)";}).join(", "));
-    }
-  }
 }
 
 function renderSaleResult() {
@@ -4762,6 +4716,11 @@ function renderVendorHome() {
     '<span style="font-size:18px">💬</span> Messages avec la direction'+
     (unreadCount>0?'<span style="background:#ff4444;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">'+unreadCount+' nouveau'+(unreadCount>1?"x":"")+'</span>':"") +
     '</button></div>';
+
+  // ── Annonces de la direction ──
+  if(typeof renderVendorAnnonces === "function") {
+    html += renderVendorAnnonces();
+  }
 
   // Règlement intérieur (si publié)
   var reg = getReglement();
@@ -5956,23 +5915,6 @@ function togglePassword() {
   else { inp.type = "password"; btn.textContent = "👁"; }
 }
 
-function acquitterAlerteStock() {
-  var key = window._stockAlertKey;
-  if(key) localStorage.setItem(key, "1");
-  var box = document.getElementById("stock-alert-box");
-  if(box) {
-    box.classList.remove("stock-blink-alert");
-    box.style.borderColor = "#6a2020";
-    box.style.borderRadius = "8px";
-    box.style.animation = "none";
-    var lbl = box.querySelector("div");
-    if(lbl) lbl.textContent = "⚠️ Stock bas — Acquitté";
-    box.onclick = null;
-    box.style.cursor = "default";
-  }
-  showToast("✅ Alerte stock acquittée");
-}
-
 function revealAdminPass() {
   var el = document.getElementById("show-admin-pass");
   if(el) el.textContent = ADMIN_PASSWORD;
@@ -6890,6 +6832,191 @@ function renderMonEvaluation(){
   }
   html+='</div>';
   document.getElementById("vendor-home-content").innerHTML=html;
+}
+</script>
+
+<!-- ═══════════════════════════════════════
+     ANNONCES + STOCK CLIGNOTEMENT
+═══════════════════════════════════════ -->
+<script>
+// ─── CACHE ANNONCES ───
+var _annoncesCache = [];
+
+// ─── STOCK BLINK : acquitter l'alerte au clic ───────────────────────────
+window._stockAlertAcknowledged = false;
+function acknowledgeStockAlert() {
+  window._stockAlertAcknowledged = true;
+  localStorage.setItem("mf_stock_ack", Date.now().toString());
+  // Retirer la classe clignotante
+  var box = document.getElementById("home-stock-alert-box");
+  if(box) {
+    box.classList.remove("stock-alert-blink");
+    box.style.cursor = "default";
+    box.onclick = null;
+    // Afficher un petit message de confirmation
+    var ack = box.querySelector(".stock-ack-msg");
+    if(ack) ack.style.display = "block";
+  }
+}
+
+// ─── SAVOIR SI L'ALERTE A DÉJÀ ÉTÉ ACQUITTÉE (dans les 10 min) ─────────
+function isStockAlertAcknowledged() {
+  var ts = parseInt(localStorage.getItem("mf_stock_ack")||"0");
+  return (Date.now() - ts) < 10 * 60 * 1000; // 10 minutes
+}
+
+// ─── RÉINITIALISER L'ACQUITTEMENT LORS D'UNE NOUVELLE VENTE ─────────────
+// Cette fonction est appelée depuis processSale() existant
+window._resetStockAck = function() {
+  localStorage.removeItem("mf_stock_ack");
+  window._stockAlertAcknowledged = false;
+};
+
+// ─── ANNONCES : onglet admin ─────────────────────────────────────────────
+function renderTabAnnonces(el) {
+  var annonces = _annoncesCache || [];
+  var html = '<div style="max-width:560px;margin:0 auto">';
+
+  // ── Formulaire nouvelle annonce ──
+  html += '<div class="acard" style="margin-bottom:16px">';
+  html += '<div class="acard-title">📢 ENVOYER UNE ANNONCE AUX VENDEURS</div>';
+  html += '<div class="field"><label>TITRE *</label><input id="ann-titre" placeholder="Ex: Réunion vendredi à 14h"></div>';
+  html += '<div class="field"><label>MESSAGE *</label><textarea id="ann-corps" rows="4" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px;resize:vertical" placeholder="Rédigez votre annonce ici…"></textarea></div>';
+  html += '<div class="field-row">';
+  html += '<div class="field"><label>TYPE</label><select id="ann-type" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px">';
+  html += '<option value="info">ℹ️ Information</option>';
+  html += '<option value="urgent">🚨 Urgent</option>';
+  html += '<option value="reunion">📅 Réunion</option>';
+  html += '<option value="objectif">🎯 Objectif</option>';
+  html += '<option value="bravo">🏆 Félicitations</option>';
+  html += '</select></div>';
+  html += '<div class="field"><label>DESTINATAIRE</label><select id="ann-dest" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px">';
+  html += '<option value="tous">Tous les vendeurs</option>';
+  var vvv = (window.vendors || []).filter(function(v){ return !v.suspended; });
+  vvv.forEach(function(v){ html += '<option value="'+v.code+'">'+v.name+' ('+v.code+')</option>'; });
+  html += '</select></div>';
+  html += '</div>';
+  html += '<button class="btn-gold btn-full" onclick="envoyerAnnonce()" style="margin-top:4px">📤 Envoyer l\'annonce</button>';
+  html += '</div>';
+
+  // ── Historique annonces ──
+  html += '<div style="font-size:11px;color:#c9a84c;letter-spacing:2px;margin-bottom:10px">HISTORIQUE DES ANNONCES ('+annonces.length+')</div>';
+  if(annonces.length === 0) {
+    html += '<div class="empty-state"><div class="es-icon">📭</div><p>Aucune annonce envoyée</p></div>';
+  } else {
+    var sorted = annonces.slice().sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    sorted.forEach(function(ann) {
+      var typeColors = {info:"#4a8adc",urgent:"#dc4a4a",reunion:"#c9a84c",objectif:"#7ac97a",bravo:"#a07ad5"};
+      var typeIcons  = {info:"ℹ️",urgent:"🚨",reunion:"📅",objectif:"🎯",bravo:"🏆"};
+      var col = typeColors[ann.type] || "#8a8070";
+      var ico = typeIcons[ann.type] || "📢";
+      var dt = ann.ts ? new Date(ann.ts).toLocaleString("fr-FR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) : "";
+      var actif = ann.actif !== false;
+      html += '<div style="background:'+(actif?"linear-gradient(135deg,#001428,#000f1e)":"#0a0a0a")+';border:1px solid '+(actif?col+"44":"#1a1a1a")+';border-radius:12px;padding:14px;margin-bottom:10px">';
+      html += '<div style="display:flex;align-items:flex-start;gap:10px">';
+      html += '<span style="font-size:22px;flex-shrink:0">'+ico+'</span>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">';
+      html += '<span style="font-size:13px;font-weight:700;color:#e8e0d0">'+escHtml(ann.titre||"Sans titre")+'</span>';
+      if(!actif) html += '<span style="background:#2a2a2a;color:#666;font-size:9px;padding:2px 6px;border-radius:10px">Archivée</span>';
+      html += '</div>';
+      html += '<div style="font-size:12px;color:#8a8070;margin-bottom:6px;white-space:pre-wrap">'+escHtml(ann.corps||"")+'</div>';
+      html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+      html += '<span style="font-size:10px;color:'+col+'">'+ico+' '+(ann.type||"info")+'</span>';
+      html += '<span style="font-size:10px;color:#4a5a7a">→ '+(ann.dest==="tous"?"Tous les vendeurs":ann.dest)+'</span>';
+      html += '<span style="font-size:10px;color:#2a3a5a">'+dt+'</span>';
+      html += '</div>';
+      html += '</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">';
+      if(actif) {
+        html += '<button onclick="archiverAnnonce(\''+ann.id+'\')" style="background:none;border:1px solid #1a2030;color:#4a5a7a;padding:5px 8px;border-radius:6px;font-size:10px">📦 Archiver</button>';
+      }
+      html += '<button onclick="supprimerAnnonce(\''+ann.id+'\')" style="background:#2e0505;border:1px solid #c9202033;color:#ff6666;padding:5px 8px;border-radius:6px;font-size:10px">🗑️</button>';
+      html += '</div></div></div>';
+    });
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+async function envoyerAnnonce() {
+  var titre = (document.getElementById("ann-titre")||{}).value.trim();
+  var corps = (document.getElementById("ann-corps")||{}).value.trim();
+  var type  = (document.getElementById("ann-type")||{}).value || "info";
+  var dest  = (document.getElementById("ann-dest")||{}).value || "tous";
+  if(!titre || !corps) { showToast("Remplissez le titre et le message", true); return; }
+  var id = "ann_" + Date.now();
+  var annonces = (_annoncesCache||[]).slice();
+  annonces.push({ id:id, titre:titre, corps:corps, type:type, dest:dest, ts:Date.now(), actif:true });
+  _annoncesCache = annonces;
+  try {
+    await window.db.collection("app_data").doc("annonces").set({ data: JSON.stringify(annonces) });
+    showToast("✅ Annonce envoyée !");
+    var el = document.getElementById("admin-content");
+    if(el) renderTabAnnonces(el);
+    if(document.getElementById("ann-titre")) document.getElementById("ann-titre").value="";
+    if(document.getElementById("ann-corps")) document.getElementById("ann-corps").value="";
+  } catch(e) { showToast("Erreur envoi annonce", true); }
+}
+
+async function archiverAnnonce(id) {
+  var annonces = (_annoncesCache||[]).map(function(a){ return a.id===id ? Object.assign({},a,{actif:false}) : a; });
+  _annoncesCache = annonces;
+  try {
+    await window.db.collection("app_data").doc("annonces").set({ data: JSON.stringify(annonces) });
+    showToast("Annonce archivée");
+    var el = document.getElementById("admin-content");
+    if(el) renderTabAnnonces(el);
+  } catch(e) { showToast("Erreur", true); }
+}
+
+async function supprimerAnnonce(id) {
+  var annonces = (_annoncesCache||[]).filter(function(a){ return a.id!==id; });
+  _annoncesCache = annonces;
+  try {
+    await window.db.collection("app_data").doc("annonces").set({ data: JSON.stringify(annonces) });
+    showToast("Annonce supprimée");
+    var el = document.getElementById("admin-content");
+    if(el) renderTabAnnonces(el);
+  } catch(e) { showToast("Erreur", true); }
+}
+
+// ─── ANNONCES : affichage côté vendeur ───────────────────────────────────
+function renderVendorAnnonces() {
+  var annonces = (_annoncesCache||[]).filter(function(a){
+    return a.actif !== false && (a.dest==="tous" || a.dest===currentUser.code);
+  }).sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+
+  if(annonces.length === 0) return "";
+
+  var lastSeen = parseInt(localStorage.getItem("mf_annonces_seen")||"0");
+  var typeIcons = {info:"ℹ️",urgent:"🚨",reunion:"📅",objectif:"🎯",bravo:"🏆"};
+  var typeColors = {info:"#4a8adc",urgent:"#dc4a4a",reunion:"#c9a84c",objectif:"#7ac97a",bravo:"#a07ad5"};
+
+  var html = '<div style="padding:0 16px;margin-bottom:16px">';
+  html += '<div style="font-size:10px;color:#c9a84c;letter-spacing:2px;margin-bottom:10px">📢 ANNONCES DE LA DIRECTION</div>';
+  annonces.forEach(function(ann) {
+    var isNew = (ann.ts||0) > lastSeen;
+    var col = typeColors[ann.type] || "#8a8070";
+    var ico = typeIcons[ann.type] || "📢";
+    var dt = ann.ts ? new Date(ann.ts).toLocaleString("fr-FR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) : "";
+    html += '<div style="background:linear-gradient(135deg,#001020,#000a18);border:1px solid '+col+'44;border-radius:12px;padding:14px;margin-bottom:8px;position:relative">';
+    if(isNew) html += '<div style="position:absolute;top:10px;right:10px;background:'+col+';color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px">NOUVEAU</div>';
+    html += '<div style="display:flex;align-items:flex-start;gap:10px">';
+    html += '<span style="font-size:24px">'+ico+'</span>';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="font-size:13px;font-weight:700;color:#e8e0d0;margin-bottom:4px">'+escHtml(ann.titre||"Annonce")+'</div>';
+    html += '<div style="font-size:12px;color:#a0a0a0;margin-bottom:6px;white-space:pre-wrap">'+escHtml(ann.corps||"")+'</div>';
+    html += '<div style="font-size:10px;color:'+col+'">'+dt+'</div>';
+    html += '</div></div></div>';
+  });
+  html += '</div>';
+
+  // Marquer comme lu
+  localStorage.setItem("mf_annonces_seen", Date.now().toString());
+  return html;
 }
 </script>
 
