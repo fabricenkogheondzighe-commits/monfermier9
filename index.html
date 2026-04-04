@@ -9120,10 +9120,10 @@ if ('serviceWorker' in navigator) {
 function renderTechHome() {
   if(!currentUser || currentUser.role !== "technicien") return;
   var nameEl = document.getElementById("tech-home-name");
-  if(nameEl) nameEl.textContent = currentUser.name + " · Technicien";
+  if(nameEl) nameEl.textContent = (currentUser.name || "Technicien") + " · Technicien";
   var content = document.getElementById("tech-home-content");
   if(!content) return;
-
+  try {
   var today = new Date().toISOString().split("T")[0];
   var ficheExistante = null;
   try { ficheExistante = JSON.parse(localStorage.getItem("fiche_tech_" + today) || "null"); } catch(e){}
@@ -9183,6 +9183,9 @@ function renderTechHome() {
   html += '🌶️ Ouvrir Tsi\'i Ocam complet</button>';
 
   content.innerHTML = html;
+  } catch(e) {
+    content.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px">⚠️ Erreur: ' + e.message + '</div>';
+  }
 }
 
 function scSetOngletDirect(onglet) {
