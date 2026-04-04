@@ -512,66 +512,66 @@ window.addEventListener('load', function() {
   </div>
   <!-- ONGLETS RANGÉE 1 : 4 colonnes -->
   <div class="admin-tabs" id="admin-tabs-row1">
-    <button class="admin-tab" id="tab-clients" onclick="openTab('clients')">
+    <button class="admin-tab" id="tab-clients" onclick="goToAdminTab('clients')">
       <span class="tab-icon">👥</span>Clients
     </button>
-    <button class="admin-tab" id="tab-vendors" onclick="openTab('vendors')">
+    <button class="admin-tab" id="tab-vendors" onclick="goToAdminTab('vendors')">
       <span class="tab-icon">👨‍💼</span>Vendeurs
     </button>
-    <button class="admin-tab" id="tab-charts" onclick="openTab('charts')">
+    <button class="admin-tab" id="tab-charts" onclick="goToAdminTab('charts')">
       <span class="tab-icon">📊</span>Graphiques
     </button>
-    <button class="admin-tab" id="tab-compta" onclick="openTab('compta')">
+    <button class="admin-tab" id="tab-compta" onclick="goToAdminTab('compta')">
       <span class="tab-icon">💰</span>Compta
     </button>
   </div>
   <!-- ONGLETS RANGÉE 2 -->
   <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr)">
-    <button class="admin-tab" id="tab-orders" onclick="openTab('orders')">
+    <button class="admin-tab" id="tab-orders" onclick="goToAdminTab('orders')">
       <span class="tab-icon">📦</span>Commandes
     </button>
-    <button class="admin-tab" id="tab-calc" onclick="openTab('calc')">
+    <button class="admin-tab" id="tab-calc" onclick="goToAdminTab('calc')">
       <span class="tab-icon">🧮</span>Calcul
     </button>
-    <button class="admin-tab" id="tab-stock" onclick="openTab('stock')">
+    <button class="admin-tab" id="tab-stock" onclick="goToAdminTab('stock')">
       <span class="tab-icon">🏭</span>Stock
     </button>
   </div>
   <!-- ONGLETS RANGÉE 3 -->
   <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
-    <button class="admin-tab" id="tab-analyses" onclick="openTab('analyses')">
+    <button class="admin-tab" id="tab-analyses" onclick="goToAdminTab('analyses')">
       <span class="tab-icon">📈</span>Analyses
     </button>
-    <button class="admin-tab" id="tab-rapports" onclick="openTab('rapports')">
+    <button class="admin-tab" id="tab-rapports" onclick="goToAdminTab('rapports')">
       <span class="tab-icon">📄</span>Rapports
     </button>
-    <button class="admin-tab" id="tab-settings" onclick="openTab('settings')">
+    <button class="admin-tab" id="tab-settings" onclick="goToAdminTab('settings')">
       <span class="tab-icon">⚙️</span>Paramètres
     </button>
   </div>
   <!-- ONGLETS RANGÉE 4 -->
   <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
-    <button class="admin-tab" id="tab-catalogue" onclick="openTab('catalogue')">
+    <button class="admin-tab" id="tab-catalogue" onclick="goToAdminTab('catalogue')">
       <span class="tab-icon">🛍️</span>Catalogue
     </button>
-    <button class="admin-tab" id="tab-reglement" onclick="openTab('reglement')">
+    <button class="admin-tab" id="tab-reglement" onclick="goToAdminTab('reglement')">
       <span class="tab-icon">📜</span>Règlement
     </button>
-    <button class="admin-tab" id="tab-messages" onclick="openTab('messages')" style="position:relative">
+    <button class="admin-tab" id="tab-messages" onclick="goToAdminTab('messages')" style="position:relative">
       <span class="tab-icon">💬</span>Messages
       <span id="msg-badge-admin" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">0</span>
     </button>
   </div>
   <!-- ONGLETS RANGÉE 5 -->
   <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
-    <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')">
+    <button class="admin-tab" id="tab-annonces" onclick="goToAdminTab('annonces')">
       <span class="tab-icon">📢</span>Annonces aux vendeurs
     </button>
-    <button class="admin-tab" id="tab-technicien" onclick="openTab('technicien')" style="position:relative">
+    <button class="admin-tab" id="tab-technicien" onclick="goToAdminTab('technicien')" style="position:relative">
       <span class="tab-icon">👷</span>Technicien
       <span id="tech-badge" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">!</span>
     </button>
-    <button class="admin-tab" id="tab-techniciens-list" onclick="openTab('techniciens-list')">
+    <button class="admin-tab" id="tab-techniciens-list" onclick="goToAdminTab('techniciens-list')">
       <span class="tab-icon">🌿</span>Équipe Champ
     </button>
   </div>
@@ -2757,13 +2757,13 @@ function openAdmin() {
   openTab(currentTab);
 }
 
+function goToAdminTab(tab) {
+  showPage("page-admin");
+  openTab(tab);
+}
+
 function openTab(tab) {
   currentTab = tab;
-  // S'assurer que la page admin est visible
-  var adminPage = document.getElementById("page-admin");
-  if(adminPage && !adminPage.classList.contains("active")) {
-    showPage("page-admin");
-  }
   // Mettre à jour les boutons actifs
   document.querySelectorAll(".admin-tab").forEach(function(b){ b.classList.remove("active"); });
   var btn = document.getElementById("tab-"+tab);
@@ -4141,8 +4141,8 @@ function renderTabSettings(el){
     '<button onclick="importBackup()" style="background:#0a0f1a;border:1px solid #1a2030;color:#8a8070;padding:13px;border-radius:8px;font-size:13px">📥 Importer des donnees</button>'+
     '</div></div>';
   // Clé API Anthropic
-  var savedKey = '';
-  try { savedKey = localStorage.getItem('mf_anthropic_key') || ''; } catch(e){}
+  var savedKey = "";
+  try { savedKey = localStorage.getItem("mf_anthropic_key") || ""; } catch(e){}
   html+='<div class="acard"><div class="acard-title">🤖 Clé API Anthropic (Diagnostic IA)</div>';
   html+='<p style="font-size:11px;color:#4a5a7a;margin-bottom:10px">Nécessaire pour la fonction <strong style="color:#a8d880">Diagnostic IA Caméra</strong> dans Tsi\'i Ocam. Obtenez votre clé sur <span style="color:#c9a84c">console.anthropic.com</span></p>';
   html+='<div style="display:flex;gap:8px;align-items:center">';
@@ -9125,21 +9125,12 @@ if ('serviceWorker' in navigator) {
 // ═══════════════════════════════════════════════════════════════
 
 function renderTechHome() {
-  // S'assurer que la bonne page est affichée
-  var techPage = document.getElementById("page-tech-home");
-  if(techPage && !techPage.classList.contains("active")) {
-    showPage("page-tech-home");
-  }
   var nameEl = document.getElementById("tech-home-name");
   if(nameEl && currentUser) nameEl.textContent = currentUser.name + " · Technicien";
   var content = document.getElementById("tech-home-content");
   if(!content) {
     setTimeout(renderTechHome, 100);
     return;
-  }
-  // Afficher immédiatement un état de chargement si vide
-  if(!content.innerHTML || content.innerHTML.trim() === "") {
-    content.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#5a8a4a"><div style="font-size:40px;margin-bottom:12px">🌿</div><div style="font-size:14px">Chargement...</div></div>';
   }
 
   var today = new Date().toISOString().split("T")[0];
