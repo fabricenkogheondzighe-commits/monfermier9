@@ -476,7 +476,7 @@ window.addEventListener('load', function() {
         <button onclick="togglePassword()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;color:#8a8070;font-size:16px;padding:4px" id="toggle-pass-btn">👁</button>
       </div>
     </div>
-    <button class="btn-login" id="btn-login-main">Se connecter</button>
+    <button class="btn-login" id="btn-login-main" onclick="if(window.doLogin)window.doLogin()">Se connecter</button>
     <div id="login-error"></div>
   </div>
 </div>
@@ -6979,7 +6979,7 @@ window.doLogout = doLogout;
 window.togglePassword = togglePassword;
 
 // Attacher le bouton connexion
-(function attachLoginBtn() {
+function attachLoginBtn() {
   var btn = document.getElementById("btn-login-main");
   if(btn) {
     btn.addEventListener("click", function() {
@@ -7011,7 +7011,12 @@ window.togglePassword = togglePassword;
   } else {
     setTimeout(attachLoginBtn, 50);
   }
-})();
+}
+if(document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", attachLoginBtn);
+} else {
+  attachLoginBtn();
+}
 
 // Enter key sur les champs login
 var _lp = document.getElementById("login-password");
