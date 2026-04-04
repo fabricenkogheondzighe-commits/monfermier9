@@ -1113,8 +1113,15 @@ function onLogin() {
 
   if(currentUser.role === "technicien") {
     showPage("page-tech-home");
-    renderTechHome();
-    startTechRealtimeSync();
+    function _doRenderTech() {
+      if(window.renderTechHome) {
+        window.renderTechHome();
+        if(window.startTechRealtimeSync) window.startTechRealtimeSync();
+      } else {
+        setTimeout(_doRenderTech, 100);
+      }
+    }
+    _doRenderTech();
   } else if(currentUser.role === "vendor") {
     var vendor = vendors.find(function(v){ return v.code===currentUser.code; });
     enregistrerAlerteConnexion(vendor);
@@ -2786,8 +2793,8 @@ function openTab(tab) {
     case "messages":  renderTabMessages(content); break;
     case "catalogue": renderTabCatalogue(content); break;
     case "annonces":  renderTabAnnonces(content);  break;
-    case "technicien": renderTabTechnicien(content); break;
-    case "techniciens-list": renderTabTechniciensList(content); break;
+    case "technicien": if(window.renderTabTechnicien) window.renderTabTechnicien(content); break;
+    case "techniciens-list": if(window.renderTabTechniciensList) window.renderTabTechniciensList(content); break;
   }
 }
 
@@ -9579,6 +9586,12 @@ async function saveNewTech() {
   }
   tryListen();
 })();
+
+// Exposer globalement pour accès inter-scripts
+window.renderTechHome = renderTechHome;
+window.startTechRealtimeSync = startTechRealtimeSync;
+window.renderTabTechniciensList = renderTabTechniciensList;
+window.renderTabTechnicien = renderTabTechnicien;
 </script>
 
 </body>
