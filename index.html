@@ -476,7 +476,7 @@ window.addEventListener('load', function() {
         <button onclick="togglePassword()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;color:#8a8070;font-size:16px;padding:4px" id="toggle-pass-btn">👁</button>
       </div>
     </div>
-    <button class="btn-login" id="btn-login-main" onclick="if(window.doLogin){doLogin();}else{this.textContent='Chargement...';this.disabled=true;var _t=this;var _i=setInterval(function(){if(window.doLogin){clearInterval(_i);_t.textContent='Se connecter';_t.disabled=false;doLogin();}},100);}">Se connecter</button>
+    <button class="btn-login" id="btn-login-main">Se connecter</button>
     <div id="login-error"></div>
   </div>
 </div>
@@ -1093,19 +1093,6 @@ function doLogin() {
         clearInterval(interval);
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
         tryTechLogin();
-      }
-    }, 500);
-  }
-}
-      if(vendors.length > 0) {
-        clearInterval(interval);
-        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        tryVendorLogin();
-      } else if(attempts >= maxAttempts) {
-        clearInterval(interval);
-        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        // Dernier essai même si vendors vide
-        tryVendorLogin();
       }
     }, 500);
   }
@@ -6989,14 +6976,39 @@ _waitForFirebase(function() {
 // Exposer doLogin globalement depuis le script principal
 window.doLogin = doLogin;
 window.doLogout = doLogout;
+window.togglePassword = togglePassword;
 
-// Attacher le bouton connexion ici où doLogin est garantie disponible
+// Attacher le bouton connexion
 (function attachLoginBtn() {
   var btn = document.getElementById("btn-login-main");
   if(btn) {
-    btn.addEventListener("click", function() { doLogin(); });
+    btn.addEventListener("click", function() {
+      if(window._firebaseLoginVendor) {
+        doLogin();
+      } else {
+        var self = btn;
+        var origText = self.textContent;
+        self.textContent = "Chargement...";
+        self.disabled = true;
+        var attempts = 0;
+        var iv = setInterval(function() {
+          attempts++;
+          if(window._firebaseLoginVendor) {
+            clearInterval(iv);
+            self.textContent = origText;
+            self.disabled = false;
+            doLogin();
+          } else if(attempts >= 80) {
+            clearInterval(iv);
+            self.textContent = origText;
+            self.disabled = false;
+            var err = document.getElementById("login-error");
+            if(err) { err.textContent = "Erreur réseau. Vérifiez votre connexion Internet."; err.style.display = "block"; }
+          }
+        }, 100);
+      }
+    });
   } else {
-    // Le DOM n'est peut-être pas encore prêt, réessayer
     setTimeout(attachLoginBtn, 50);
   }
 })();
