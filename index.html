@@ -101,7 +101,7 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 .home-greeting{font-size:11px;color:#c9a84c;letter-spacing:3px;margin-bottom:4px}
 .home-title{font-size:20px;font-weight:700;color:#e8e0d0}
 .home-date{font-size:12px;color:#4a4640;margin-top:4px}
-.home-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
+.home-kpis{display:block;padding:16px}
 .kpi-card{background:linear-gradient(135deg,#14120f,#1a1813);border:1px solid #2e2a22;border-radius:12px;padding:14px}
 .kpi-label{font-size:10px;color:#4a4640;letter-spacing:1.5px;margin-bottom:6px}
 .kpi-value{font-size:20px;font-weight:700;color:#c9a84c}
@@ -566,13 +566,9 @@ window.addEventListener('load', function() {
     </button>
   </div>
   <!-- ONGLETS RANGÉE 5 -->
-  <div class="admin-tabs-row2" style="grid-template-columns:repeat(2,1fr);padding-top:0">
+  <div class="admin-tabs-row2" style="grid-template-columns:repeat(1,1fr);padding-top:0">
     <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')">
       <span class="tab-icon">📢</span>Annonces aux vendeurs
-    </button>
-    <button class="admin-tab" id="tab-technicien" onclick="openTab('technicien')" style="position:relative">
-      <span class="tab-icon">👷</span>Technicien
-      <span id="tech-badge" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">!</span>
     </button>
   </div>
   <div id="admin-content"></div>
@@ -2120,10 +2116,12 @@ function openSannyChamp() {
     modal = document.createElement("div");
     modal.id = "modal-sanny-champ";
     modal.className = "modal";
+    modal.style.padding = "0";
+    modal.style.alignItems = "flex-end";
     document.body.appendChild(modal);
   }
   renderACModal(modal);
-  openModal("modal-sanny-champ");
+  modal.classList.add("open");
 }
 
 function renderACModal(modal) {
