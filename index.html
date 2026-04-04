@@ -1363,8 +1363,7 @@ function loadAll() {
 // ═══════════════════════════════════════
 function renderHome() {
   if(!currentUser || currentUser.role !== "admin") return;
-
-  // Horloge
+  try {
   startHomeClock();
   // Rafraîchir badge messages
   updateMsgBadge();
@@ -1464,6 +1463,14 @@ function renderHome() {
     '<div style="font-size:40px;font-weight:700;color:#c9a84c;margin-bottom:4px">'+fmtPrice(revMois)+'</div>' +
     objBar + stockAlert +
     '</div>' + alertConnHtml;
+  } catch(e) {
+    // Afficher le cadre CA même en cas d'erreur partielle
+    var el = document.getElementById("home-kpis");
+    if(el && !el.innerHTML) {
+      el.innerHTML = '<div style="background:linear-gradient(135deg,#2a1f0a,#1a1308);border:1px solid #c9a84c44;border-radius:16px;padding:24px;text-align:center"><div style="font-size:11px;color:#8a8070;letter-spacing:2px;margin-bottom:8px">CHIFFRE D\'AFFAIRES</div><div style="font-size:40px;font-weight:700;color:#c9a84c">0 FCFA</div></div>';
+    }
+    console.error("renderHome error:", e);
+  }
 }
 
 // ═══════════════════════════════════════
@@ -2116,10 +2123,12 @@ function openSannyChamp() {
     modal = document.createElement("div");
     modal.id = "modal-sanny-champ";
     modal.className = "modal";
-    modal.style.padding = "0";
-    modal.style.alignItems = "flex-end";
     document.body.appendChild(modal);
   }
+  // Toujours appliquer les styles pour Tsi'i Ocam (plein écran bas)
+  modal.style.padding = "0";
+  modal.style.alignItems = "flex-end";
+  modal.style.justifyContent = "center";
   renderACModal(modal);
   modal.classList.add("open");
 }
