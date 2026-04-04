@@ -1112,11 +1112,8 @@ function onLogin() {
 
   if(currentUser.role === "technicien") {
     showPage("page-tech-home");
-    // Petit délai pour que le DOM soit prêt avant de render
-    setTimeout(function() {
-      renderTechHome();
-      startTechRealtimeSync();
-    }, 80);
+    renderTechHome();
+    startTechRealtimeSync();
   } else if(currentUser.role === "vendor") {
     var vendor = vendors.find(function(v){ return v.code===currentUser.code; });
     enregistrerAlerteConnexion(vendor);
@@ -1234,11 +1231,7 @@ function loadAll() {
   db.collection("clients").onSnapshot(function(snap) {
     clients = [];
     snap.forEach(function(doc) { clients.push({id:doc.id, ...doc.data()}); });
-    if(currentUser) {
-      if(currentUser.role === "admin") renderHome();
-      else if(currentUser.role === "technicien") renderTechHome();
-      else renderVendorHome();
-    }
+    if(currentUser && currentUser.role === "admin") renderHome();
   }, function(err) {
     console.warn("Firestore clients error");
   });
@@ -9125,13 +9118,11 @@ if ('serviceWorker' in navigator) {
 // ═══════════════════════════════════════════════════════════════
 
 function renderTechHome() {
+  if(!currentUser || currentUser.role !== "technicien") return;
   var nameEl = document.getElementById("tech-home-name");
-  if(nameEl && currentUser) nameEl.textContent = currentUser.name + " · Technicien";
+  if(nameEl) nameEl.textContent = currentUser.name + " · Technicien";
   var content = document.getElementById("tech-home-content");
-  if(!content) {
-    setTimeout(renderTechHome, 100);
-    return;
-  }
+  if(!content) return;
 
   var today = new Date().toISOString().split("T")[0];
   var ficheExistante = null;
