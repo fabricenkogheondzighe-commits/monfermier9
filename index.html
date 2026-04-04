@@ -1101,6 +1101,7 @@ function doLogin() {
 }
 
 function onLogin() {
+  try {
   var badge = document.getElementById("user-badge");
   var logout = document.getElementById("logout-btn");
   badge.textContent = currentUser.role==="admin" ? "👑 Admin" : currentUser.role==="technicien" ? "🌿 "+currentUser.name : "👤 "+currentUser.name;
@@ -1126,6 +1127,12 @@ function onLogin() {
   } else {
     showPage("page-home");
     renderHome();
+  }
+  } catch(e) {
+    // Afficher l'erreur sur la page tech si technicien
+    var techContent = document.getElementById("tech-home-content");
+    if(techContent) techContent.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px;background:#1a0505;border-radius:10px">⚠️ Erreur onLogin: ' + e.message + '</div>';
+    console.error("onLogin error:", e);
   }
 }
 
@@ -9118,11 +9125,19 @@ if ('serviceWorker' in navigator) {
 // ═══════════════════════════════════════════════════════════════
 
 function renderTechHome() {
-  if(!currentUser || currentUser.role !== "technicien") return;
-  var nameEl = document.getElementById("tech-home-name");
-  if(nameEl) nameEl.textContent = (currentUser.name || "Technicien") + " · Technicien";
   var content = document.getElementById("tech-home-content");
   if(!content) return;
+  // Diagnostic: afficher l'état de currentUser
+  if(!currentUser) {
+    content.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px">❌ currentUser est NULL</div>';
+    return;
+  }
+  if(currentUser.role !== "technicien") {
+    content.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px">❌ role = "' + currentUser.role + '" (pas technicien)</div>';
+    return;
+  }
+  var nameEl = document.getElementById("tech-home-name");
+  if(nameEl) nameEl.textContent = (currentUser.name || "Technicien") + " · Technicien";
   try {
   var today = new Date().toISOString().split("T")[0];
   var ficheExistante = null;
