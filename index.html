@@ -951,8 +951,7 @@ function goHome() {
     renderVendorHome();
   } else if(currentUser && currentUser.role === "technicien") {
     showPage("page-tech-home");
-    renderTechHome();
-    startTechRealtimeSync();
+    setTimeout(function(){ renderTechHome(); startTechRealtimeSync(); }, 50);
   } else {
     showPage("page-home");
     renderHome();
@@ -2760,6 +2759,11 @@ function openAdmin() {
 
 function openTab(tab) {
   currentTab = tab;
+  // S'assurer que la page admin est visible
+  var adminPage = document.getElementById("page-admin");
+  if(adminPage && !adminPage.classList.contains("active")) {
+    showPage("page-admin");
+  }
   // Mettre à jour les boutons actifs
   document.querySelectorAll(".admin-tab").forEach(function(b){ b.classList.remove("active"); });
   var btn = document.getElementById("tab-"+tab);
@@ -9121,13 +9125,21 @@ if ('serviceWorker' in navigator) {
 // ═══════════════════════════════════════════════════════════════
 
 function renderTechHome() {
+  // S'assurer que la bonne page est affichée
+  var techPage = document.getElementById("page-tech-home");
+  if(techPage && !techPage.classList.contains("active")) {
+    showPage("page-tech-home");
+  }
   var nameEl = document.getElementById("tech-home-name");
   if(nameEl && currentUser) nameEl.textContent = currentUser.name + " · Technicien";
   var content = document.getElementById("tech-home-content");
   if(!content) {
-    // Réessayer dans 100ms si le DOM n'est pas encore prêt
     setTimeout(renderTechHome, 100);
     return;
+  }
+  // Afficher immédiatement un état de chargement si vide
+  if(!content.innerHTML || content.innerHTML.trim() === "") {
+    content.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#5a8a4a"><div style="font-size:40px;margin-bottom:12px">🌿</div><div style="font-size:14px">Chargement...</div></div>';
   }
 
   var today = new Date().toISOString().split("T")[0];
