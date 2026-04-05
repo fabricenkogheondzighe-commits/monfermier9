@@ -1794,18 +1794,30 @@ async function sannyEnvoyerAvecImage(base64Data, mimeType, fileName, typeName) {
   };
 
   try {
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
+    var response = await fetch('/api/Sanny', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        system: getSannySystem(),
-        messages: [...iaConversation, imageMessage]
+        messages: [
+          { role: 'system', content: getSannySystem() },
+          ...iaConversation.slice(0, -0),
+          {
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + base64Data } },
+              { type: 'text', text: prompt }
+            ]
+          }
+        ]
       })
     });
     var data = await response.json();
-    var reponse = (data.content && data.content[0]) ? data.content[0].text : 'Désolé, je n\'ai pas pu analyser cette image.';
+    var reponse = '';
+    if (data.choices && data.choices[0]) reponse = data.choices[0].message.content || '';
+    else if (data.content && data.content[0]) reponse = data.content[0].text || '';
+    if (!reponse) reponse = 'Désolé, je n\'ai pas pu analyser cette image.';
 
     iaConversation.push({ role: 'user', content: prompt });
     iaConversation.push({ role: 'assistant', content: reponse });
@@ -7944,24 +7956,31 @@ async function acLancerDiagnostic() {
   if (res) res.innerHTML = '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:12px;padding:16px;text-align:center"><div style="display:flex;gap:6px;justify-content:center;align-items:center"><div style="width:8px;height:8px;background:#6a9a50;border-radius:50%;animation:pulse 1s infinite"></div><div style="width:8px;height:8px;background:#6a9a50;border-radius:50%;animation:pulse 1s infinite 0.3s"></div><div style="width:8px;height:8px;background:#6a9a50;border-radius:50%;animation:pulse 1s infinite 0.6s"></div></div><div style="font-size:12px;color:#6a9a50;margin-top:10px">Analyse de l\'image par l\'IA...</div></div>';
 
   try {
-    var response = await fetch("https://api.anthropic.com/v1/messages", {
+    // Construction du payload vision via le proxy /api/Sanny
+    var response = await fetch("/api/Sanny", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
-        system: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true ou false}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}.",
         messages: [{
+          role: "system",
+          content: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}."
+        }, {
           role: "user",
           content: [
-            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: _camImageBase64 } },
-            { type: "text", text: "Analyse cette photo de piment sous abri. 1) Identifie tout parasite, maladie ou symptôme anormal visible. 2) Évalue la maturité des piments visibles et indique s'ils sont prêts à récolter. Réponds uniquement en JSON." }
+            { type: "image_url", image_url: { url: "data:image/jpeg;base64," + _camImageBase64 } },
+            { type: "text", text: "Analyse cette photo de piment. 1) Identifie tout parasite, maladie ou symptôme anormal visible. 2) Évalue la maturité des piments visibles et indique s'ils sont prêts à récolter. Réponds uniquement en JSON." }
           ]
         }]
       })
     });
     var data = await response.json();
-    var raw = (data.content && data.content[0] && data.content[0].text) || "{}";
+    // Support réponse OpenAI-style (choices) ou Anthropic-style (content)
+    var raw = "";
+    if (data.choices && data.choices[0]) raw = data.choices[0].message.content || "{}";
+    else if (data.content && data.content[0]) raw = data.content[0].text || "{}";
+    else raw = "{}";
     var clean = raw.replace(/```json|```/g, "").trim();
     var result = JSON.parse(clean);
     if (btn) { btn.textContent = "🔬 Lancer le diagnostic IA"; btn.disabled = false; }
