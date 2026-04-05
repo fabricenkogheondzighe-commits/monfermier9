@@ -7963,11 +7963,13 @@ async function acLancerDiagnostic() {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
-        system: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}."
         messages: [{
+          role: "system",
+          content: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}."
+        }, {
           role: "user",
           content: [
-            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: _camImageBase64 } },
+            { type: "image_url", image_url: { url: "data:image/jpeg;base64," + _camImageBase64 } },
             { type: "text", text: "Analyse cette photo de piment. 1) Identifie tout parasite, maladie ou symptôme anormal visible. 2) Évalue la maturité des piments visibles et indique s'ils sont prêts à récolter. Réponds uniquement en JSON." }
           ]
         }]
