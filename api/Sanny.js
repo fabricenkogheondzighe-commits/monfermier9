@@ -1,46 +1,77 @@
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+// api/Sanny.js — Proxy Anthropic pour Vercel
+// La clé API est dans Vercel → Settings → Environment Variables → ANTHROPIC_API_KEY
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "Clé API manquante côté serveur" });
+  }
 
   try {
-    const { max_tokens, messages } = req.body;
+    const body = req.body;
 
-    // Séparer le system message des autres messages
-    const systemMsg = messages && messages.find(m => m.role === 'system');
-    const chatMessages = messages ? messages.filter(m => m.role !== 'system') : [];
+    let messages = body.messages || [];
+    messages = messages.map(msg => {
+      if (msg.role === "user" && Array.isArray(msg.content)) {
+        const newContent = msg.content.map(item => {
+          if (item.type === "image_url" && item.image_url && item.image_url.url) {
+            const dataUrl = item.image_url.url;
+            const match = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+            if (match) {
+              return {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: match[1],
+                  data: match[2]
+                }
+              };
+            }
+          }
+          return item;
+        });
+        return { ...msg, content: newContent };
+      }
+      return msg;
+    });
 
-    const bodyMessages = systemMsg ? [systemMsg, ...chatMessages] : chatMessages;
+    let systemPrompt = body.system || null;
+    if (!systemPrompt) {
+      const sysMsg = messages.find(m => m.role === "system");
+      if (sysMsg) {
+        systemPrompt = typeof sysMsg.content === "string"
+          ? sysMsg.content
+          : sysMsg.content[0]?.text || "";
+        messages = messages.filter(m => m.role !== "system");
+      }
+    }
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
+    const payload = {
+      model: body.model || "claude-opus-4-5",
+      max_tokens: body.max_tokens || 1000,
+      messages: messages
+    };
+    if (systemPrompt) payload.system = systemPrompt;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01"
       },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: max_tokens || 1500,
-        messages: bodyMessages
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
+    return res.status(response.status).json(data);
 
-    console.log('Groq status:', response.status);
-    console.log('Groq data:', JSON.stringify(data));
-
-    if (!response.ok) {
-      return res.status(500).json({ error: data.error?.message || 'Groq error' });
-    }
-
-    res.status(200).json(data);
-
-  } catch (error) {
-    console.error('Sanny error:', error.message);
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error("Erreur proxy Sanny:", err);
+    return res.status(500).json({ error: "Erreur serveur", detail: err.message });
   }
 }
