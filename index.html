@@ -476,7 +476,7 @@ window.addEventListener('load', function() {
         <button onclick="togglePassword()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;color:#8a8070;font-size:16px;padding:4px" id="toggle-pass-btn">👁</button>
       </div>
     </div>
-    <button class="btn-login" id="btn-login-main" onclick="if(window.doLogin)window.doLogin()">Se connecter</button>
+    <button class="btn-login" id="btn-login-main" onclick="if(window.doLogin){doLogin();}else{this.textContent='Chargement...';this.disabled=true;var _t=this;var _i=setInterval(function(){if(window.doLogin){clearInterval(_i);_t.textContent='Se connecter';_t.disabled=false;doLogin();}},100);}">Se connecter</button>
     <div id="login-error"></div>
   </div>
 </div>
@@ -512,68 +512,62 @@ window.addEventListener('load', function() {
   </div>
   <!-- ONGLETS RANGÉE 1 : 4 colonnes -->
   <div class="admin-tabs" id="admin-tabs-row1">
-    <button class="admin-tab" id="tab-clients" onclick="goToAdminTab('clients')">
+    <button class="admin-tab" id="tab-clients" onclick="openTab('clients')">
       <span class="tab-icon">👥</span>Clients
     </button>
-    <button class="admin-tab" id="tab-vendors" onclick="goToAdminTab('vendors')">
+    <button class="admin-tab" id="tab-vendors" onclick="openTab('vendors')">
       <span class="tab-icon">👨‍💼</span>Vendeurs
     </button>
-    <button class="admin-tab" id="tab-charts" onclick="goToAdminTab('charts')">
+    <button class="admin-tab" id="tab-charts" onclick="openTab('charts')">
       <span class="tab-icon">📊</span>Graphiques
     </button>
-    <button class="admin-tab" id="tab-compta" onclick="goToAdminTab('compta')">
+    <button class="admin-tab" id="tab-compta" onclick="openTab('compta')">
       <span class="tab-icon">💰</span>Compta
     </button>
   </div>
   <!-- ONGLETS RANGÉE 2 -->
   <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr)">
-    <button class="admin-tab" id="tab-orders" onclick="goToAdminTab('orders')">
+    <button class="admin-tab" id="tab-orders" onclick="openTab('orders')">
       <span class="tab-icon">📦</span>Commandes
     </button>
-    <button class="admin-tab" id="tab-calc" onclick="goToAdminTab('calc')">
+    <button class="admin-tab" id="tab-calc" onclick="openTab('calc')">
       <span class="tab-icon">🧮</span>Calcul
     </button>
-    <button class="admin-tab" id="tab-stock" onclick="goToAdminTab('stock')">
+    <button class="admin-tab" id="tab-stock" onclick="openTab('stock')">
       <span class="tab-icon">🏭</span>Stock
     </button>
   </div>
   <!-- ONGLETS RANGÉE 3 -->
   <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
-    <button class="admin-tab" id="tab-analyses" onclick="goToAdminTab('analyses')">
+    <button class="admin-tab" id="tab-analyses" onclick="openTab('analyses')">
       <span class="tab-icon">📈</span>Analyses
     </button>
-    <button class="admin-tab" id="tab-rapports" onclick="goToAdminTab('rapports')">
+    <button class="admin-tab" id="tab-rapports" onclick="openTab('rapports')">
       <span class="tab-icon">📄</span>Rapports
     </button>
-    <button class="admin-tab" id="tab-settings" onclick="goToAdminTab('settings')">
+    <button class="admin-tab" id="tab-settings" onclick="openTab('settings')">
       <span class="tab-icon">⚙️</span>Paramètres
     </button>
   </div>
   <!-- ONGLETS RANGÉE 4 -->
   <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
-    <button class="admin-tab" id="tab-catalogue" onclick="goToAdminTab('catalogue')">
+    <button class="admin-tab" id="tab-catalogue" onclick="openTab('catalogue')">
       <span class="tab-icon">🛍️</span>Catalogue
     </button>
-    <button class="admin-tab" id="tab-reglement" onclick="goToAdminTab('reglement')">
+    <button class="admin-tab" id="tab-reglement" onclick="openTab('reglement')">
       <span class="tab-icon">📜</span>Règlement
     </button>
-    <button class="admin-tab" id="tab-messages" onclick="goToAdminTab('messages')" style="position:relative">
+    <button class="admin-tab" id="tab-messages" onclick="openTab('messages')" style="position:relative">
       <span class="tab-icon">💬</span>Messages
       <span id="msg-badge-admin" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">0</span>
     </button>
   </div>
   <!-- ONGLETS RANGÉE 5 -->
-  <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
-    <button class="admin-tab" id="tab-annonces" onclick="goToAdminTab('annonces')">
+  <div class="admin-tabs-row2" style="grid-template-columns:repeat(2,1fr);padding-top:0">
+    <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')">
       <span class="tab-icon">📢</span>Annonces aux vendeurs
     </button>
-    <button class="admin-tab" id="tab-technicien" onclick="goToAdminTab('technicien')" style="position:relative">
-      <span class="tab-icon">👷</span>Technicien
-      <span id="tech-badge" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">!</span>
-    </button>
-    <button class="admin-tab" id="tab-techniciens-list" onclick="goToAdminTab('techniciens-list')">
-      <span class="tab-icon">🌿</span>Équipe Champ
-    </button>
+
   </div>
   <div id="admin-content"></div>
 </div>
@@ -849,7 +843,6 @@ const COMMISSIONS = [
 let currentUser = null;
 let clients = [];
 let vendors = [];
-let technicians = [];
 let currentClient = null;
 let cart = [];
 let selectedPayment = "especes";
@@ -946,20 +939,74 @@ function goBack() {
 function goHome() {
   pageHistory = [currentUser && currentUser.role === "vendor" ? "page-vendor-home" : currentUser && currentUser.role === "technicien" ? "page-tech-home" : "page-home"];
   cart = []; rewardChoice = null; currentClient = null;
-  if(currentUser && currentUser.role === "vendor") {
+  if(currentUser && currentUser.role === "technicien") {
+    showPage("page-tech-home");
+    renderTechHome();
+  } else if(currentUser && currentUser.role === "vendor") {
     showPage("page-vendor-home");
     renderVendorHome();
-  } else if(currentUser && currentUser.role === "technicien") {
-    showPage("page-tech-home");
-    setTimeout(function(){
-      window.renderTechHome && window.renderTechHome();
-      window.startTechRealtimeSync && window.startTechRealtimeSync();
-    }, 200);
   } else {
     showPage("page-home");
     renderHome();
   }
 }
+
+function renderTechHome() {
+  if(!currentUser || currentUser.role !== "technicien") return;
+  var nameEl = document.getElementById("tech-home-name");
+  if(nameEl) nameEl.textContent = (currentUser.name||"Technicien") + " · Technicien";
+  var content = document.getElementById("tech-home-content");
+  if(!content) return;
+
+  var today = new Date().toISOString().split("T")[0];
+  var ficheExistante = null;
+  try { ficheExistante = JSON.parse(localStorage.getItem("fiche_tech_"+today)||"null"); } catch(e){}
+  var parcelles = getParcelles ? getParcelles() : [];
+  var observations = getObservations ? getObservations() : [];
+  var alertes = observations.filter(function(o){
+    var cutoff = new Date(Date.now()-7*86400000).toISOString().split("T")[0];
+    return o.type==="maladie" && o.date>=cutoff;
+  }).length;
+
+  var html = "";
+
+  // KPIs
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">';
+  html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">🌿</div><div style="font-size:18px;font-weight:700;color:#a8d880">'+parcelles.length+'</div><div style="font-size:9px;color:#5a8a4a">PARCELLES</div></div>';
+  html += '<div style="background:#061504;border:1px solid '+(alertes>0?"#d5701a44":"#2a5a1a44")+'44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">⚠️</div><div style="font-size:18px;font-weight:700;color:'+(alertes>0?"#ff8040":"#5a8a4a")+'">'+alertes+'</div><div style="font-size:9px;color:#5a8a4a">ALERTES</div></div>';
+  html += '<div style="background:#061504;border:1px solid '+(ficheExistante?"#2a5a1a44":"#8a202044")+'44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">'+(ficheExistante?"✅":"❌")+'</div><div style="font-size:11px;font-weight:700;color:'+(ficheExistante?"#7ac97a":"#ff8080")+'">'+(ficheExistante?"Fiche OK":"À remplir")+'</div><div style="font-size:9px;color:#5a8a4a">FICHE JOUR</div></div>';
+  html += '</div>';
+
+  // Accès rapide
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+  var mods = [
+    {icon:"🏠",label:"Tableau de bord",fn:"scSetOngletDirect('dashboard')"},
+    {icon:"🌿",label:"Mes parcelles",fn:"scSetOngletDirect('parcelles')"},
+    {icon:"📋",label:"Journal terrain",fn:"scSetOngletDirect('journal')"},
+    {icon:"⚠️",label:"Alertes"+(alertes>0?" ("+alertes+")":""),fn:"scSetOngletDirect('alertes')"},
+    {icon:"📸",label:"Diagnostic IA",fn:"scSetOngletDirect('camera')"},
+    {icon:"👷",label:"Ma fiche du jour",fn:"scSetOngletDirect('technicien')"},
+  ];
+  mods.forEach(function(m){
+    html += '<button onclick="'+m.fn+'" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">';
+    html += '<div style="font-size:24px">'+m.icon+'</div>';
+    html += '<div style="font-size:12px;font-weight:600;color:#a8d880;text-align:center">'+m.label+'</div>';
+    html += '</button>';
+  });
+  html += '</div>';
+
+  // Bouton Tsi'i Ocam complet
+  html += '<button onclick="openSannyChamp()" style="width:100%;background:linear-gradient(135deg,#0a2008,#1a4a08);border:2px solid #4a8a3055;color:#a8d880;padding:16px;border-radius:14px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">';
+  html += "🌶️ Ouvrir Tsi'i Ocam complet</button>";
+
+  content.innerHTML = html;
+}
+
+function scSetOngletDirect(onglet) {
+  openSannyChamp();
+  setTimeout(function(){ if(window.scSetOnglet) scSetOnglet(onglet); }, 120);
+}
+
 
 // ═══════════════════════════════════════
 // AUTH
@@ -969,8 +1016,6 @@ function doLogin() {
   var pass = document.getElementById("login-password").value.trim();
   var err = document.getElementById("login-error");
   err.style.display = "none";
-  // Charger la clé API depuis localStorage
-  try { var saved = localStorage.getItem("mf_anthropic_key"); if(saved) window._ANTHROPIC_KEY = saved; } catch(e){}
 
   if(!code || !pass) { err.textContent="Remplissez tous les champs"; err.style.display="block"; return; }
 
@@ -1010,40 +1055,11 @@ function doLogin() {
     return;
   }
 
-  // Technicien — chercher dans la collection technicians
-  function tryTechLogin() {
-    var tech = technicians.find(function(t){ return t.code===code; });
-    if(tech) {
-      var techEmail = tech.code.toLowerCase().replace(/[^a-z0-9]/g,"")+"-tech@monfermier.app";
-      window._firebaseLoginVendor(techEmail, pass).then(function() {
-        if(tech.suspended) {
-          window._firebaseLogout();
-          err.innerHTML="⛔ Compte suspendu. Contactez l'admin.";
-          err.style.display="block";
-          return;
-        }
-        currentUser = {code:tech.code, name:tech.name, role:"technicien", techId:tech.id};
-        onLogin();
-      }).catch(function() {
-        if(tech.password === pass) {
-          currentUser = {code:tech.code, name:tech.name, role:"technicien", techId:tech.id};
-          onLogin();
-        } else {
-          err.textContent = "Code ou mot de passe incorrect";
-          err.style.display = "block";
-        }
-      });
-      return;
-    }
-    // Pas technicien → essayer vendeur
-    tryVendorLogin();
-  }
-
   // Vendeur — d'abord chercher dans la liste chargée de Firestore
   function tryVendorLogin() {
     var vendor = vendors.find(function(v){ return v.code===code; });
     if(!vendor) {
-      err.textContent = "Code introuvable";
+      err.textContent = "Code vendeur introuvable";
       err.style.display = "block";
       return;
     }
@@ -1080,24 +1096,25 @@ function doLogin() {
   }
 
   // Attendre que les vendors soient chargés si besoin
-  if(vendors.length > 0 || technicians.length > 0) {
-    tryTechLogin();
+  if(vendors.length > 0) {
+    tryVendorLogin();
   } else {
     // Attendre que Firebase charge avec retries (max 10s)
     var btn = document.querySelector(".btn-login");
     if(btn) { btn.textContent = "Connexion..."; btn.disabled = true; }
     var attempts = 0;
-    var maxAttempts = 20;
+    var maxAttempts = 20; // 20 x 500ms = 10 secondes max
     var interval = setInterval(function() {
       attempts++;
-      if(vendors.length > 0 || technicians.length > 0) {
+      if(vendors.length > 0) {
         clearInterval(interval);
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        tryTechLogin();
+        tryVendorLogin();
       } else if(attempts >= maxAttempts) {
         clearInterval(interval);
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        tryTechLogin();
+        // Dernier essai même si vendors vide
+        tryVendorLogin();
       }
     }, 500);
   }
@@ -1110,22 +1127,11 @@ function onLogin() {
   badge.style.display = "block";
   logout.style.display = "block";
 
-  // ── Démarrer l'écoute des messages Firestore en temps réel ──
   startMessagesListener();
 
   if(currentUser.role === "technicien") {
     showPage("page-tech-home");
-    // Appel direct - les scripts sont tous chargés au moment du clic
-    if(typeof renderTechHome === "function") {
-      renderTechHome();
-      if(typeof startTechRealtimeSync === "function") startTechRealtimeSync();
-    } else if(window.renderTechHome) {
-      window.renderTechHome();
-      if(window.startTechRealtimeSync) window.startTechRealtimeSync();
-    } else {
-      var c = document.getElementById("tech-home-content");
-      if(c) c.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px;background:#1a0505;border-radius:10px">❌ renderTechHome introuvable dans: ' + Object.keys(window).filter(function(k){return k.indexOf("render")>-1;}).join(", ") + '</div>';
-    }
+    renderTechHome();
   } else if(currentUser.role === "vendor") {
     var vendor = vendors.find(function(v){ return v.code===currentUser.code; });
     enregistrerAlerteConnexion(vendor);
@@ -1243,7 +1249,10 @@ function loadAll() {
   db.collection("clients").onSnapshot(function(snap) {
     clients = [];
     snap.forEach(function(doc) { clients.push({id:doc.id, ...doc.data()}); });
-    if(currentUser && currentUser.role === "admin") renderHome();
+    if(currentUser) {
+      if(currentUser.role === "admin") renderHome();
+      else renderVendorHome();
+    }
   }, function(err) {
     console.warn("Firestore clients error");
   });
@@ -1253,17 +1262,6 @@ function loadAll() {
     vendors = [];
     snap.forEach(function(doc) { vendors.push({id:doc.id, ...doc.data()}); });
   }, function(err) { console.warn("vendors:", err); });
-
-  // Techniciens
-  db.collection("technicians").onSnapshot(function(snap) {
-    technicians = [];
-    snap.forEach(function(doc) { technicians.push({id:doc.id, ...doc.data()}); });
-    // Si admin a l'onglet équipe champ ouvert, rafraîchir
-    if(currentUser && currentUser.role==="admin" && currentTab==="techniciens-list") {
-      var content = document.getElementById("admin-content");
-      if(content) renderTabTechniciensList(content);
-    }
-  }, function(err) { console.warn("technicians:", err); });
 
   // Toutes les données en temps réel
   ["stock_v2","stock_mvts","stock_journees","messages","reglement","settings","evaluations","catalogues","comm_payments","annonces"].forEach(function(docName) {
@@ -2131,6 +2129,7 @@ function renderACModal(modal) {
   html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '">📖 Guide</button>';
   html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '">📸 IA</button>';
   html += '<button onclick="scSetOnglet(\'technicien\')" style="' + tabStyle("technicien") + '">👷 Fiche</button>';
+  html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '">👥 Équipe</button>';
   html += '</div>';
   html += '<div id="sc-content" style="flex:1;overflow-y:auto;padding:12px;background:#020a01">';
   html += scRenderOnglet(scOnglet, parcelles, observations);
@@ -2153,6 +2152,7 @@ function scRenderOnglet(onglet, parcelles, observations) {
   if (onglet === "guide")      return scRenderGuide();
   if (onglet === "camera")     return scRenderCamera();
   if (onglet === "technicien") return scRenderFicheTech();
+  if (onglet === "equipe")     return scRenderEquipe();
   return "";
 }
 
@@ -2762,11 +2762,6 @@ function openAdmin() {
   openTab(currentTab);
 }
 
-function goToAdminTab(tab) {
-  showPage("page-admin");
-  openTab(tab);
-}
-
 function openTab(tab) {
   currentTab = tab;
   // Mettre à jour les boutons actifs
@@ -2775,7 +2770,6 @@ function openTab(tab) {
   if(btn) btn.classList.add("active");
   // Rendre le contenu
   var content = document.getElementById("admin-content");
-  if(!content) return;
   switch(tab) {
     case "clients":   renderTabClients(content);  break;
     case "vendors":   renderTabVendors(content);  break;
@@ -2791,8 +2785,7 @@ function openTab(tab) {
     case "messages":  renderTabMessages(content); break;
     case "catalogue": renderTabCatalogue(content); break;
     case "annonces":  renderTabAnnonces(content);  break;
-    case "technicien": if(window.renderTabTechnicien) window.renderTabTechnicien(content); break;
-    case "techniciens-list": if(window.renderTabTechniciensList) window.renderTabTechniciensList(content); break;
+    case "technicien": renderTabTechnicien(content); break;
   }
 }
 
@@ -4145,18 +4138,6 @@ function renderTabSettings(el){
     '<button onclick="exportBackup()" style="background:linear-gradient(135deg,#0a3a1a,#1a6a2a);color:#7ac97a;border:1px solid #3d6a3d;padding:13px;border-radius:8px;font-size:13px;font-weight:700">📤 Exporter les donnees</button>'+
     '<button onclick="importBackup()" style="background:#0a0f1a;border:1px solid #1a2030;color:#8a8070;padding:13px;border-radius:8px;font-size:13px">📥 Importer des donnees</button>'+
     '</div></div>';
-  // Clé API Anthropic
-  var savedKey = "";
-  try { savedKey = localStorage.getItem("mf_anthropic_key") || ""; } catch(e){}
-  html+='<div class="acard"><div class="acard-title">🤖 Clé API Anthropic (Diagnostic IA)</div>';
-  html+='<p style="font-size:11px;color:#4a5a7a;margin-bottom:10px">Nécessaire pour la fonction <strong style="color:#a8d880">Diagnostic IA Caméra</strong> dans Tsi\'i Ocam. Obtenez votre clé sur <span style="color:#c9a84c">console.anthropic.com</span></p>';
-  html+='<div style="display:flex;gap:8px;align-items:center">';
-  html+='<input id="set-anthropic-key" type="password" value="'+escapeHtml(savedKey)+'" placeholder="sk-ant-..." style="flex:1;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:13px">';
-  html+='<button onclick="saveAnthropicKey()" class="btn-gold" style="padding:11px 16px">Sauver</button>';
-  html+='</div>';
-  if(savedKey) html+='<div style="font-size:11px;color:#7ac97a;margin-top:6px">✅ Clé enregistrée</div>';
-  html+='</div>';
-
   // Infos app
   html+='<div class="acard"><div class="acard-title">ℹ️ A propos</div>';
   html+='<div style="font-size:12px;color:#4a5a7a;line-height:2">'+
@@ -4166,21 +4147,6 @@ function renderTabSettings(el){
     '<div>Donnees stockees localement sur cet appareil</div>'+
     '</div></div>';
   el.innerHTML=html;
-}
-
-function saveAnthropicKey() {
-  var val = (document.getElementById('set-anthropic-key')||{}).value || '';
-  if(val.trim()) {
-    window._ANTHROPIC_KEY = val.trim();
-    try { localStorage.setItem('mf_anthropic_key', val.trim()); } catch(e){}
-    showToast('✅ Clé API sauvegardée !');
-  } else {
-    window._ANTHROPIC_KEY = '';
-    try { localStorage.removeItem('mf_anthropic_key'); } catch(e){}
-    showToast('Clé API supprimée.');
-  }
-  var c = document.getElementById('admin-content');
-  if(c) renderTabSettings(c);
 }
 
 // ═══════════════════════════════════════
@@ -6898,6 +6864,27 @@ function generatePDFReport() {
 </table>
 
 <div class="footer">Mon Fermier — Rapport généré automatiquement — ${now.toLocaleString("fr-FR")}</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE TECHNICIEN — ACCUEIL
+═══════════════════════════════════════ -->
+<div id="page-tech-home" class="page" style="background:#040d03;min-height:100vh">
+  <div style="background:linear-gradient(135deg,#061504,#0a2008);border-bottom:1px solid #2a5a1a44;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:26px">🌶️</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#a8d880">Tsi'i Ocam</div>
+        <div id="tech-home-name" style="font-size:10px;color:#5a8a4a;letter-spacing:1px">Chargement...</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="tech-sync-dot" style="width:8px;height:8px;border-radius:50%;background:#7ac97a"></div>
+      <button onclick="doLogout()" style="background:#0a1a08;border:1px solid #2a5a1a44;color:#5a8a4a;padding:7px 12px;border-radius:8px;font-size:11px">Déconnexion</button>
+    </div>
+  </div>
+  <div id="tech-home-content" style="padding:16px"></div>
+</div>
+
 </body>
 </html>`;
 
@@ -7019,47 +7006,17 @@ _waitForFirebase(function() {
 // Exposer doLogin globalement depuis le script principal
 window.doLogin = doLogin;
 window.doLogout = doLogout;
-window.togglePassword = togglePassword;
 
-// Attacher le bouton connexion
-function attachLoginBtn() {
+// Attacher le bouton connexion ici où doLogin est garantie disponible
+(function attachLoginBtn() {
   var btn = document.getElementById("btn-login-main");
   if(btn) {
-    btn.addEventListener("click", function() {
-      if(window._firebaseLoginVendor) {
-        doLogin();
-      } else {
-        var self = btn;
-        var origText = self.textContent;
-        self.textContent = "Chargement...";
-        self.disabled = true;
-        var attempts = 0;
-        var iv = setInterval(function() {
-          attempts++;
-          if(window._firebaseLoginVendor) {
-            clearInterval(iv);
-            self.textContent = origText;
-            self.disabled = false;
-            doLogin();
-          } else if(attempts >= 80) {
-            clearInterval(iv);
-            self.textContent = origText;
-            self.disabled = false;
-            var err = document.getElementById("login-error");
-            if(err) { err.textContent = "Erreur réseau. Vérifiez votre connexion Internet."; err.style.display = "block"; }
-          }
-        }, 100);
-      }
-    });
+    btn.addEventListener("click", function() { doLogin(); });
   } else {
+    // Le DOM n'est peut-être pas encore prêt, réessayer
     setTimeout(attachLoginBtn, 50);
   }
-}
-if(document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", attachLoginBtn);
-} else {
-  attachLoginBtn();
-}
+})();
 
 // Enter key sur les champs login
 var _lp = document.getElementById("login-password");
@@ -7322,86 +7279,6 @@ Mon Fermier — Qualité, Hygiène & Excellence — 2025</textarea>
   </div>
 </div>
 
-
-<!-- ═══════════════════════════════════════
-     PAGE TECHNICIEN — TSI'I OCAM PLEIN ÉCRAN
-═══════════════════════════════════════ -->
-<div id="page-tech-home" class="page" style="background:#040d03;min-height:100vh">
-  <div style="background:linear-gradient(135deg,#061504,#0a2008);border-bottom:1px solid #2a5a1a44;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="font-size:26px">🌶️</div>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:#a8d880;letter-spacing:0.5px">Tsi'i Ocam</div>
-        <div id="tech-home-name" style="font-size:10px;color:#5a8a4a;letter-spacing:1px">Chargement...</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div id="tech-sync-dot" style="width:8px;height:8px;border-radius:50%;background:#7ac97a;box-shadow:0 0 6px #7ac97a66"></div>
-      <button onclick="doLogout()" style="background:#0a1a08;border:1px solid #2a5a1a44;color:#5a8a4a;padding:7px 12px;border-radius:8px;font-size:11px">Déconnexion</button>
-    </div>
-  </div>
-  <div id="tech-home-content" style="padding:16px"></div>
-</div>
-
-<!-- ═══════════════════════════════════════
-     NOUVEAU TECHNICIEN
-═══════════════════════════════════════ -->
-<div id="page-add-tech" class="page">
-  <div class="page-header">
-    <h2 id="at-page-title">👷 Nouveau Technicien</h2>
-    <p>Renseignez les informations du technicien de champ</p>
-  </div>
-  <div class="acard" style="margin-bottom:12px;text-align:center">
-    <div class="acard-title">📸 PHOTO DU TECHNICIEN</div>
-    <div id="at-photo-preview" onclick="triggerTechPhotoChoice()" style="width:100px;height:100px;border-radius:50%;background:#061504;border:3px dashed #4a8a3055;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;overflow:hidden;cursor:pointer;font-size:40px">📸</div>
-    <input type="file" id="at-photo-camera" accept="image/*" capture="environment" style="display:none" onchange="handleTechPhoto(this)">
-    <input type="file" id="at-photo-gallery" accept="image/*" style="display:none" onchange="handleTechPhoto(this)">
-    <div style="display:flex;gap:8px;justify-content:center">
-      <button type="button" onclick="document.getElementById('at-photo-camera').click()" style="background:#0a2008;border:1px solid #4a8a3055;color:#7ac97a;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600">📷 Caméra</button>
-      <button type="button" onclick="document.getElementById('at-photo-gallery').click()" style="background:#0a2008;border:1px solid #4a8a3055;color:#7ac97a;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600">🖼️ Galerie</button>
-    </div>
-  </div>
-  <div class="acard">
-    <div class="field-row">
-      <div class="field"><label>PRÉNOM *</label><input id="at-firstname" placeholder="Prénom"></div>
-      <div class="field"><label>NOM *</label><input id="at-lastname" placeholder="Nom"></div>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label>SEXE</label>
-        <select id="at-sex" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:11px 13px;border-radius:8px;font-size:14px">
-          <option value="Homme">Homme</option>
-          <option value="Femme">Femme</option>
-        </select>
-      </div>
-      <div class="field"><label>TÉLÉPHONE</label><input id="at-phone" type="tel" placeholder="+241 07 00 00 00"></div>
-    </div>
-    <div class="field"><label>SPÉCIALITÉ / RÔLE</label><input id="at-specialite" placeholder="Ex: Technicien maraîcher, Chef de champ..."></div>
-    <div class="field"><label>CHAMP / SECTEUR ASSIGNÉ</label><input id="at-champ" placeholder="Ex: Serre A, Parcelle Nord..."></div>
-  </div>
-  <div class="acard" style="margin-top:12px">
-    <div class="acard-title">🔑 IDENTIFIANTS DE CONNEXION</div>
-    <button id="at-gen-btn" onclick="generateTechCredentials()" style="width:100%;background:#061504;border:2px solid #4a8a3055;color:#a8d880;padding:13px;border-radius:10px;font-size:14px;font-weight:700;margin-bottom:12px">🔑 Générer les identifiants</button>
-    <div id="at-credentials" style="display:none">
-      <div style="background:#040d03;border:1px solid #4a8a3044;border-radius:10px;padding:14px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:12px;color:#5a8a4a">CODE TECHNICIEN</span>
-          <span id="at-code-display" style="font-size:18px;font-weight:700;color:#a8d880;font-family:monospace"></span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12px;color:#5a8a4a">MOT DE PASSE</span>
-          <span id="at-pass-display" style="font-size:18px;font-weight:700;color:#7ac97a;font-family:monospace"></span>
-        </div>
-      </div>
-      <button onclick="copyTechCredentials()" style="width:100%;background:#0a2008;border:1px solid #4a8a3055;color:#7ac97a;padding:12px;border-radius:8px;font-size:14px;font-weight:600;margin-bottom:8px">📋 Copier les identifiants</button>
-      <button onclick="shareTechCredentials()" style="width:100%;background:linear-gradient(135deg,#128c3e,#25d366);color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600">💬 Envoyer par WhatsApp</button>
-    </div>
-  </div>
-  <div style="margin-top:16px">
-    <button class="btn-gold btn-full" style="margin-bottom:8px;padding:16px;font-size:15px;background:linear-gradient(135deg,#1a4a08,#2d7a1a);color:#d8f0b0;border:none" onclick="saveNewTech()">💾 Enregistrer le technicien</button>
-    <button class="btn-outline btn-full" style="padding:14px" onclick="goHome()">Annuler</button>
-  </div>
-</div>
 
 <!-- ═══════════════════════════════════════
      NOUVEAU VENDEUR
@@ -8058,7 +7935,7 @@ async function acLancerDiagnostic() {
   try {
     var response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": window._ANTHROPIC_KEY||"", "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
@@ -8182,16 +8059,9 @@ function scRenderFicheTech() {
   html += '<div style="font-size:11px;color:#5a8a4a;margin-top:4px">' + new Date().toLocaleDateString("fr-FR", {weekday:"long", day:"numeric", month:"long", year:"numeric"}) + '</div>';
   html += '</div>';
 
-  // Nom technicien — auto si connecté comme technicien
-  if(currentUser && currentUser.role === "technicien") {
-    html += '<div style="background:#040d03;border:1px solid #2a5a1a44;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px">';
-    html += '<span style="font-size:18px">👷</span><div><div style="font-size:12px;font-weight:700;color:#a8d880">'+escapeHtml(currentUser.name)+'</div><div style="font-size:10px;color:#5a8a4a;font-family:monospace">'+currentUser.code+'</div></div>';
-    html += '</div>';
-    html += '<input type="hidden" id="fiche-tech-nom" value="'+escapeHtml(currentUser.name)+'">';
-  } else {
-    html += '<div style="margin-bottom:12px"><div style="font-size:11px;color:#6a9a50;margin-bottom:4px">👤 Nom du technicien *</div>';
-    html += '<input type="text" id="fiche-tech-nom" placeholder="Votre nom complet" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px 12px;border-radius:10px;font-size:13px;box-sizing:border-box"></div>';
-  }
+  // Nom technicien
+  html += '<div style="margin-bottom:12px"><div style="font-size:11px;color:#6a9a50;margin-bottom:4px">👤 Nom du technicien *</div>';
+  html += '<input type="text" id="fiche-tech-nom" placeholder="Votre nom complet" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px 12px;border-radius:10px;font-size:13px;box-sizing:border-box"></div>';
 
   // Heure arrivée / départ
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">';
@@ -8228,35 +8098,6 @@ function scRenderFicheTech() {
   html += '<div style="margin-bottom:12px"><div style="font-size:11px;color:#6a9a50;margin-bottom:4px">📝 Observations & commentaires libres</div>';
   html += '<textarea id="fiche-commentaire" placeholder="Décrivez les observations du jour : état des plants, problèmes rencontrés, anomalies, besoins urgents..." style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px 12px;border-radius:10px;font-size:13px;min-height:100px;box-sizing:border-box;resize:none"></textarea></div>';
 
-  // ── SAISONNIERS ──
-  html += '<div style="background:#040d03;border:1px solid #2a5a1a44;border-radius:12px;padding:14px;margin-bottom:14px">';
-  html += '<div style="font-size:11px;color:#a8d880;font-weight:700;margin-bottom:10px">👥 ÉQUIPE DU JOUR — SAISONNIERS PRÉSENTS</div>';
-  html += '<div id="saisonniers-list" style="display:flex;flex-direction:column;gap:8px">';
-  // Charger saisonniers existants depuis localStorage
-  var saisListeData = [];
-  try { saisListeData = JSON.parse(localStorage.getItem("mf_saisonniers")||"[]"); } catch(e){}
-  if(saisListeData.length === 0) {
-    html += '<div style="font-size:11px;color:#3a6a2a;font-style:italic">Aucun saisonnier enregistré. Ajoutez-en ci-dessous.</div>';
-  } else {
-    saisListeData.forEach(function(s, i) {
-      html += '<div style="display:flex;align-items:center;gap:8px;background:#061504;border:1px solid #1a3a1222;border-radius:8px;padding:8px 10px">';
-      html += '<div onclick="acToggleSaisonnier(this)" data-sid="'+s.id+'" data-snom="'+escapeHtml(s.nom)+'" style="width:20px;height:20px;border:2px solid #2a5a1a;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer"></div>';
-      html += '<div style="flex:1"><div style="font-size:12px;color:#c8d8b0;font-weight:600">'+escapeHtml(s.nom)+'</div>';
-      if(s.role) html += '<div style="font-size:10px;color:#5a8a4a">'+escapeHtml(s.role)+'</div>';
-      html += '</div>';
-      html += '<input type="text" placeholder="Tâches du jour..." data-swork="'+s.id+'" style="flex:1.5;background:#040d03;border:1px solid #1a3a1244;color:#a8d880;padding:5px 8px;border-radius:6px;font-size:11px">';
-      html += '</div>';
-    });
-  }
-  html += '</div>';
-  // Ajouter un saisonnier
-  html += '<div style="margin-top:10px;display:flex;gap:6px">';
-  html += '<input type="text" id="new-sais-nom" placeholder="Nom du saisonnier" style="flex:1;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:8px;border-radius:8px;font-size:12px">';
-  html += '<input type="text" id="new-sais-role" placeholder="Rôle (optionnel)" style="flex:1;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:8px;border-radius:8px;font-size:12px">';
-  html += '<button onclick="acAjouterSaisonnier()" style="background:#1a4a08;border:none;color:#d8f0b0;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap">+ Ajouter</button>';
-  html += '</div>';
-  html += '</div>';
-
   // Problèmes signalés
   html += '<div style="margin-bottom:14px"><div style="font-size:11px;color:#6a9a50;margin-bottom:6px">⚠️ Problèmes signalés à l\'admin</div>';
   html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
@@ -8269,6 +8110,271 @@ function scRenderFicheTech() {
   html += '</div>';
   return html;
 }
+
+// ═══════════════════════════════════════════════════════════
+// TSI'I OCAM — ONGLET ÉQUIPE (gestion techniciens)
+// ═══════════════════════════════════════════════════════════
+var _scEquipePage = "liste"; // liste | nouveau | detail
+var _scEquipeTechId = null;
+
+function scRenderEquipe() {
+  if (_scEquipePage === "nouveau" || _scEquipePage === "modifier") return scRenderEquipeForm();
+  if (_scEquipePage === "detail") return scRenderEquipeDetail(_scEquipeTechId);
+  return scRenderEquipeListe();
+}
+
+function scRenderEquipeListe() {
+  var html = "";
+
+  // Bouton nouveau technicien
+  html += '<div style="margin-bottom:14px">';
+  html += '<button onclick="scEquipePage(\'nouveau\')" style="width:100%;background:linear-gradient(135deg,#061504,#0a2008);border:2px solid #4a8a3055;color:#a8d880;padding:13px;border-radius:12px;font-size:13px;font-weight:700">+ Nouveau Technicien</button>';
+  html += '</div>';
+
+  if (!technicians || technicians.length === 0) {
+    html += '<div style="text-align:center;padding:40px 20px;color:#3a6a2a;font-size:13px">Aucun technicien enregistré.</div>';
+    return html;
+  }
+
+  var today = new Date().toISOString().split("T")[0];
+  technicians.forEach(function(tech) {
+    var ficheAujourd = (_fichesCache||[]).find(function(f){ return f.date===today && f.techCode===tech.code; });
+    var hasFiche = !!ficheAujourd;
+    html += '<div style="background:#061504;border:1px solid '+(hasFiche?"#2a5a1a44":"#8a202044")+';border-radius:14px;padding:14px;margin-bottom:10px">';
+    
+    // Header
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+    html += '<div style="width:44px;height:44px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0">';
+    html += tech.photo ? '<img src="'+tech.photo+'" style="width:100%;height:100%;object-fit:cover">' : '👷';
+    html += '</div>';
+    html += '<div style="flex:1">';
+    html += '<div style="font-size:14px;font-weight:700;color:#a8d880">' + escapeHtml(tech.name||((tech.firstName||"")+" "+(tech.lastName||""))) + '</div>';
+    html += '<div style="font-size:10px;color:#5a8a4a;font-family:monospace">' + tech.code + '</div>';
+    if (tech.specialite) html += '<div style="font-size:11px;color:#4a7a3a">' + escapeHtml(tech.specialite) + '</div>';
+    html += '</div>';
+    html += '<div style="text-align:center"><div style="font-size:18px">'+(hasFiche?"✅":"🔴")+'</div><div style="font-size:9px;color:'+(hasFiche?"#7ac97a":"#ff8080")+'">'+(hasFiche?"Fiche OK":"Pas de fiche")+'</div></div>';
+    html += '</div>';
+
+    // Fiche résumée
+    if (hasFiche) {
+      html += '<div style="background:#040d03;border-radius:8px;padding:8px;font-size:11px;margin-bottom:8px">';
+      html += '<div style="color:#7ac97a">⏱ '+ficheAujourd.heureDebut+' → '+ficheAujourd.heureFin+'</div>';
+      if (ficheAujourd.problemes && ficheAujourd.problemes[0] !== "RAS — Tout va bien")
+        html += '<div style="color:#ff8080;margin-top:2px">⚠️ '+ficheAujourd.problemes.join(", ")+'</div>';
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:11px;color:#8a202a;background:#1a0505;border-radius:8px;padding:8px;text-align:center;margin-bottom:8px">Aucune fiche soumise aujourd\'hui</div>';
+    }
+
+    // Actions
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button onclick="scEquipePage(\'detail\',\''+tech.id+'\')" style="flex:1;background:#0a1a08;border:1px solid #2a5a1a44;color:#6a9a50;border-radius:8px;padding:8px;font-size:11px;cursor:pointer">📋 Détail</button>';
+    if (tech.suspended) {
+      html += '<button onclick="scEquipeToggleSuspend(\''+tech.id+'\',false)" style="flex:1;background:#0a1a08;border:1px solid #4a8a3055;color:#7ac97a;border-radius:8px;padding:8px;font-size:11px;cursor:pointer">✅ Réactiver</button>';
+    } else {
+      html += '<button onclick="scEquipeToggleSuspend(\''+tech.id+'\',true)" style="flex:1;background:#1a0505;border:1px solid #8a202044;color:#ff8080;border-radius:8px;padding:8px;font-size:11px;cursor:pointer">⛔ Suspendre</button>';
+    }
+    html += '<button onclick="scEquipeSupprimer(\''+tech.id+'\')" style="background:#1a0505;border:1px solid #aa000044;color:#ff5555;border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer">🗑️</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  // Section assigner une tâche
+  html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:14px;padding:14px;margin-top:14px">';
+  html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">📌 Assigner une tâche</div>';
+  if (technicians.length > 0) {
+    html += '<select id="sc-tache-dest" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:9px;border-radius:8px;font-size:13px;margin-bottom:8px">';
+    html += '<option value="">— Tous les techniciens —</option>';
+    technicians.forEach(function(t){ html += '<option value="'+t.code+'">'+escapeHtml(t.name||"")+'</option>'; });
+    html += '</select>';
+  }
+  html += '<textarea id="sc-tache-texte" placeholder="Description de la tâche..." style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;min-height:60px;resize:none;box-sizing:border-box;margin-bottom:8px"></textarea>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+  html += '<div><label style="font-size:10px;color:#5a8a4a">DATE LIMITE</label><input type="date" id="sc-tache-date" value="'+new Date().toISOString().split("T")[0]+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:9px;border-radius:8px;font-size:12px;box-sizing:border-box;margin-top:4px"></div>';
+  html += '<div><label style="font-size:10px;color:#5a8a4a">PRIORITÉ</label><select id="sc-tache-prio" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:9px;border-radius:8px;font-size:12px;box-sizing:border-box;margin-top:4px"><option value="normale">🟡 Normale</option><option value="haute">🔴 Haute</option><option value="urgente">🚨 Urgente</option></select></div>';
+  html += '</div>';
+  html += '<button onclick="scEquipeEnvoyerTache()" style="width:100%;background:linear-gradient(135deg,#0d1525,#1a2540);border:1px solid #c9a84c55;color:#c9a84c;padding:12px;border-radius:10px;font-size:13px;font-weight:700">📤 Envoyer la tâche</button>';
+  html += '</div>';
+
+  return html;
+}
+
+function scRenderEquipeDetail(techId) {
+  var tech = (technicians||[]).find(function(t){return t.id===techId;});
+  if (!tech) return '<div style="padding:20px;color:#ff8080">Technicien introuvable</div>';
+  
+  var fiches = (_fichesCache||[]).filter(function(f){return f.techCode===tech.code;}).sort(function(a,b){return b.date>a.date?1:-1;});
+  
+  var html = '<button onclick="scEquipePage(\'liste\')" style="background:none;border:none;color:#5a8a4a;font-size:20px;cursor:pointer;margin-bottom:10px">← Retour</button>';
+  html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:14px;margin-bottom:14px">';
+  html += '<div style="display:flex;align-items:center;gap:10px">';
+  html += '<div style="width:50px;height:50px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden">';
+  html += tech.photo ? '<img src="'+tech.photo+'" style="width:100%;height:100%;object-fit:cover">' : '👷';
+  html += '</div><div>';
+  html += '<div style="font-size:15px;font-weight:700;color:#a8d880">'+escapeHtml(tech.name||"")+'</div>';
+  html += '<div style="font-size:11px;color:#5a8a4a;font-family:monospace">'+tech.code+'</div>';
+  if (tech.phone) html += '<div style="font-size:11px;color:#4a7a3a">📞 '+escapeHtml(tech.phone)+'</div>';
+  if (tech.specialite) html += '<div style="font-size:11px;color:#4a7a3a">🔧 '+escapeHtml(tech.specialite)+'</div>';
+  html += '</div></div></div>';
+
+  if (fiches.length === 0) {
+    html += '<div style="color:#3a6a2a;text-align:center;padding:20px;font-size:12px">Aucune fiche soumise</div>';
+  } else {
+    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:8px">📋 Historique ('+fiches.length+' fiche'+(fiches.length>1?"s":"")+')</div>';
+    fiches.slice(0,10).forEach(function(f) {
+      var hasPb = f.problemes && f.problemes.some(function(p){return p!=="RAS — Tout va bien";});
+      html += '<div style="background:#061504;border:1px solid '+(hasPb?"#8a202044":"#2a5a1a22")+';border-radius:10px;padding:10px;margin-bottom:6px">';
+      html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px">';
+      html += '<div style="font-size:12px;font-weight:700;color:#a8d880">'+f.date+'</div>';
+      html += '<div style="font-size:10px;color:#5a8a4a">'+f.heureDebut+' → '+f.heureFin+'</div></div>';
+      if (f.taches && f.taches.length) html += '<div style="font-size:11px;color:#7ac97a">✅ '+f.taches.length+' tâche(s)</div>';
+      if (hasPb) html += '<div style="font-size:11px;color:#ff8080">⚠️ '+f.problemes.filter(function(p){return p!=="RAS — Tout va bien";}).join(", ")+'</div>';
+      html += '</div>';
+    });
+  }
+  return html;
+}
+
+function scRenderEquipeForm() {
+  var isEdit = _scEquipePage === "modifier";
+  var tech = isEdit ? (technicians||[]).find(function(t){return t.id===_scEquipeTechId;}) : null;
+  
+  var html = '<button onclick="scEquipePage(\'liste\')" style="background:none;border:none;color:#5a8a4a;font-size:20px;cursor:pointer;margin-bottom:10px">← Retour</button>';
+  html += '<div style="font-size:14px;font-weight:700;color:#a8d880;margin-bottom:14px">'+(isEdit?"✏️ Modifier":"+ Nouveau Technicien")+'</div>';
+  
+  html += '<div style="display:grid;gap:10px">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  html += '<div><label style="font-size:10px;color:#5a8a4a">PRÉNOM *</label><input id="sc-tech-prenom" value="'+(tech?(tech.firstName||(tech.name||"").split(" ")[0]):"")+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="Prénom"></div>';
+  html += '<div><label style="font-size:10px;color:#5a8a4a">NOM *</label><input id="sc-tech-nom" value="'+(tech?(tech.lastName||(tech.name||"").split(" ").slice(1).join(" ")):"")+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="Nom"></div>';
+  html += '</div>';
+  html += '<div><label style="font-size:10px;color:#5a8a4a">TÉLÉPHONE</label><input id="sc-tech-tel" value="'+(tech?tech.phone||"":"")+'" type="tel" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="+241..."></div>';
+  html += '<div><label style="font-size:10px;color:#5a8a4a">SPÉCIALITÉ</label><input id="sc-tech-specialite" value="'+(tech?escapeHtml(tech.specialite||""):"")+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="Ex: Chef de champ, Technicien..."></div>';
+  html += '<div><label style="font-size:10px;color:#5a8a4a">SECTEUR / CHAMP</label><input id="sc-tech-champ" value="'+(tech?escapeHtml(tech.champ||""):"")+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="Ex: Serre A, Parcelle Nord..."></div>';
+  
+  if (!isEdit) {
+    html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:10px;padding:12px">';
+    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:8px">🔑 Identifiants de connexion</div>';
+    html += '<button onclick="scEquipeGenererCode()" style="width:100%;background:#061504;border:2px solid #4a8a3055;color:#a8d880;padding:11px;border-radius:8px;font-size:13px;font-weight:700;margin-bottom:8px">🔑 Générer les identifiants</button>';
+    html += '<div id="sc-tech-creds" style="display:none;background:#040d03;border:1px solid #4a8a3044;border-radius:8px;padding:10px">';
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;color:#5a8a4a">CODE</span><span id="sc-tech-code-disp" style="font-size:14px;font-weight:700;color:#a8d880;font-family:monospace"></span></div>';
+    html += '<div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:#5a8a4a">MOT DE PASSE</span><span id="sc-tech-pass-disp" style="font-size:14px;font-weight:700;color:#7ac97a;font-family:monospace"></span></div>';
+    html += '</div></div>';
+  }
+  
+  html += '<button onclick="scEquipeSauvegarder()" style="width:100%;background:linear-gradient(135deg,#1a4a08,#2d7a1a);color:#d8f0b0;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;margin-top:4px">'+(isEdit?"✅ Enregistrer les modifications":"✅ Créer le technicien")+'</button>';
+  html += '</div>';
+  return html;
+}
+
+// Actions équipe
+function scEquipePage(page, techId) {
+  _scEquipePage = page;
+  _scEquipeTechId = techId || null;
+  if (window.scSetOnglet) scSetOnglet("equipe");
+}
+
+function scEquipeToggleSuspend(techId, suspend) {
+  if (!window.db) return;
+  window.db.collection("technicians").doc(techId).update({suspended: suspend}).then(function(){
+    showToast(suspend ? "⛔ Technicien suspendu" : "✅ Technicien réactivé");
+  });
+}
+
+function scEquipeSupprimer(techId) {
+  var tech = (technicians||[]).find(function(t){return t.id===techId;});
+  if (!tech) return;
+  var nom = tech.name || "";
+  if (!confirm("Supprimer définitivement " + nom + " ?")) return;
+  if (!window.db) return;
+  window.db.collection("technicians").doc(techId).delete().then(function(){
+    showToast("✅ Technicien supprimé");
+  }).catch(function(e){ showToast("Erreur: "+e.message, true); });
+}
+
+var _scTechGenCode = "";
+var _scTechGenPass = "";
+
+function scEquipeGenererCode() {
+  var prenom = (document.getElementById("sc-tech-prenom")||{}).value||"";
+  var nom = (document.getElementById("sc-tech-nom")||{}).value||"";
+  if (!prenom || !nom) { showToast("Entrez le prénom et nom d'abord", true); return; }
+  var base = (prenom.slice(0,3)+nom.slice(0,3)).toUpperCase().replace(/[^A-Z]/g,"");
+  _scTechGenCode = base + Math.floor(10+Math.random()*90);
+  _scTechGenPass = Math.random().toString(36).slice(2,8).toUpperCase();
+  var creds = document.getElementById("sc-tech-creds");
+  var codeDisp = document.getElementById("sc-tech-code-disp");
+  var passDisp = document.getElementById("sc-tech-pass-disp");
+  if (creds) creds.style.display = "block";
+  if (codeDisp) codeDisp.textContent = _scTechGenCode;
+  if (passDisp) passDisp.textContent = _scTechGenPass;
+}
+
+async function scEquipeSauvegarder() {
+  var prenom = (document.getElementById("sc-tech-prenom")||{}).value.trim()||"";
+  var nom = (document.getElementById("sc-tech-nom")||{}).value.trim()||"";
+  var tel = (document.getElementById("sc-tech-tel")||{}).value.trim()||"";
+  var specialite = (document.getElementById("sc-tech-specialite")||{}).value.trim()||"";
+  var champ = (document.getElementById("sc-tech-champ")||{}).value.trim()||"";
+  
+  if (!prenom || !nom) { showToast("Prénom et nom obligatoires", true); return; }
+  
+  var isEdit = _scEquipePage === "modifier";
+  
+  if (isEdit) {
+    var updated = {
+      firstName:prenom, lastName:nom,
+      name:prenom+" "+nom,
+      phone:tel, specialite:specialite, champ:champ
+    };
+    try {
+      await window.db.collection("technicians").doc(_scEquipeTechId).update(updated);
+      showToast("✅ Technicien modifié !");
+      scEquipePage("liste");
+    } catch(e) { showToast("Erreur: "+e.message, true); }
+    return;
+  }
+  
+  if (!_scTechGenCode) { showToast("Générez les identifiants d'abord", true); return; }
+  
+  var tech = {
+    firstName:prenom, lastName:nom, name:prenom+" "+nom,
+    phone:tel, specialite:specialite, champ:champ,
+    code:_scTechGenCode, password:_scTechGenPass,
+    role:"technicien", suspended:false,
+    createdAt:new Date().toLocaleDateString("fr-FR")
+  };
+  var techEmail = _scTechGenCode.toLowerCase()+"-tech@monfermier.app";
+  tech.authEmail = techEmail;
+  
+  try {
+    showToast("⏳ Création en cours...");
+    var ref = await window.db.collection("technicians").add(tech);
+    tech.id = ref.id;
+    if (window._createVendorAuthAccount) {
+      try { await window._createVendorAuthAccount(techEmail, _scTechGenPass); } catch(e){}
+    }
+    showToast("✅ Technicien "+tech.name+" créé !");
+    _scTechGenCode = ""; _scTechGenPass = "";
+    scEquipePage("liste");
+  } catch(e) { showToast("Erreur: "+e.message, true); }
+}
+
+function scEquipeEnvoyerTache() {
+  var texte = (document.getElementById("sc-tache-texte")||{}).value||"";
+  var dest = (document.getElementById("sc-tache-dest")||{}).value||"";
+  var date = (document.getElementById("sc-tache-date")||{}).value||"";
+  var prio = (document.getElementById("sc-tache-prio")||{}).value||"normale";
+  if (!texte.trim()) { showToast("Décrivez la tâche", true); return; }
+  var tache = {id:"t_"+Date.now(), texte:texte.trim(), dateLimite:date, priorite:prio, dest:dest, faite:false, createdAt:new Date().toISOString()};
+  _techTachesCache = _techTachesCache||[];
+  _techTachesCache.unshift(tache);
+  if (window.db) {
+    window.db.collection("app_data").doc("tech_taches").set({data:JSON.stringify(_techTachesCache)}).catch(function(){});
+  }
+  showToast("✅ Tâche envoyée !");
+  scSetOnglet("equipe");
+}
+
 
 function acToggleParcelleFiche(btn) {
   var active = btn.style.background === "rgb(26, 74, 8)" || btn.style.background === "#1a4a08";
@@ -8317,13 +8423,7 @@ function acRenderFicheSoumise(fiche) {
 }
 
 function acSoumettreFiche() {
-  // Si connecté comme technicien, utiliser son nom automatiquement
-  var nom = "";
-  if(currentUser && currentUser.role === "technicien") {
-    nom = currentUser.name;
-  } else {
-    nom = (document.getElementById("fiche-tech-nom")||{}).value || "";
-  }
+  var nom = (document.getElementById("fiche-tech-nom")||{}).value || "";
   if (!nom.trim()) { alert("Veuillez indiquer votre nom."); return; }
 
   var taches = [];
@@ -8346,17 +8446,6 @@ function acSoumettreFiche() {
     }
   });
 
-  // Collecter les saisonniers présents et leurs travaux
-  var saisonniers = [];
-  document.querySelectorAll("[data-sid]").forEach(function(chk) {
-    var isPresent = chk.innerHTML === "✓";
-    var sid = chk.getAttribute("data-sid");
-    var snom = chk.getAttribute("data-snom");
-    var workInput = document.querySelector("[data-swork='"+sid+"']");
-    var work = workInput ? workInput.value.trim() : "";
-    saisonniers.push({ id:sid, nom:snom, present:isPresent, travaux:work });
-  });
-
   var today = new Date().toISOString().split("T")[0];
   var heure = new Date().toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"});
   var fiche = {
@@ -8364,8 +8453,6 @@ function acSoumettreFiche() {
     date: today,
     heure: heure,
     technicien: nom.trim(),
-    techCode: currentUser ? currentUser.code : "",
-    techId: currentUser ? (currentUser.techId||"") : "",
     heureDebut: (document.getElementById("fiche-heure-debut")||{}).value || "",
     heureFin: (document.getElementById("fiche-heure-fin")||{}).value || "",
     taches: taches,
@@ -8373,7 +8460,6 @@ function acSoumettreFiche() {
     produits: (document.getElementById("fiche-produits")||{}).value || "",
     commentaire: (document.getElementById("fiche-commentaire")||{}).value || "",
     problemes: problemes,
-    saisonniers: saisonniers,
     lu: false,
     createdAt: new Date().toISOString()
   };
@@ -8381,28 +8467,20 @@ function acSoumettreFiche() {
   // Sauvegarder localement
   localStorage.setItem("fiche_tech_" + today, JSON.stringify(fiche));
 
-  // Envoyer à Firebase dans la collection fiches_champ (temps réel admin)
+  // Envoyer à Firebase
   if (window.db) {
-    window.db.collection("fiches_champ").doc(fiche.id).set(fiche)
-      .then(function() { console.log("Fiche envoyée Firebase fiches_champ"); })
-      .catch(function(e) { console.warn("Firebase fiche:", e); });
-    // Also update legacy app_data for compatibility
     window.db.collection("app_data").doc("fiche_tech_" + fiche.id).set({ data: JSON.stringify(fiche) })
-      .catch(function(){});
-    // Notif admin temps réel
+      .then(function() { console.log("Fiche envoyée Firebase"); })
+      .catch(function(e) { console.warn("Firebase fiche:", e); });
+    // Notif admin
     window.db.collection("app_data").doc("alerte_fiche_tech").set({
-      data: JSON.stringify({ id: fiche.id, technicien: fiche.technicien, techCode: fiche.techCode, date: fiche.date, heure: fiche.heure, problemes: fiche.problemes, timestamp: Date.now() })
+      data: JSON.stringify({ id: fiche.id, technicien: fiche.technicien, date: fiche.date, heure: fiche.heure, problemes: fiche.problemes, timestamp: Date.now() })
     }).catch(function(){});
   }
 
   showToast("Fiche soumise avec succès ! L'admin a été notifié.");
-  // Refresh selon le contexte (technicien connecté ou modal)
   var el = document.getElementById("sc-content");
   if (el) el.innerHTML = scRenderFicheSoumise(fiche);
-  // Si page technicien dédiée, rafraîchir
-  var techContent = document.getElementById("tech-home-content");
-  if(techContent && currentUser && currentUser.role==="technicien") renderTechHome();
-
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -8413,225 +8491,125 @@ var _fichesCache = [];
 var _techTachesCache = [];
 
 function renderTabTechnicien(el) {
-  // Écoute temps réel fiches_champ (si pas encore démarré)
-  if (window.db && !window._techFichesChampListener) {
-    window._techFichesChampListener = true;
-    window.db.collection("fiches_champ").onSnapshot(function(snap) {
-      _fichesCache = [];
-      snap.forEach(function(doc) {
-        try { _fichesCache.push(Object.assign({id:doc.id}, doc.data())); } catch(e){}
+  // Charger les fiches depuis Firebase
+  if (window.db) {
+    // Écoute en temps réel
+    if (!window._techListener) {
+      window._techListener = true;
+      window.db.collection("app_data").onSnapshot(function(snap) {
+        _fichesCache = [];
+        snap.forEach(function(doc) {
+          if (doc.id.startsWith("fiche_tech_")) {
+            try { _fichesCache.push(JSON.parse(doc.data().data || "{}")); } catch(e){}
+          }
+          if (doc.id === "tech_taches") {
+            try { _techTachesCache = JSON.parse(doc.data().data || "[]"); } catch(e){}
+          }
+        });
+        _fichesCache.sort(function(a,b){ return b.createdAt > a.createdAt ? 1 : -1; });
+        var nonLues = _fichesCache.filter(function(f){ return !f.lu; }).length;
+        var badge = document.getElementById("tech-badge");
+        if (badge) { badge.style.display = nonLues > 0 ? "flex" : "none"; badge.textContent = nonLues; }
+        if (document.getElementById("tab-technicien") && document.getElementById("tab-technicien").classList.contains("active-tab")) {
+          var content = document.getElementById("admin-content");
+          if (content) renderTabTechnicien(content);
+        }
       });
-      _fichesCache.sort(function(a,b){ return b.date>a.date?1:b.date<a.date?-1:0; });
-      var today = new Date().toISOString().split("T")[0];
-      var nonLues = _fichesCache.filter(function(f){ return !f.lu && f.date===today; }).length;
-      var badge = document.getElementById("tech-badge");
-      if(badge) { badge.style.display = nonLues>0?"flex":"none"; badge.textContent = nonLues; }
-      if(currentTab==="technicien") {
-        var c = document.getElementById("admin-content"); if(c) renderTabTechnicien(c);
-      }
-    }, function(err){ console.warn("fiches_champ:", err); });
-  }
-
-  // Écoute tâches assignées
-  if (window.db && !window._techListener) {
-    window._techListener = true;
-    window.db.collection("app_data").doc("tech_taches").onSnapshot(function(snap) {
-      var raw = snap.data ? snap.data() : null;
-      if(!raw) return;
-      try { _techTachesCache = JSON.parse(raw.data || "[]"); } catch(e){}
-    });
+    }
   }
 
   var today = new Date().toISOString().split("T")[0];
   var fichesAujourdhui = _fichesCache.filter(function(f){ return f.date === today; });
-  var fichesNonLues    = _fichesCache.filter(function(f){ return !f.lu; });
-  var tachesEnAttente  = _techTachesCache.filter(function(t){ return !t.faite; });
-  var parcelles        = getParcelles ? getParcelles() : [];
-  var observations     = getObservations ? getObservations() : [];
-
-  // Alertes actives (maladies dans les 7 jours)
-  var cutoff7j = new Date(Date.now()-7*86400000).toISOString().split("T")[0];
-  var alertesChamp = observations.filter(function(o){ return o.type==="maladie" && o.date>=cutoff7j; });
-
-  // Stats dernière fiche
-  var derniereFiche = fichesAujourdhui[0] || null;
+  var fichesNonLues = _fichesCache.filter(function(f){ return !f.lu; });
+  var tachesEnAttente = _techTachesCache.filter(function(t){ return !t.faite; });
 
   var html = '<div style="max-width:560px;margin:0 auto">';
 
-  // ── BANDEAU STATUS CHAMP EN TEMPS RÉEL ──
-  var champOk = derniereFiche && !( derniereFiche.problemes && derniereFiche.problemes.some(function(p){return p!=="RAS — Tout va bien";}) );
-  var champAlert = derniereFiche && derniereFiche.problemes && derniereFiche.problemes.some(function(p){return p!=="RAS — Tout va bien";});
-  var champBg = !derniereFiche ? "#1a0a00" : champAlert ? "#1a0808" : "#061504";
-  var champBorder = !derniereFiche ? "#d5a03a44" : champAlert ? "#d55a1a66" : "#2a5a1a66";
-  var champIcon = !derniereFiche ? "🟡" : champAlert ? "🔴" : "🟢";
-  var champMsg = !derniereFiche ? "Aucune fiche reçue aujourd'hui" : champAlert ? "Alerte signalée sur le champ" : "Champ OK — Rapport reçu";
-  html += '<div class="'+(champAlert?"stock-alert-blink":"")+'" style="background:'+champBg+';border:2px solid '+champBorder+';border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px">';
-  html += '<div style="font-size:28px">'+champIcon+'</div>';
-  html += '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:'+(champAlert?"#ff8080":champOk?"#7ac97a":"#d5a03a")+'">'+champMsg+'</div>';
-  if(derniereFiche) html += '<div style="font-size:11px;color:#5a7a5a;margin-top:2px">Soumis par '+escapeHtml(derniereFiche.technicien||"")+'  à '+derniereFiche.heure+'</div>';
-  html += '</div>';
-  html += '<div style="font-size:9px;color:#3a6a3a;text-align:right">LIVE<br><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7ac97a;animation:pulse 2s infinite"></span></div>';
+  // KPIs
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">';
+  html += techKpi("📋", "Fiches aujourd'hui", fichesAujourdhui.length, "#a8d880");
+  html += techKpi("🔴", "Non lues", fichesNonLues.length, fichesNonLues.length > 0 ? "#ff8080" : "#5a8a4a");
+  html += techKpi("📌", "Tâches assignées", tachesEnAttente.length, tachesEnAttente.length > 0 ? "#d5a03a" : "#5a8a4a");
   html += '</div>';
 
-  // ── KPIs ──
-  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">';
-  html += techKpi("📋", "Fiches\naujourd'hui", fichesAujourdhui.length, "#a8d880");
-  html += techKpi("👥", "Saisonniers\nprésents", derniereFiche && derniereFiche.saisonniers ? derniereFiche.saisonniers.filter(function(s){return s.present;}).length : "—", "#6abcde");
-  html += techKpi("⚠️", "Alertes\n7 jours", alertesChamp.length, alertesChamp.length>0?"#ff8040":"#5a8a4a");
-  html += techKpi("📌", "Tâches\nassignées", tachesEnAttente.length, tachesEnAttente.length>0?"#d5a03a":"#5a8a4a");
-  html += '</div>';
-
-  // ── ACTIVITÉS DU JOUR EN TEMPS RÉEL ──
-  html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:14px;padding:14px;margin-bottom:14px">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
-  html += '<div style="font-size:12px;font-weight:700;color:#a8d880">🔴 ACTIVITÉS DU CHAMP — AUJOURD\'HUI</div>';
-  html += '<div style="font-size:9px;color:#3a6a3a;background:#061504;border:1px solid #2a5a1a33;border-radius:10px;padding:3px 8px">Temps réel</div></div>';
-
-  if(fichesAujourdhui.length === 0) {
-    html += '<div style="text-align:center;padding:20px;color:#3a6a2a;font-size:12px">';
-    html += '<div style="font-size:30px;margin-bottom:8px">📡</div>';
-    html += 'En attente du rapport du technicien...<br><span style="font-size:10px;color:#2a4a22">La fiche apparaîtra ici dès qu\'elle sera soumise</span></div>';
-  } else {
-    fichesAujourdhui.forEach(function(fiche) {
-      var hasPb = fiche.problemes && fiche.problemes.some(function(p){return p!=="RAS — Tout va bien";});
-      var saisPresents = (fiche.saisonniers||[]).filter(function(s){return s.present;});
-      html += '<div style="background:'+(hasPb?"#1a0808":"#061504")+';border:1px solid '+(hasPb?"#d55a1a44":"#2a5a1a33")+';border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="techVoirFiche(\''+fiche.id+'\')">';
-
-      // En-tête fiche
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
-      html += '<div><div style="font-size:13px;font-weight:700;color:#a8d880">👷 '+escapeHtml(fiche.technicien||"Technicien")+'</div>';
-      html += '<div style="font-size:10px;color:#5a8a4a">'+fiche.heureDebut+' → '+(fiche.heureFin||"en cours")+'</div></div>';
-      html += '<div style="display:flex;gap:6px;align-items:center">';
-      if(!fiche.lu) html += '<span style="font-size:9px;background:#a8d880;color:#061504;padding:2px 6px;border-radius:6px;font-weight:700">NOUVEAU</span>';
-      if(hasPb) html += '<span style="font-size:9px;background:#d55a1a;color:#fff;padding:2px 6px;border-radius:6px;font-weight:700">⚠️</span>';
-      html += '<span style="font-size:16px;color:#3a6a3a">›</span></div></div>';
-
-      // Tâches effectuées
-      if(fiche.taches && fiche.taches.length > 0) {
-        html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
-        fiche.taches.forEach(function(t){
-          html += '<span style="background:#0a2008;border:1px solid #2a5a1a33;color:#7ac97a;font-size:10px;padding:3px 7px;border-radius:10px">✓ '+escapeHtml(t.replace(/[^\w\sàâäéèêëîïôùûüç&—'.,\-]/g,''))+'</span>';
-        });
-        html += '</div>';
-      }
-
-      // Saisonniers présents
-      if(saisPresents.length > 0) {
-        html += '<div style="background:#040d03;border-radius:8px;padding:8px;margin-bottom:6px">';
-        html += '<div style="font-size:10px;color:#5a8a4a;margin-bottom:4px">👥 Équipe présente ('+saisPresents.length+')</div>';
-        saisPresents.forEach(function(s){
-          html += '<div style="font-size:11px;color:#6a9a5a">• '+escapeHtml(s.nom)+(s.travaux?' — <span style="color:#4a8a4a">'+escapeHtml(s.travaux)+'</span>':'')+'</div>';
-        });
-        html += '</div>';
-      }
-
-      // Problèmes
-      if(hasPb) {
-        html += '<div style="background:#2a0808;border-radius:8px;padding:8px">';
-        fiche.problemes.filter(function(p){return p!=="RAS — Tout va bien";}).forEach(function(p){
-          html += '<div style="font-size:11px;color:#ff8080">⚠️ '+escapeHtml(p)+'</div>';
-        });
-        html += '</div>';
-      }
-
-      // Commentaire court
-      if(fiche.commentaire && !hasPb) {
-        html += '<div style="font-size:11px;color:#4a7a4a;margin-top:4px;font-style:italic">📝 '+escapeHtml(fiche.commentaire.substring(0,100))+(fiche.commentaire.length>100?"...":"")+'</div>';
-      }
-
-      html += '</div>';
-    });
-  }
-  html += '</div>';
-
-  // ── PARCELLES DU CHAMP ──
-  if(parcelles.length > 0) {
-    html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:14px;padding:14px;margin-bottom:14px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">🌿 ÉTAT DES PARCELLES</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:6px">';
-    parcelles.forEach(function(p){
-      var obsP = observations.filter(function(o){return o.parcelleId===p.id;}).sort(function(a,b){return b.date>a.date?1:-1;});
-      var lastObs = obsP[0];
-      var hasMaladie = obsP.some(function(o){return o.type==="maladie" && o.date>=cutoff7j;});
-      html += '<div style="background:'+(hasMaladie?"#1a0808":"#061504")+';border:1px solid '+(hasMaladie?"#d55a1a44":"#1a3a1222")+';border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">';
-      html += '<div style="font-size:18px">'+(hasMaladie?"🔴":"🟢")+'</div>';
-      html += '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:#a8d880">'+escapeHtml(p.nom)+'</div>';
-      if(lastObs) html += '<div style="font-size:10px;color:#5a8a4a">Dernière obs. : '+lastObs.date+' — '+escapeHtml((lastObs.quantite||lastObs.type||"").substring(0,40))+'</div>';
-      else html += '<div style="font-size:10px;color:#3a5a3a">Aucune observation récente</div>';
-      html += '</div>';
-      if(hasMaladie) html += '<span style="font-size:9px;background:#d55a1a;color:#fff;padding:2px 6px;border-radius:6px">ALERTE</span>';
-      html += '</div>';
-    });
-    html += '</div></div>';
+  // Alerte si pas de fiche aujourd'hui
+  if (fichesAujourdhui.length === 0) {
+    html += '<div class="stock-alert-blink" style="border-radius:12px;padding:12px;margin-bottom:14px;text-align:center">';
+    html += '<div style="font-size:12px;font-weight:700;color:#ff8080">⚠️ Aucune fiche soumise aujourd\'hui !</div>';
+    html += '<div style="font-size:11px;color:#ff9090;margin-top:4px">Le technicien n\'a pas encore envoyé son rapport du ' + today + '</div>';
+    html += '</div>';
   }
 
-  // ── ASSIGNER UNE TÂCHE ──
-  html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:14px;padding:14px;margin-bottom:14px">';
-  html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">📌 ASSIGNER UNE TÂCHE AU TECHNICIEN</div>';
-
-  // Sélecteur de technicien (toujours affiché)
-  if(technicians.length > 0) {
-    html += '<div style="margin-bottom:8px"><label style="font-size:10px;color:#5a8a4a">TECHNICIEN CIBLÉ</label>';
-    html += '<select id="tech-tache-dest" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:9px;border-radius:8px;font-size:13px;margin-top:4px">';
-    html += '<option value="">— Tous les techniciens —</option>';
-    technicians.forEach(function(t){ html += '<option value="'+t.code+'">'+escapeHtml(t.name||t.firstName+" "+t.lastName)+'</option>'; });
-    html += '</select></div>';
-  }
-
-  html += '<textarea id="tech-tache-texte" placeholder="Ex: Traiter parcelle Nord avec Mancozèbe 2g/L, Vérifier palissage abri B..." style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;min-height:70px;resize:none;box-sizing:border-box;margin-bottom:8px"></textarea>';
+  // Assigner une tâche
+  html += '<div class="acard" style="margin-bottom:14px">';
+  html += '<div class="acard-title">📌 ASSIGNER UNE TÂCHE AU TECHNICIEN</div>';
+  html += '<div class="field"><label>TÂCHE À EFFECTUER *</label>';
+  html += '<textarea id="tech-tache-texte" placeholder="Ex: Traiter parcelle Nord avec Mancozèbe 2g/L ce vendredi, Vérifier palissage abri B..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;min-height:70px;resize:none;box-sizing:border-box"></textarea></div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-  html += '<div><label style="font-size:10px;color:#5a8a4a">DATE LIMITE</label><input type="date" id="tech-tache-date" value="'+today+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:9px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px"></div>';
-  html += '<div><label style="font-size:10px;color:#5a8a4a">PRIORITÉ</label><select id="tech-tache-prio" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:9px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px"><option value="normale">🟡 Normale</option><option value="haute">🔴 Haute</option><option value="urgente">🚨 Urgente</option></select></div>';
+  html += '<div class="field"><label>DATE LIMITE</label><input type="date" id="tech-tache-date" value="' + today + '" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box"></div>';
+  html += '<div class="field"><label>PRIORITÉ</label><select id="tech-tache-prio" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box"><option value="normale">🟡 Normale</option><option value="haute">🔴 Haute</option><option value="urgente">🚨 Urgente</option></select></div>';
   html += '</div>';
-  html += '<button onclick="techAssignerTache()" style="width:100%;background:linear-gradient(135deg,#0d1525,#1a2540);border:1px solid #c9a84c55;color:#c9a84c;padding:13px;border-radius:10px;font-size:13px;font-weight:700">📤 Envoyer la tâche</button>';
+  html += '<button onclick="techAssignerTache()" class="btn-gold" style="width:100%;font-size:13px">📤 Envoyer la tâche</button>';
   html += '</div>';
 
-  // ── TÂCHES EN ATTENTE ──
-  if(tachesEnAttente.length > 0) {
-    html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:14px;padding:14px;margin-bottom:14px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">📌 TÂCHES EN ATTENTE ('+tachesEnAttente.length+')</div>';
+  // Tâches assignées en attente
+  if (tachesEnAttente.length > 0) {
+    html += '<div class="acard" style="margin-bottom:14px">';
+    html += '<div class="acard-title">📌 TÂCHES EN ATTENTE (' + tachesEnAttente.length + ')</div>';
     tachesEnAttente.forEach(function(t) {
       var prioCol = t.priorite==="urgente" ? "#ff4040" : t.priorite==="haute" ? "#ff8040" : "#d5a03a";
       var prioIcon = t.priorite==="urgente" ? "🚨" : t.priorite==="haute" ? "🔴" : "🟡";
-      html += '<div style="background:#061504;border-left:3px solid '+prioCol+';border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:8px">';
-      html += '<div style="flex:1"><div style="font-size:12px;color:#c8d8b0;margin-bottom:2px">'+prioIcon+' '+escapeHtml(t.texte)+'</div>';
-      html += '<div style="font-size:10px;color:#4a7a4a">Limite : '+(t.dateLimite||"—")+(t.dest?' · '+t.dest:'')+'</div></div>';
-      html += '<button onclick="techSupprimerTache(\''+t.id+'\')" style="background:none;border:none;color:#5a3a3a;font-size:18px;cursor:pointer;padding:0;flex-shrink:0">×</button>';
+      html += '<div style="background:#0a0f1a;border:1px solid #1a2030;border-left:3px solid ' + prioCol + ';border-radius:8px;padding:10px 12px;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
+      html += '<div style="flex:1"><div style="font-size:12px;color:#e8e0d0;margin-bottom:4px">' + prioIcon + ' ' + escapeHtml(t.texte) + '</div>';
+      html += '<div style="font-size:10px;color:#4a5a7a">Limite : ' + (t.dateLimite||"—") + '</div></div>';
+      html += '<button onclick="techSupprimerTache(\'' + t.id + '\')" style="background:none;border:none;color:#5a3a3a;font-size:16px;cursor:pointer;padding:0;flex-shrink:0">×</button>';
+      html += '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  // Fiches soumises
+  html += '<div class="acard">';
+  html += '<div class="acard-title">📋 FICHES REÇUES (' + _fichesCache.length + ')</div>';
+  if (_fichesCache.length === 0) {
+    html += '<div style="text-align:center;padding:20px;font-size:12px;color:#4a5a7a">Aucune fiche reçue pour l\'instant</div>';
+  } else {
+    _fichesCache.slice(0,20).forEach(function(fiche) {
+      var hasProbleme = fiche.problemes && fiche.problemes.length > 0 && !fiche.problemes.includes("RAS — Tout va bien");
+      var borderCol = hasProbleme ? "#d55a1a" : fiche.lu ? "#1a2030" : "#c9a84c";
+      var blinkCls = hasProbleme && !fiche.lu ? " stock-alert-blink" : "";
+      html += '<div class="' + blinkCls.trim() + '" style="background:#0a0f1a;border:1px solid ' + borderCol + ';border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="techVoirFiche(\'' + fiche.id + '\')">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+      html += '<div><div style="font-size:13px;font-weight:700;color:#e8e0d0">👷 ' + escapeHtml(fiche.technicien||"Technicien") + '</div>';
+      html += '<div style="font-size:10px;color:#4a5a7a">' + fiche.date + ' à ' + (fiche.heure||"—") + (fiche.heureDebut ? " · Travail : " + fiche.heureDebut + "→" + (fiche.heureFin||"?") : "") + '</div></div>';
+      html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">';
+      if (!fiche.lu) html += '<span style="font-size:9px;background:#c9a84c;color:#0a0906;padding:2px 6px;border-radius:8px;font-weight:700">NOUVEAU</span>';
+      if (hasProbleme) html += '<span style="font-size:9px;background:#d55a1a;color:#fff;padding:2px 6px;border-radius:8px;font-weight:700">⚠️ ALERTE</span>';
+      html += '</div></div>';
+      if (fiche.taches && fiche.taches.length > 0) html += '<div style="font-size:11px;color:#7ac97a;margin-bottom:4px">✅ ' + fiche.taches.length + ' tâche(s) effectuée(s)</div>';
+      if (hasProbleme) html += '<div style="font-size:11px;color:#ff9090">⚠️ ' + fiche.problemes.join(" · ") + '</div>';
+      if (fiche.commentaire) html += '<div style="font-size:11px;color:#8a8070;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">"' + escapeHtml(fiche.commentaire.substring(0,80)) + (fiche.commentaire.length>80?"...":"") + '"</div>';
       html += '</div>';
     });
-    html += '</div>';
   }
 
-  // ── HISTORIQUE FICHES RÉCENTES ──
-  var fichesAnciennes = _fichesCache.filter(function(f){ return f.date !== today; }).slice(0, 10);
-  if(fichesAnciennes.length > 0) {
-    html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:14px;padding:14px;margin-bottom:14px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">📂 FICHES PRÉCÉDENTES</div>';
-    fichesAnciennes.forEach(function(fiche) {
-      var hasPb = fiche.problemes && fiche.problemes.some(function(p){return p!=="RAS — Tout va bien";});
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;background:#061504;border-radius:10px;margin-bottom:6px;cursor:pointer;border:1px solid '+(hasPb?"#d55a1a33":"#1a3a1222")+'" onclick="techVoirFiche(\''+fiche.id+'\')">';
-      html += '<div><div style="font-size:12px;color:#a8d880">'+fiche.date+' · '+escapeHtml(fiche.technicien||"")+'</div>';
-      html += '<div style="font-size:10px;color:#5a8a4a">'+(fiche.taches||[]).length+' tâches'+(hasPb?' · <span style="color:#ff8080">⚠️ Alerte</span>':'')+'</div></div>';
-      html += '<span style="font-size:16px;color:#3a6a3a">›</span></div>';
-    });
-    html += '</div>';
-  }
-
-  // Stats 7 jours
+  // Statistiques semaine
+  html += '<div style="margin-top:14px;border-top:1px solid #1a2030;padding-top:12px">';
+  html += '<div style="font-size:11px;color:#8a8070;font-weight:700;margin-bottom:8px">📈 STATISTIQUES (7 DERNIERS JOURS)</div>';
   var stats7j = techStats7j();
-  html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:14px;padding:14px;margin-bottom:14px">';
-  html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">📈 STATISTIQUES (7 JOURS)</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
-  html += techKpiSmall("Fiches reçues", stats7j.fiches);
-  html += techKpiSmall("Tâches / jour", stats7j.tachesMoy);
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">';
+  html += techKpiSmall("Fiches", stats7j.fiches);
+  html += techKpiSmall("Tâches moy.", stats7j.tachesMoy);
   html += techKpiSmall("Alertes", stats7j.alertes);
   html += '</div></div>';
+  html += '</div>';
 
   html += '</div>';
   el.innerHTML = html;
 
-  // Marquer comme lues après 1.5s
-  setTimeout(function() { techMarquerLu(); }, 1500);
+  // Marquer visites comme lues
+  setTimeout(function() { techMarquerLu(); }, 1000);
 }
 
 function techKpi(icon, label, val, color) {
@@ -8664,117 +8642,70 @@ function techStats7j() {
 function techVoirFiche(ficheId) {
   var fiche = _fichesCache.find(function(f){ return f.id === ficheId; });
   if (!fiche) return;
-  var parcelles = getParcelles ? getParcelles() : [];
+  var parcelles = getParcelles();
   var hasProbleme = fiche.problemes && fiche.problemes.length > 0 && !fiche.problemes.includes("RAS — Tout va bien");
 
-  // Calcul durée
-  var dureeStr = "—";
+  var html = '<div style="max-width:560px;margin:0 auto">';
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
+  html += '<button onclick="openTab(\'technicien\')" style="background:none;border:none;color:#c9a84c;font-size:18px;cursor:pointer">←</button>';
+  html += '<div><div style="font-size:15px;font-weight:700;color:#e8e0d0">📋 Fiche de Travail</div>';
+  html += '<div style="font-size:10px;color:#4a5a7a">' + (fiche.date||"") + ' à ' + (fiche.heure||"") + '</div></div></div>';
+
+  html += '<div class="acard" style="margin-bottom:10px">';
+  html += '<div style="font-size:12px;font-weight:700;color:#c9a84c;margin-bottom:10px">👷 INFORMATIONS TECHNICIEN</div>';
+  html += techBilanLigne("Technicien", fiche.technicien||"—");
+  html += techBilanLigne("Heure arrivée", fiche.heureDebut||"—");
+  html += techBilanLigne("Heure départ", fiche.heureFin||"—");
   if (fiche.heureDebut && fiche.heureFin) {
     var debut = fiche.heureDebut.split(":"); var fin = fiche.heureFin.split(":");
     var duree = (parseInt(fin[0])*60+parseInt(fin[1])) - (parseInt(debut[0])*60+parseInt(debut[1]));
-    if (duree > 0) dureeStr = Math.floor(duree/60) + "h" + (duree%60 ? duree%60+"min" : "");
+    if (duree > 0) techBilanLigne("Durée travail", Math.floor(duree/60) + "h" + (duree%60 ? duree%60 + "min" : ""));
   }
-
-  var html = '<div style="max-width:560px;margin:0 auto">';
-  // Header
-  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
-  html += '<button onclick="openTab(\'technicien\')" style="background:none;border:none;color:#a8d880;font-size:20px;cursor:pointer">←</button>';
-  html += '<div><div style="font-size:15px;font-weight:700;color:#a8d880">📋 Rapport du ' + (fiche.date||"") + '</div>';
-  html += '<div style="font-size:10px;color:#5a8a4a">Soumis à ' + (fiche.heure||"") + (fiche.technicien?" · "+fiche.technicien:"") + '</div></div>';
-  if(hasProbleme) html += '<span style="margin-left:auto;background:#d55a1a;color:#fff;font-size:10px;padding:4px 8px;border-radius:8px;font-weight:700">⚠️ ALERTE</span>';
   html += '</div>';
 
-  // Bloc identité technicien
-  html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:14px;padding:14px;margin-bottom:10px">';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">';
-  html += '<div><div style="font-size:10px;color:#5a8a4a">ARRIVÉE</div><div style="font-size:14px;font-weight:700;color:#a8d880">'+(fiche.heureDebut||"—")+'</div></div>';
-  html += '<div><div style="font-size:10px;color:#5a8a4a">DURÉE</div><div style="font-size:14px;font-weight:700;color:#7ac97a">'+dureeStr+'</div></div>';
-  html += '<div><div style="font-size:10px;color:#5a8a4a">DÉPART</div><div style="font-size:14px;font-weight:700;color:#a8d880">'+(fiche.heureFin||"—")+'</div></div>';
-  html += '</div></div>';
-
-  // Problèmes (en premier si alerte)
-  if (hasProbleme) {
-    html += '<div style="background:#1a0808;border:2px solid #d55a1a66;border-radius:14px;padding:14px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#ff8080;margin-bottom:8px">⚠️ PROBLÈMES SIGNALÉS À L\'ADMIN</div>';
-    fiche.problemes.forEach(function(p){
-      if(p !== "RAS — Tout va bien")
-        html += '<div style="background:#2a0a0a;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;color:#ff9090">⚠️ '+escapeHtml(p)+'</div>';
-    });
-    html += '</div>';
-  }
-
-  // Tâches effectuées
   if (fiche.taches && fiche.taches.length > 0) {
-    html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:14px;padding:14px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">✅ TÂCHES EFFECTUÉES ('+fiche.taches.length+')</div>';
-    fiche.taches.forEach(function(t){
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #0a2008">';
-      html += '<div style="width:18px;height:18px;background:#1a4a08;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;color:#7ac97a">✓</div>';
-      html += '<div style="font-size:12px;color:#c8d8b0">'+escapeHtml(t)+'</div></div>';
-    });
+    html += '<div class="acard" style="margin-bottom:10px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#c9a84c;margin-bottom:10px">✅ TÂCHES EFFECTUÉES (' + fiche.taches.length + ')</div>';
+    fiche.taches.forEach(function(t){ html += '<div style="font-size:12px;color:#e8e0d0;padding:5px 0;border-bottom:1px solid #1a2030">✅ ' + escapeHtml(t) + '</div>'; });
     html += '</div>';
   }
 
-  // Parcelles travaillées
   if (fiche.parcelles && fiche.parcelles.length > 0) {
-    html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:14px;padding:14px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:8px">🌿 PARCELLES TRAVAILLÉES</div>';
+    html += '<div class="acard" style="margin-bottom:10px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#c9a84c;margin-bottom:8px">🌿 PARCELLES TRAVAILLÉES</div>';
     fiche.parcelles.forEach(function(pid) {
       var p = parcelles.find(function(x){ return x.id===pid; });
-      html += '<div style="background:#0a2008;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;color:#7ac97a">🌿 '+(p ? escapeHtml(p.nom) : pid)+'</div>';
+      html += '<div style="font-size:12px;color:#7ac97a;padding:4px 0">🌿 ' + (p ? escapeHtml(p.nom) : pid) + '</div>';
     });
     html += '</div>';
   }
 
-  // Saisonniers
-  if (fiche.saisonniers && fiche.saisonniers.length > 0) {
-    var presents = fiche.saisonniers.filter(function(s){return s.present;});
-    var absents  = fiche.saisonniers.filter(function(s){return !s.present;});
-    html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:14px;padding:14px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">👥 ÉQUIPE SAISONNIERS — '+presents.length+' présent(s) / '+fiche.saisonniers.length+' total</div>';
-    fiche.saisonniers.forEach(function(s){
-      var col = s.present ? "#7ac97a" : "#5a4a4a";
-      var bg  = s.present ? "#0a2008" : "#0a0a0a";
-      var ico = s.present ? "✅" : "🔴";
-      html += '<div style="background:'+bg+';border-radius:10px;padding:10px 12px;margin-bottom:6px">';
-      html += '<div style="display:flex;align-items:center;gap:8px">';
-      html += '<span style="font-size:14px">'+ico+'</span>';
-      html += '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:'+col+'">'+escapeHtml(s.nom)+'</div>';
-      if(s.role) html += '<div style="font-size:10px;color:#4a7a4a">'+escapeHtml(s.role)+'</div>';
-      html += '</div></div>';
-      if(s.present && s.travaux) html += '<div style="font-size:11px;color:#5a9a5a;margin-top:6px;padding-left:22px;font-style:italic">→ '+escapeHtml(s.travaux)+'</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-
-  // Produits utilisés
   if (fiche.produits) {
-    html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:14px;padding:14px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:6px">🧪 PRODUITS UTILISÉS</div>';
-    html += '<div style="font-size:12px;color:#c8d8b0;line-height:1.6">'+escapeHtml(fiche.produits)+'</div></div>';
+    html += '<div class="acard" style="margin-bottom:10px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#c9a84c;margin-bottom:6px">🧪 PRODUITS UTILISÉS</div>';
+    html += '<div style="font-size:12px;color:#e8e0d0">' + escapeHtml(fiche.produits) + '</div></div>';
   }
 
-  // Commentaires
   if (fiche.commentaire) {
-    html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:14px;padding:14px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:6px">📝 OBSERVATIONS DU TECHNICIEN</div>';
-    html += '<div style="font-size:12px;color:#c8d8b0;line-height:1.7;white-space:pre-wrap">'+escapeHtml(fiche.commentaire)+'</div></div>';
+    html += '<div class="acard" style="margin-bottom:10px">';
+    html += '<div style="font-size:12px;font-weight:700;color:#c9a84c;margin-bottom:6px">📝 OBSERVATIONS & COMMENTAIRES</div>';
+    html += '<div style="font-size:12px;color:#e8e0d0;line-height:1.7;white-space:pre-wrap">' + escapeHtml(fiche.commentaire) + '</div></div>';
   }
 
-  // RAS si pas de problème
-  if (!hasProbleme && fiche.problemes && fiche.problemes.includes("RAS — Tout va bien")) {
-    html += '<div style="background:#040d03;border:1px solid #2a5a1a44;border-radius:12px;padding:12px;margin-bottom:10px;text-align:center;font-size:13px;color:#7ac97a">✅ RAS — Tout va bien au champ</div>';
+  if (fiche.problemes && fiche.problemes.length > 0) {
+    html += '<div class="acard" style="margin-bottom:10px;background:' + (hasProbleme?"#1a0505":"#0a0f1a") + ';border-color:' + (hasProbleme?"#d55a1a44":"#1a2030") + '">';
+    html += '<div style="font-size:12px;font-weight:700;color:' + (hasProbleme?"#ff8080":"#7ac97a") + ';margin-bottom:8px">⚠️ PROBLÈMES SIGNALÉS</div>';
+    fiche.problemes.forEach(function(p){ html += '<div style="font-size:12px;color:' + (p==="RAS — Tout va bien"?"#7ac97a":"#ff9090") + ';padding:4px 0">' + (p==="RAS — Tout va bien"?"✅":"⚠️") + ' ' + escapeHtml(p) + '</div>'; });
+    html += '</div>';
   }
 
   html += '</div>';
   var content = document.getElementById("admin-content");
   if (content) content.innerHTML = html;
 
-  // Marquer comme lu dans fiches_champ
+  // Marquer comme lu
   fiche.lu = true;
   if (window.db) {
-    window.db.collection("fiches_champ").doc(fiche.id).update({lu: true}).catch(function(){});
     window.db.collection("app_data").doc("fiche_tech_" + fiche.id).set({ data: JSON.stringify(fiche) }).catch(function(){});
   }
 }
@@ -8787,16 +8718,15 @@ function techBilanLigne(label, val) {
 
 function techAssignerTache() {
   var texte = (document.getElementById("tech-tache-texte")||{}).value || "";
-  var date  = (document.getElementById("tech-tache-date")||{}).value || "";
-  var prio  = (document.getElementById("tech-tache-prio")||{}).value || "normale";
-  var dest  = (document.getElementById("tech-tache-dest")||{}).value || "";
-  if (!texte.trim()) { showToast("Décrivez la tâche à assigner.", true); return; }
-  var tache = { id:"t_"+Date.now(), texte:texte.trim(), dateLimite:date, priorite:prio, dest:dest, faite:false, createdAt:new Date().toISOString() };
+  var date = (document.getElementById("tech-tache-date")||{}).value || "";
+  var prio = (document.getElementById("tech-tache-prio")||{}).value || "normale";
+  if (!texte.trim()) { alert("Décrivez la tâche à assigner."); return; }
+  var tache = { id: "t_"+Date.now(), texte: texte.trim(), dateLimite: date, priorite: prio, faite: false, createdAt: new Date().toISOString() };
   _techTachesCache.unshift(tache);
   if (window.db) {
     window.db.collection("app_data").doc("tech_taches").set({ data: JSON.stringify(_techTachesCache) }).catch(function(){});
   }
-  showToast("✅ Tâche assignée au technicien !");
+  showToast("Tâche assignée au technicien !");
   var content = document.getElementById("admin-content");
   if (content) renderTabTechnicien(content);
 }
@@ -8812,15 +8742,7 @@ function techSupprimerTache(id) {
 
 function techMarquerLu() {
   var modif = false;
-  _fichesCache.forEach(function(f) {
-    if (!f.lu) {
-      f.lu = true; modif = true;
-      if (window.db) {
-        window.db.collection("fiches_champ").doc(f.id).update({lu: true}).catch(function(){});
-        window.db.collection("app_data").doc("fiche_tech_"+f.id).set({data:JSON.stringify(f)}).catch(function(){});
-      }
-    }
-  });
+  _fichesCache.forEach(function(f) { if (!f.lu) { f.lu = true; modif = true; if (window.db) window.db.collection("app_data").doc("fiche_tech_"+f.id).set({data:JSON.stringify(f)}).catch(function(){}); } });
   if (modif) { var badge = document.getElementById("tech-badge"); if (badge) badge.style.display = "none"; }
 }
 
@@ -9124,472 +9046,6 @@ if ('serviceWorker' in navigator) {
     deferredPrompt = null;
   });
 })();
-
-// ═══════════════════════════════════════════════════════════════
-// TECHNICIEN — PAGE DÉDIÉE TSI'I OCAM
-// ═══════════════════════════════════════════════════════════════
-
-function renderTechHome() {
-  var content = document.getElementById("tech-home-content");
-  if(!content) return;
-  // Diagnostic: afficher l'état de currentUser
-  if(!currentUser) {
-    content.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px">❌ currentUser est NULL</div>';
-    return;
-  }
-  if(currentUser.role !== "technicien") {
-    content.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px">❌ role = "' + currentUser.role + '" (pas technicien)</div>';
-    return;
-  }
-  var nameEl = document.getElementById("tech-home-name");
-  if(nameEl) nameEl.textContent = (currentUser.name || "Technicien") + " · Technicien";
-  try {
-  var today = new Date().toISOString().split("T")[0];
-  var ficheExistante = null;
-  try { ficheExistante = JSON.parse(localStorage.getItem("fiche_tech_" + today) || "null"); } catch(e){}
-
-  var parcelles = getParcelles ? getParcelles() : [];
-  var observations = getObservations ? getObservations() : [];
-  var alertes = 0;
-  parcelles.forEach(function(p){
-    var lastObs = observations.filter(function(o){return o.parcelleId===p.id;}).sort(function(a,b){return b.createdAt>a.createdAt?1:-1;})[0];
-    if(lastObs && lastObs.type==="maladie") alertes++;
-  });
-
-  var html = '';
-
-  // KPIs rapides
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">';
-  html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">🌿</div><div style="font-size:18px;font-weight:700;color:#a8d880">'+parcelles.length+'</div><div style="font-size:9px;color:#5a8a4a">PARCELLES</div></div>';
-  html += '<div style="background:#061504;border:1px solid '+(alertes>0?"#d5701a44":"#2a5a1a44")+'44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">⚠️</div><div style="font-size:18px;font-weight:700;color:'+(alertes>0?"#ff8040":"#5a8a4a")+'">'+alertes+'</div><div style="font-size:9px;color:#5a8a4a">ALERTES</div></div>';
-  html += '<div style="background:#061504;border:1px solid '+(ficheExistante?"#2a5a1a44":"#8a202044")+'44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">'+(ficheExistante?"✅":"❌")+'</div><div style="font-size:11px;font-weight:700;color:'+(ficheExistante?"#7ac97a":"#ff8080")+'">'+(ficheExistante?"Fiche OK":"À remplir")+'</div><div style="font-size:9px;color:#5a8a4a">FICHE JOUR</div></div>';
-  html += '</div>';
-
-  // Accès rapide modules Tsi'i Ocam
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
-  var mods = [
-    {icon:"🏠",label:"Tableau de bord",fn:"scSetOngletDirect('dashboard')"},
-    {icon:"🌿",label:"Mes parcelles",fn:"scSetOngletDirect('parcelles')"},
-    {icon:"📋",label:"Journal terrain",fn:"scSetOngletDirect('journal')"},
-    {icon:"⚠️",label:"Alertes"+(alertes>0?" ("+alertes+")":""),fn:"scSetOngletDirect('alertes')"},
-    {icon:"📸",label:"Diagnostic IA",fn:"scSetOngletDirect('camera')"},
-    {icon:"👷",label:"Ma fiche du jour",fn:"scSetOngletDirect('technicien')"},
-  ];
-  mods.forEach(function(m){
-    html += '<button onclick="'+m.fn+'" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">';
-    html += '<div style="font-size:24px">'+m.icon+'</div>';
-    html += '<div style="font-size:12px;font-weight:600;color:#a8d880;text-align:center">'+m.label+'</div>';
-    html += '</button>';
-  });
-  html += '</div>';
-
-  // Fiche du jour résumée si soumise
-  if(ficheExistante) {
-    html += '<div style="background:#040d03;border:1px solid #2a5a1a44;border-radius:12px;padding:14px;margin-bottom:14px">';
-    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:8px">✅ Fiche soumise aujourd\'hui à '+ficheExistante.heure+'</div>';
-    if(ficheExistante.taches && ficheExistante.taches.length>0)
-      html += '<div style="font-size:11px;color:#7ac97a;margin-bottom:4px">'+ficheExistante.taches.length+' tâche(s) effectuée(s)</div>';
-    if(ficheExistante.problemes && ficheExistante.problemes.length>0)
-      html += '<div style="font-size:11px;color:#ff8080">⚠️ '+ficheExistante.problemes.join(", ")+'</div>';
-    if(ficheExistante.saisonniers && ficheExistante.saisonniers.filter(function(s){return s.present;}).length>0) {
-      var presents = ficheExistante.saisonniers.filter(function(s){return s.present;});
-      html += '<div style="font-size:11px;color:#6a9a50;margin-top:6px">👥 '+presents.length+' saisonnier(s) présent(s)</div>';
-    }
-    html += '</div>';
-  }
-
-  // Bouton accès complet Tsi'i Ocam
-  html += '<button onclick="openSannyChamp()" style="width:100%;background:linear-gradient(135deg,#0a2008,#1a4a08);border:2px solid #4a8a3055;color:#a8d880;padding:16px;border-radius:14px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">';
-  html += '🌶️ Ouvrir Tsi\'i Ocam complet</button>';
-
-  content.innerHTML = html;
-  } catch(e) {
-    content.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px">⚠️ Erreur: ' + e.message + '</div>';
-  }
-}
-
-function scSetOngletDirect(onglet) {
-  openSannyChamp();
-  setTimeout(function(){ if(window.scSetOnglet) scSetOnglet(onglet); }, 120);
-}
-
-function startTechRealtimeSync() {
-  // Le technicien reçoit ses tâches assignées depuis Firebase en temps réel
-  if(!window.db || !currentUser) return;
-  window.db.collection("app_data").doc("tech_taches").onSnapshot(function(snap) {
-    var raw = snap.data ? snap.data() : null;
-    if(!raw) return;
-    try {
-      var taches = JSON.parse(raw.data || "[]");
-      // Filtrer celles pour ce technicien
-      var mesTaches = taches.filter(function(t){ return !t.faite; });
-      var dot = document.getElementById("tech-sync-dot");
-      if(dot) { dot.style.background="#7ac97a"; dot.title="Synchronisé"; }
-      // Badge de tâches si page active
-      var techContent = document.getElementById("tech-home-content");
-      if(techContent && currentUser && currentUser.role==="technicien") renderTechHome();
-    } catch(e){}
-  });
-}
-
-// Saisonniers helpers
-function acAjouterSaisonnier() {
-  var nom = (document.getElementById("new-sais-nom")||{}).value || "";
-  var role = (document.getElementById("new-sais-role")||{}).value || "";
-  if(!nom.trim()) { showToast("Entrez le nom du saisonnier", true); return; }
-  var liste = [];
-  try { liste = JSON.parse(localStorage.getItem("mf_saisonniers")||"[]"); } catch(e){}
-  var newS = { id:"s_"+Date.now(), nom:nom.trim(), role:role.trim() };
-  liste.push(newS);
-  localStorage.setItem("mf_saisonniers", JSON.stringify(liste));
-  showToast("Saisonnier "+nom+" ajouté !");
-  // Rafraîchir la fiche
-  if(window.scSetOnglet) scSetOnglet("technicien");
-}
-
-function acToggleSaisonnier(chk) {
-  var isOn = chk.innerHTML === "✓";
-  chk.innerHTML = isOn ? "" : "✓";
-  chk.style.background = isOn ? "transparent" : "#1a4a08";
-  chk.style.borderColor = isOn ? "#2a5a1a" : "#4a8a20";
-  chk.style.color = "#7ac97a";
-  var row = chk.closest ? chk.closest("div[style*='display:flex']") : chk.parentElement;
-  if(row) row.style.background = isOn ? "#061504" : "#0a2008";
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ADMIN — ÉQUIPE CHAMP (liste des techniciens)
-// ═══════════════════════════════════════════════════════════════
-
-function renderTabTechniciensList(el) {
-  var html = '<div style="max-width:560px;margin:0 auto">';
-
-  // Bouton créer technicien
-  html += '<button onclick="openAddTechPage()" style="width:100%;background:linear-gradient(135deg,#061504,#0a2008);border:2px solid #4a8a3055;color:#a8d880;padding:14px;border-radius:12px;font-size:14px;font-weight:700;margin-bottom:16px">+ Nouveau Technicien de Champ</button>';
-
-  if(technicians.length === 0) {
-    html += '<div style="text-align:center;padding:40px 20px;color:#3a6a2a;font-size:13px">Aucun technicien enregistré.<br>Créez le premier compte ci-dessus.</div>';
-  } else {
-    // Fiches du jour
-    var today = new Date().toISOString().split("T")[0];
-    technicians.forEach(function(tech) {
-      var ficheAujourd = null;
-      // Chercher dans le cache fiches
-      if(_fichesCache) {
-        ficheAujourd = _fichesCache.find(function(f){ return f.date===today && f.techCode===tech.code; });
-      }
-      var hasFiche = !!ficheAujourd;
-      html += '<div style="background:#061504;border:1px solid '+(hasFiche?"#2a5a1a44":"#8a202044")+';border-radius:14px;padding:14px;margin-bottom:10px">';
-      html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">';
-      html += '<div style="width:44px;height:44px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0">';
-      html += tech.photo ? '<img src="'+tech.photo+'" style="width:100%;height:100%;object-fit:cover">' : '👷';
-      html += '</div><div style="flex:1">';
-      html += '<div style="font-size:14px;font-weight:700;color:#a8d880">'+escapeHtml(tech.name||tech.firstName+" "+tech.lastName)+'</div>';
-      html += '<div style="font-size:10px;color:#5a8a4a;font-family:monospace">'+tech.code+'</div>';
-      if(tech.specialite) html += '<div style="font-size:11px;color:#4a7a3a">'+escapeHtml(tech.specialite)+'</div>';
-      html += '</div>';
-      html += '<div style="text-align:center"><div style="font-size:18px">'+(hasFiche?"✅":"🔴")+'</div><div style="font-size:9px;color:'+(hasFiche?"#7ac97a":"#ff8080")+'">'+(hasFiche?"Fiche OK":"Pas de fiche")+'</div></div>';
-      html += '</div>';
-
-      if(hasFiche) {
-        // Résumé fiche du jour
-        html += '<div style="background:#040d03;border-radius:10px;padding:10px;font-size:11px">';
-        html += '<div style="color:#7ac97a;margin-bottom:4px">⏱ '+ficheAujourd.heureDebut+' → '+ficheAujourd.heureFin+' &nbsp;·&nbsp; '+ficheAujourd.taches.length+' tâche(s)</div>';
-        if(ficheAujourd.problemes && ficheAujourd.problemes.length>0 && ficheAujourd.problemes[0]!=="RAS — Tout va bien")
-          html += '<div style="color:#ff8080;margin-bottom:4px">⚠️ '+ficheAujourd.problemes.join(", ")+'</div>';
-        if(ficheAujourd.saisonniers && ficheAujourd.saisonniers.length>0) {
-          var presents = ficheAujourd.saisonniers.filter(function(s){return s.present;});
-          if(presents.length>0) {
-            html += '<div style="color:#6a9a50;margin-bottom:4px">👥 Saisonniers présents :</div>';
-            presents.forEach(function(s){
-              html += '<div style="color:#5a8a4a;margin-left:8px">• '+escapeHtml(s.nom)+(s.travaux?' — '+escapeHtml(s.travaux):'')+'</div>';
-            });
-          }
-        }
-        if(ficheAujourd.commentaire) html += '<div style="color:#6a9a60;margin-top:4px;font-style:italic">📝 '+escapeHtml(ficheAujourd.commentaire.substring(0,120))+(ficheAujourd.commentaire.length>120?"...":"")+'</div>';
-        html += '</div>';
-        html += '<button onclick="voirHistoriqueTech(\''+tech.id+'\')" style="width:100%;background:none;border:1px solid #2a5a1a44;color:#5a8a4a;border-radius:8px;padding:8px;font-size:11px;margin-top:8px;cursor:pointer">📋 Voir l\'historique complet</button>';
-      } else {
-        html += '<div style="font-size:11px;color:#8a202a;background:#1a0505;border-radius:8px;padding:8px;text-align:center">Aucune fiche soumise aujourd\'hui</div>';
-      }
-
-      // Boutons actions
-      html += '<div style="display:flex;gap:8px;margin-top:8px">';
-      html += '<button onclick="openEditTechPage(\''+tech.id+'\')" style="flex:1;background:#0a1a08;border:1px solid #2a5a1a44;color:#6a9a50;border-radius:8px;padding:8px;font-size:11px;cursor:pointer">✏️ Modifier</button>';
-      if(tech.suspended) {
-        html += '<button onclick="toggleTechSuspend(\''+tech.id+'\',false)" style="flex:1;background:#0a1a08;border:1px solid #4a8a3055;color:#7ac97a;border-radius:8px;padding:8px;font-size:11px;cursor:pointer">✅ Réactiver</button>';
-      } else {
-        html += '<button onclick="toggleTechSuspend(\''+tech.id+'\',true)" style="flex:1;background:#1a0505;border:1px solid #8a202044;color:#ff8080;border-radius:8px;padding:8px;font-size:11px;cursor:pointer">⛔ Suspendre</button>';
-      }
-      html += '<button onclick="deleteTechnicien(\''+tech.id+'\')" style="background:#1a0505;border:1px solid #aa000044;color:#ff5555;border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer" title="Supprimer">🗑️</button>';
-      html += '</div>';
-      html += '</div>';
-    });
-  }
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-function deleteTechnicien(techId) {
-  var tech = technicians.find(function(t){return t.id===techId;});
-  if(!tech) return;
-  var nom = tech.name || ((tech.firstName||"")+" "+(tech.lastName||"")).trim();
-  if(!confirm("Supprimer définitivement le technicien ""+nom+"" ?\nCette action est irréversible.")) return;
-  if(!window.db) { showToast("Erreur base de données", true); return; }
-  window.db.collection("technicians").doc(techId).delete().then(function(){
-    showToast("✅ Technicien supprimé.");
-    var content = document.getElementById("admin-content");
-    if(content) renderTabTechniciensList(content);
-  }).catch(function(e){ showToast("Erreur suppression: "+e.message, true); });
-}
-
-function voirHistoriqueTech(techId) {
-  var tech = technicians.find(function(t){return t.id===techId;});
-  if(!tech) return;
-  var fiches = (_fichesCache||[]).filter(function(f){return f.techCode===tech.code;}).sort(function(a,b){return b.date>a.date?1:-1;});
-  var html = '<div style="max-width:560px;margin:0 auto">';
-  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
-  html += '<button onclick="openTab(\'techniciens-list\')" style="background:none;border:none;color:#5a8a4a;font-size:20px;cursor:pointer">←</button>';
-  html += '<div style="font-size:15px;font-weight:700;color:#a8d880">Historique — '+escapeHtml(tech.name||"")+'</div></div>';
-  if(fiches.length===0) { html += '<div style="color:#3a6a2a;text-align:center;padding:20px">Aucune fiche pour ce technicien</div>'; }
-  fiches.forEach(function(f){
-    var hasPb = f.problemes && f.problemes.length>0 && f.problemes[0]!=="RAS — Tout va bien";
-    html += '<div style="background:#061504;border:1px solid '+(hasPb?"#8a202044":"#2a5a1a22")+';border-radius:12px;padding:12px;margin-bottom:8px">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880">'+f.date+'</div>';
-    html += '<div style="font-size:10px;color:#5a8a4a">'+f.heureDebut+' → '+f.heureFin+'</div></div>';
-    if(f.taches && f.taches.length>0) html += '<div style="font-size:11px;color:#7ac97a;margin-bottom:4px">✅ '+f.taches.length+' tâche(s) : '+f.taches.slice(0,3).join(", ")+(f.taches.length>3?"...":"")+'</div>';
-    if(hasPb) html += '<div style="font-size:11px;color:#ff8080;margin-bottom:4px">⚠️ '+f.problemes.join(", ")+'</div>';
-    if(f.saisonniers) {
-      var pres = f.saisonniers.filter(function(s){return s.present;});
-      if(pres.length>0) html += '<div style="font-size:11px;color:#6a9a50">👥 '+pres.map(function(s){return s.nom;}).join(", ")+'</div>';
-    }
-    if(f.commentaire) html += '<div style="font-size:10px;color:#4a7a3a;margin-top:4px;font-style:italic">'+escapeHtml(f.commentaire.substring(0,150))+'</div>';
-    html += '</div>';
-  });
-  html += '</div>';
-  var content = document.getElementById("admin-content");
-  if(content) content.innerHTML = html;
-}
-
-function toggleTechSuspend(techId, suspend) {
-  var tech = technicians.find(function(t){return t.id===techId;});
-  if(!tech) return;
-  if(!window.db) return;
-  window.db.collection("technicians").doc(techId).update({suspended: suspend}).then(function(){
-    showToast(suspend ? "Compte technicien suspendu" : "Compte technicien réactivé");
-  }).catch(function(e){ showToast("Erreur: "+(e.message||"inconnue"), true); });
-}
-
-// ═══════════════════════════════════════════════════════════════
-// CRÉATION / MODIFICATION TECHNICIEN (admin)
-// ═══════════════════════════════════════════════════════════════
-
-var atGeneratedCode = "";
-var atGeneratedPass = "";
-var atPhotoBase64 = null;
-var atEditTechId = null;
-
-function openAddTechPage() {
-  atGeneratedCode = ""; atGeneratedPass = ""; atPhotoBase64 = null; atEditTechId = null;
-  var title = document.getElementById("at-page-title");
-  if(title) title.textContent = "👷 Nouveau Technicien";
-  showPage("page-add-tech");
-  setTimeout(function(){
-    ["at-firstname","at-lastname","at-phone","at-specialite","at-champ"].forEach(function(id){
-      var el=document.getElementById(id); if(el) el.value="";
-    });
-    document.getElementById("at-sex").value = "Homme";
-    document.getElementById("at-credentials").style.display = "none";
-    document.getElementById("at-gen-btn").style.display = "block";
-    var ph = document.getElementById("at-photo-preview"); if(ph) ph.innerHTML = "📸";
-  }, 30);
-}
-
-function openEditTechPage(id) {
-  var tech = technicians.find(function(t){return t.id===id;});
-  if(!tech) return;
-  atEditTechId = id;
-  atPhotoBase64 = tech.photo || null;
-  atGeneratedCode = tech.code;
-  atGeneratedPass = tech.password;
-  var title = document.getElementById("at-page-title");
-  if(title) title.textContent = "✏️ Modifier Technicien";
-  showPage("page-add-tech");
-  setTimeout(function(){
-    var set = function(id,val){ var el=document.getElementById(id); if(el) el.value=val||""; };
-    set("at-firstname", tech.firstName||(tech.name||"").split(" ")[0]);
-    set("at-lastname", tech.lastName||(tech.name||"").split(" ").slice(1).join(" "));
-    set("at-phone", tech.phone);
-    set("at-specialite", tech.specialite);
-    set("at-champ", tech.champ);
-    document.getElementById("at-sex").value = tech.sex||"Homme";
-    var ph = document.getElementById("at-photo-preview");
-    if(ph) ph.innerHTML = tech.photo ? '<img src="'+tech.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : "📸";
-    document.getElementById("at-code-display").textContent = tech.code;
-    document.getElementById("at-pass-display").textContent = tech.password;
-    document.getElementById("at-credentials").style.display = "block";
-    document.getElementById("at-gen-btn").style.display = "none";
-  }, 30);
-}
-
-function triggerTechPhotoChoice() {
-  var choice = confirm("Prendre une photo avec la caméra ?");
-  if(choice) document.getElementById("at-photo-camera").click();
-  else document.getElementById("at-photo-gallery").click();
-}
-
-function handleTechPhoto(input) {
-  var file = input.files[0]; if(!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    atPhotoBase64 = e.target.result;
-    var ph = document.getElementById("at-photo-preview");
-    if(ph) ph.innerHTML = '<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-  };
-  reader.readAsDataURL(file);
-}
-
-function generateTechCredentials() {
-  var firstName = (document.getElementById("at-firstname")||{value:""}).value.trim();
-  var lastName = (document.getElementById("at-lastname")||{value:""}).value.trim();
-  if(!firstName || !lastName) { showToast("Entrez le prénom et le nom d'abord", true); return; }
-  var initials = (firstName[0]+lastName[0]).toUpperCase();
-  var year = new Date().getFullYear().toString().slice(2);
-  var rand = Math.random().toString(36).slice(2,5).toUpperCase();
-  atGeneratedCode = "TECH-" + initials + year + "-" + rand;
-  while(technicians.find(function(t){return t.code===atGeneratedCode;})) {
-    rand = Math.random().toString(36).slice(2,5).toUpperCase();
-    atGeneratedCode = "TECH-" + initials + year + "-" + rand;
-  }
-  var chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  atGeneratedPass = "";
-  for(var i=0;i<4;i++) atGeneratedPass += chars[Math.floor(Math.random()*chars.length)];
-  atGeneratedPass += "-";
-  for(var i=0;i<4;i++) atGeneratedPass += chars[Math.floor(Math.random()*chars.length)];
-  document.getElementById("at-code-display").textContent = atGeneratedCode;
-  document.getElementById("at-pass-display").textContent = atGeneratedPass;
-  document.getElementById("at-credentials").style.display = "block";
-  document.getElementById("at-gen-btn").textContent = "🔄 Regénérer";
-  showToast("Identifiants technicien générés !");
-}
-
-function copyTechCredentials() {
-  var firstName = (document.getElementById("at-firstname")||{value:""}).value.trim();
-  var lastName = (document.getElementById("at-lastname")||{value:""}).value.trim();
-  var text = "Mon Fermier — Identifiants Technicien\n\nNom: "+firstName+" "+lastName+"\nCode: "+atGeneratedCode+"\nMot de passe: "+atGeneratedPass+"\n\nConnectez-vous sur l'application Mon Fermier avec ces identifiants.";
-  if(navigator.clipboard) { navigator.clipboard.writeText(text).then(function(){ showToast("Copié !"); }); }
-  else { showToast("Code: "+atGeneratedCode+" | Mdp: "+atGeneratedPass); }
-}
-
-function shareTechCredentials() {
-  var firstName = (document.getElementById("at-firstname")||{value:""}).value.trim();
-  var lastName = (document.getElementById("at-lastname")||{value:""}).value.trim();
-  var msg = "🌶️ Mon Fermier — Vos identifiants Technicien"+
-    "\n\nNom: "+firstName+" "+lastName+
-    "\nCode: "+atGeneratedCode+
-    "\nMot de passe: "+atGeneratedPass+
-    "\n\nConnectez-vous sur l'app pour accéder à Tsi'i Ocam.";
-  window.open("https://wa.me/?text="+encodeURIComponent(msg));
-}
-
-async function saveNewTech() {
-  var firstName = (document.getElementById("at-firstname")||{value:""}).value.trim();
-  var lastName = (document.getElementById("at-lastname")||{value:""}).value.trim();
-  if(!firstName||!lastName) { showToast("Prénom et nom obligatoires", true); return; }
-  if(!atGeneratedCode) { showToast("Générez les identifiants d'abord", true); return; }
-
-  // MODE MODIFICATION
-  if(atEditTechId) {
-    var existing = technicians.find(function(t){return t.id===atEditTechId;});
-    if(!existing) return;
-    var updated = Object.assign({}, existing, {
-      firstName:firstName, lastName:lastName,
-      name:firstName+" "+lastName,
-      sex:(document.getElementById("at-sex")||{value:"Homme"}).value,
-      phone:(document.getElementById("at-phone")||{value:""}).value.trim(),
-      specialite:(document.getElementById("at-specialite")||{value:""}).value.trim(),
-      champ:(document.getElementById("at-champ")||{value:""}).value.trim(),
-      photo: atPhotoBase64||existing.photo||null,
-    });
-    try { var d=Object.assign({},updated); delete d.id; await db.collection("technicians").doc(atEditTechId).set(d); } catch(e){}
-    showToast("✅ Technicien "+updated.name+" modifié !");
-    atEditTechId = null;
-    showPage("page-admin");
-    openTab("techniciens-list");
-    return;
-  }
-
-  // MODE CRÉATION
-  showToast("⏳ Création du compte technicien...");
-  var tech = {
-    firstName:firstName, lastName:lastName,
-    name:firstName+" "+lastName,
-    sex:(document.getElementById("at-sex")||{value:"Homme"}).value,
-    phone:(document.getElementById("at-phone")||{value:""}).value.trim(),
-    specialite:(document.getElementById("at-specialite")||{value:""}).value.trim(),
-    champ:(document.getElementById("at-champ")||{value:""}).value.trim(),
-    code:atGeneratedCode,
-    password:atGeneratedPass,
-    photo: atPhotoBase64||null,
-    role:"technicien",
-    suspended:false,
-    createdAt:new Date().toLocaleDateString("fr-FR")
-  };
-  var techEmail = atGeneratedCode.toLowerCase().replace(/[^a-z0-9]/g,"")+"-tech@monfermier.app";
-  tech.authEmail = techEmail;
-
-  try {
-    var ref = await db.collection("technicians").add(tech);
-    tech.id = ref.id;
-    technicians.push(tech);
-    showToast("✅ Technicien créé !");
-  } catch(e) {
-    showToast("❌ Firestore: "+(e&&e.message||"erreur"), true);
-    return;
-  }
-
-  try {
-    await window._createVendorAuthAccount(techEmail, atGeneratedPass);
-    showToast("✅ Compte cloud créé pour "+tech.name);
-  } catch(e) {
-    showToast("⚠️ Technicien créé, compte cloud: "+(e&&e.code||"erreur"), true);
-  }
-
-  showPage("page-admin");
-  openTab("techniciens-list");
-}
-
-// Écoute temps réel des fiches champ pour l'admin
-(function startFichesChampListener() {
-  function tryListen() {
-    if(!window.db) { setTimeout(tryListen, 800); return; }
-    window.db.collection("fiches_champ").onSnapshot(function(snap) {
-      _fichesCache = [];
-      snap.forEach(function(doc) {
-        try { _fichesCache.push(Object.assign({id:doc.id}, doc.data())); } catch(e){}
-      });
-      _fichesCache.sort(function(a,b){ return b.date>a.date?1:b.date<a.date?-1:0; });
-      // Badge admin onglet technicien
-      var today = new Date().toISOString().split("T")[0];
-      var nonLues = _fichesCache.filter(function(f){ return !f.lu && f.date===today; }).length;
-      var badge = document.getElementById("tech-badge");
-      if(badge) { badge.style.display = nonLues>0?"flex":"none"; badge.textContent = nonLues; }
-      // Rafraîchir si onglet actif
-      if(currentUser && currentUser.role==="admin") {
-        if(currentTab==="technicien") { var c=document.getElementById("admin-content"); if(c) renderTabTechnicien(c); }
-        if(currentTab==="techniciens-list") { var c=document.getElementById("admin-content"); if(c) renderTabTechniciensList(c); }
-      }
-    }, function(err){ console.warn("fiches_champ listener:", err); });
-  }
-  tryListen();
-})();
-
-// Exposer globalement pour accès inter-scripts
-window.renderTechHome = renderTechHome;
-window.startTechRealtimeSync = startTechRealtimeSync;
-window.renderTabTechniciensList = renderTabTechniciensList;
-window.renderTabTechnicien = renderTabTechnicien;
 </script>
 
 </body>
