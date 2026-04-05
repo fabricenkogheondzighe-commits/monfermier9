@@ -1798,7 +1798,7 @@ async function sannyEnvoyerAvecImage(base64Data, mimeType, fileName, typeName) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5',
         max_tokens: 1000,
         messages: [
           { role: 'system', content: getSannySystem() },
@@ -2151,7 +2151,7 @@ function renderACModal(modal) {
   html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
   html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '"><span style="font-size:15px">📖</span>Guide</button>';
   html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '"><span style="font-size:15px">📸</span>Caméra IA</button>';
-  html += '<button onclick="scSetOnglet(\'suivi\')" style="' + tabStyle("suivi") + '"><span style="font-size:15px">📊</span>Suivi</button>';
+  html += '<button onclick="scSetOnglet(\'technicien\')" style="' + tabStyle("technicien") + '"><span style="font-size:15px">👷</span>Ma fiche</button>';
   html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '"><span style="font-size:15px">👥</span>Équipe</button>';
   html += '</div>';
   html += '<div id="sc-content" style="flex:1;overflow-y:auto;padding:12px;background:#020a01">';
@@ -2174,7 +2174,6 @@ function scRenderOnglet(onglet, parcelles, observations) {
   if (onglet === "alertes")    return scRenderAlertes(parcelles, observations);
   if (onglet === "guide")      return scRenderGuide();
   if (onglet === "camera")     return scRenderCamera();
-  if (onglet === "suivi")      return scRenderSuivi();
   if (onglet === "technicien") return scRenderFicheTech();
   if (onglet === "equipe")     return scRenderEquipe();
   return "";
@@ -7962,8 +7961,8 @@ async function acLancerDiagnostic() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        model: "claude-sonnet-4-5",
+        max_tokens: 1024,
         system: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}.",
         messages: [{
           role: "user",
@@ -7975,7 +7974,6 @@ async function acLancerDiagnostic() {
       })
     });
     var data = await response.json();
-    // Support réponse OpenAI-style (choices) ou Anthropic-style (content)
     var raw = "";
     if (data.choices && data.choices[0]) raw = data.choices[0].message.content || "{}";
     else if (data.content && data.content[0]) raw = data.content[0].text || "{}";
@@ -8065,115 +8063,6 @@ function acEnregistrerDiagObs() {
   showToast("Observation enregistrée dans le journal !");
   btn.textContent = "✅ Enregistré dans le journal";
   btn.disabled = true;
-}
-
-// ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-// TSI'I OCAM — ONGLET SUIVI ADMIN (contrôle activités techniciens)
-// ═══════════════════════════════════════════════════════════
-var _scSuiviTab = "fiches"; // fiches | historique | taches
-
-function scRenderSuivi() {
-  var html = '<div style="padding:0">';
-  var tabS = function(id, label, icon) {
-    var active = _scSuiviTab === id;
-    return '<button onclick="scSuiviTab(\'' + id + '\')" style="flex:1;padding:8px 4px;background:' + (active ? "linear-gradient(135deg,#1a4a08,#2d7a1a)" : "#061504") + ';color:' + (active ? "#d8f0b0" : "#5a8a4a") + ';border:none;border-radius:8px;font-size:10px;font-weight:' + (active ? "700" : "400") + ';cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px">' + icon + '<span>' + label + '</span></button>';
-  };
-  html += '<div style="display:flex;gap:4px;margin-bottom:12px">';
-  html += tabS("fiches", "Fiches du jour", "📋");
-  html += tabS("historique", "Historique", "📅");
-  html += tabS("taches", "Tâches", "✅");
-  html += '</div>';
-
-  if (_scSuiviTab === "fiches") {
-    var today = new Date().toISOString().split("T")[0];
-    var fichesAuj = (_fichesCache || []).filter(function(f) { return f.date === today; });
-    var techs = technicians || [];
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">📋 Fiches du jour — ' + new Date().toLocaleDateString("fr-FR", {day:"numeric",month:"long"}) + '</div>';
-    if (techs.length === 0) {
-      html += '<div style="color:#3a6a2a;text-align:center;padding:20px;font-size:12px">Aucun technicien enregistré</div>';
-    } else {
-      techs.forEach(function(tech) {
-        var fiche = fichesAuj.find(function(f) { return f.techCode === tech.code; });
-        var soumis = !!fiche;
-        html += '<div style="background:#061504;border:1px solid ' + (soumis ? "#2a5a1a44" : "#8a202033") + ';border-radius:12px;padding:12px;margin-bottom:8px">';
-        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:' + (soumis ? "10px" : "0") + '">';
-        html += '<div style="width:38px;height:38px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">';
-        html += tech.photo ? '<img src="' + tech.photo + '" style="width:100%;height:100%;object-fit:cover">' : '👷';
-        html += '</div><div style="flex:1">';
-        html += '<div style="font-size:13px;font-weight:700;color:#a8d880">' + escapeHtml(tech.name || "") + '</div>';
-        html += '<div style="font-size:10px;color:#5a8a4a">' + escapeHtml(tech.specialite || tech.champ || "") + '</div>';
-        html += '</div>';
-        html += '<div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;background:' + (soumis ? "#0a3a08" : "#3a0808") + ';color:' + (soumis ? "#7ac97a" : "#ff8080") + '">' + (soumis ? "✅ Soumise" : "⏳ En attente") + '</div>';
-        html += '</div>';
-        if (soumis && fiche) {
-          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">';
-          html += '<div style="color:#5a8a4a">🕐 ' + (fiche.heureDebut || "--") + ' → ' + (fiche.heureFin || "--") + '</div>';
-          html += '<div style="color:#5a8a4a">✅ ' + (fiche.taches ? fiche.taches.length : 0) + ' tâche(s)</div>';
-          if (fiche.parcelles && fiche.parcelles.length) html += '<div style="color:#7ac97a;grid-column:span 2">🌿 ' + fiche.parcelles.join(", ") + '</div>';
-          if (fiche.commentaire) html += '<div style="color:#c8d8b0;grid-column:span 2;background:#040d03;border-radius:8px;padding:8px;margin-top:4px">📝 ' + escapeHtml(fiche.commentaire) + '</div>';
-          var pbs = (fiche.problemes || []).filter(function(p) { return p !== "RAS — Tout va bien"; });
-          if (pbs.length) html += '<div style="color:#ff8080;grid-column:span 2">⚠️ ' + pbs.join(", ") + '</div>';
-          html += '</div>';
-        }
-        html += '</div>';
-      });
-    }
-  } else if (_scSuiviTab === "historique") {
-    var toutes = (_fichesCache || []).slice().sort(function(a,b) { return b.date > a.date ? 1 : -1; });
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">📅 Historique — ' + toutes.length + ' fiche(s)</div>';
-    if (toutes.length === 0) {
-      html += '<div style="color:#3a6a2a;text-align:center;padding:20px;font-size:12px">Aucune fiche soumise</div>';
-    } else {
-      toutes.slice(0, 20).forEach(function(f) {
-        var tech = (technicians || []).find(function(t) { return t.code === f.techCode; });
-        var hasPb = f.problemes && f.problemes.some(function(p) { return p !== "RAS — Tout va bien"; });
-        html += '<div style="background:#061504;border:1px solid ' + (hasPb ? "#8a202044" : "#2a5a1a22") + ';border-radius:10px;padding:10px;margin-bottom:6px">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
-        html += '<div style="font-size:12px;font-weight:700;color:#a8d880">' + f.date + '</div>';
-        html += '<div style="font-size:10px;color:#5a8a4a">' + (tech ? escapeHtml(tech.name) : f.techCode) + '</div>';
-        html += '</div>';
-        html += '<div style="font-size:11px;color:#7ac97a">✅ ' + (f.taches ? f.taches.length : 0) + ' tâche(s) · 🕐 ' + (f.heureDebut || "--") + '→' + (f.heureFin || "--") + '</div>';
-        if (hasPb) html += '<div style="font-size:11px;color:#ff8080;margin-top:4px">⚠️ ' + f.problemes.filter(function(p) { return p !== "RAS — Tout va bien"; }).join(", ") + '</div>';
-        html += '</div>';
-      });
-    }
-  } else if (_scSuiviTab === "taches") {
-    var taches = _techTachesCache || [];
-    html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:10px">✅ Tâches assignées</div>';
-    html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:12px;margin-bottom:12px">';
-    html += '<div style="font-size:11px;color:#6a9a50;margin-bottom:8px;font-weight:700">+ Nouvelle tâche</div>';
-    html += '<textarea id="sc-tache-texte" placeholder="Décrire la tâche..." style="width:100%;background:#040d03;border:1px solid #2a5a1a;color:#c8d8b0;padding:8px;border-radius:8px;font-size:12px;min-height:60px;box-sizing:border-box;resize:none;margin-bottom:6px"></textarea>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">';
-    html += '<select id="sc-tache-dest" style="background:#040d03;border:1px solid #2a5a1a;color:#c8d8b0;padding:8px;border-radius:8px;font-size:12px"><option value="">Tous</option>';
-    (technicians || []).forEach(function(t) { html += '<option value="' + t.code + '">' + escapeHtml(t.name) + '</option>'; });
-    html += '</select>';
-    html += '<select id="sc-tache-prio" style="background:#040d03;border:1px solid #2a5a1a;color:#c8d8b0;padding:8px;border-radius:8px;font-size:12px"><option value="normale">Normale</option><option value="urgente">🔴 Urgente</option></select>';
-    html += '</div>';
-    html += '<input type="date" id="sc-tache-date" style="width:100%;background:#040d03;border:1px solid #2a5a1a;color:#c8d8b0;padding:8px;border-radius:8px;font-size:12px;box-sizing:border-box;margin-bottom:8px">';
-    html += '<button onclick="scEquipeEnvoyerTache()" style="width:100%;background:linear-gradient(135deg,#1a4a08,#2d7a1a);color:#d8f0b0;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700">📤 Envoyer</button>';
-    html += '</div>';
-    if (taches.length === 0) {
-      html += '<div style="color:#3a6a2a;text-align:center;padding:16px;font-size:12px">Aucune tâche</div>';
-    } else {
-      taches.slice(0, 15).forEach(function(t) {
-        html += '<div style="background:#061504;border:1px solid ' + (t.priorite === "urgente" ? "#8a202055" : "#2a5a1a22") + ';border-radius:10px;padding:10px;margin-bottom:6px">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
-        html += '<div style="font-size:12px;color:#c8d8b0;flex:1">' + (t.priorite === "urgente" ? "🔴 " : "") + escapeHtml(t.texte) + '</div>';
-        html += '<div style="font-size:10px;color:' + (t.faite ? "#7ac97a" : "#5a8a4a") + ';flex-shrink:0">' + (t.faite ? "✅" : "⏳") + '</div>';
-        html += '</div>';
-        if (t.dateLimite) html += '<div style="font-size:10px;color:#4a7a3a;margin-top:4px">📅 ' + t.dateLimite + '</div>';
-        html += '</div>';
-      });
-    }
-  }
-  html += '</div>';
-  return html;
-}
-
-function scSuiviTab(tab) {
-  _scSuiviTab = tab;
-  if (window.scSetOnglet) scSetOnglet("suivi");
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -8396,13 +8285,6 @@ function scRenderEquipeForm() {
   html += '<div style="font-size:14px;font-weight:700;color:#a8d880;margin-bottom:14px">'+(isEdit?"✏️ Modifier":"+ Nouveau Technicien")+'</div>';
   
   html += '<div style="display:grid;gap:10px">';
-  html += '<div style="text-align:center">';
-  html += '<div onclick="document.getElementById(\'sc-tech-form-photo-input\').click()" id="sc-tech-form-photo-preview" style="width:70px;height:70px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;cursor:pointer;margin:0 auto 4px">';
-  html += (tech && tech.photo) ? '<img src="' + tech.photo + '" style="width:100%;height:100%;object-fit:cover">' : '👷';
-  html += '</div>';
-  html += '<div style="font-size:10px;color:#5a8a4a;cursor:pointer" onclick="document.getElementById(\'sc-tech-form-photo-input\').click()">📷 Photo</div>';
-  html += '<input type="file" id="sc-tech-form-photo-input" accept="image/*" style="display:none" onchange="scTechFormPhoto(this)">';
-  html += '</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   html += '<div><label style="font-size:10px;color:#5a8a4a">PRÉNOM *</label><input id="sc-tech-prenom" value="'+(tech?(tech.firstName||(tech.name||"").split(" ")[0]):"")+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="Prénom"></div>';
   html += '<div><label style="font-size:10px;color:#5a8a4a">NOM *</label><input id="sc-tech-nom" value="'+(tech?(tech.lastName||(tech.name||"").split(" ").slice(1).join(" ")):"")+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="Nom"></div>';
@@ -8418,14 +8300,6 @@ function scRenderEquipeForm() {
     html += '<div id="sc-tech-creds" style="display:none;background:#040d03;border:1px solid #4a8a3044;border-radius:8px;padding:10px">';
     html += '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;color:#5a8a4a">CODE</span><span id="sc-tech-code-disp" style="font-size:14px;font-weight:700;color:#a8d880;font-family:monospace"></span></div>';
     html += '<div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:#5a8a4a">MOT DE PASSE</span><span id="sc-tech-pass-disp" style="font-size:14px;font-weight:700;color:#7ac97a;font-family:monospace"></span></div>';
-    html += '</div></div>';
-  } else {
-    // En mode édition : afficher les identifiants existants en lecture seule
-    html += '<div style="background:#040d03;border:1px solid #2a5a1a33;border-radius:10px;padding:12px">';
-    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:8px">🔑 Identifiants de connexion</div>';
-    html += '<div style="background:#061504;border:1px solid #4a8a3044;border-radius:8px;padding:10px">';
-    html += '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:#5a8a4a">CODE</span><span style="font-size:14px;font-weight:700;color:#a8d880;font-family:monospace">' + escapeHtml(tech ? tech.code : "") + '</span></div>';
-    html += '<div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:#5a8a4a">MOT DE PASSE</span><span style="font-size:14px;font-weight:700;color:#7ac97a;font-family:monospace">' + escapeHtml(tech ? tech.password : "") + '</span></div>';
     html += '</div></div>';
   }
   
@@ -8461,29 +8335,6 @@ function scEquipeSupprimer(techId) {
 
 var _scTechGenCode = "";
 var _scTechGenPass = "";
-var _scTechFormPhotoBase64 = null;
-
-function scTechFormPhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var img = new Image();
-    img.onload = function() {
-      var canvas = document.createElement("canvas");
-      var MAX = 400; var w = img.width, h = img.height;
-      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
-      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      _scTechFormPhotoBase64 = canvas.toDataURL("image/jpeg", 0.7);
-      var preview = document.getElementById("sc-tech-form-photo-preview");
-      if (preview) preview.innerHTML = '<img src="' + _scTechFormPhotoBase64 + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
 
 function scEquipeGenererCode() {
   var prenom = (document.getElementById("sc-tech-prenom")||{}).value||"";
@@ -8517,8 +8368,6 @@ async function scEquipeSauvegarder() {
       name:prenom+" "+nom,
       phone:tel, specialite:specialite, champ:champ
     };
-    if (_scTechFormPhotoBase64) updated.photo = _scTechFormPhotoBase64;
-    _scTechFormPhotoBase64 = null;
     try {
       await window.db.collection("technicians").doc(_scEquipeTechId).update(updated);
       showToast("✅ Technicien modifié !");
@@ -8536,8 +8385,6 @@ async function scEquipeSauvegarder() {
     role:"technicien", suspended:false,
     createdAt:new Date().toLocaleDateString("fr-FR")
   };
-  if (_scTechFormPhotoBase64) tech.photo = _scTechFormPhotoBase64;
-  _scTechFormPhotoBase64 = null;
   var techEmail = _scTechGenCode.toLowerCase()+"-tech@monfermier.app";
   tech.authEmail = techEmail;
   
