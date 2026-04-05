@@ -562,12 +562,11 @@ window.addEventListener('load', function() {
       <span id="msg-badge-admin" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">0</span>
     </button>
   </div>
-  <!-- ONGLETS RANGÉE 5 -->
-  <div class="admin-tabs-row2" style="grid-template-columns:repeat(2,1fr);padding-top:0">
-    <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')">
+  <!-- ONGLETS RANGÉE 5 : Annonces seul, centré -->
+  <div style="padding:4px 8px 0;display:flex;justify-content:center">
+    <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')" style="max-width:260px;width:100%">
       <span class="tab-icon">📢</span>Annonces aux vendeurs
     </button>
-
   </div>
   <div id="admin-content"></div>
 </div>
@@ -843,6 +842,7 @@ const COMMISSIONS = [
 let currentUser = null;
 let clients = [];
 let vendors = [];
+var technicians = [];
 let currentClient = null;
 let cart = [];
 let selectedPayment = "especes";
@@ -1229,7 +1229,7 @@ function doLogout() {
   // Arrêter l'écoute des messages
   if(typeof _messagesUnsub === "function") _messagesUnsub();
   _messagesCache = [];
-  currentUser = null; clients = []; vendors = []; currentClient = null; cart = [];
+  currentUser = null; clients = []; vendors = []; technicians = []; currentClient = null; cart = [];
   document.getElementById("user-badge").style.display = "none";
   document.getElementById("logout-btn").style.display = "none";
   document.getElementById("back-btn").style.display = "none";
@@ -1262,6 +1262,15 @@ function loadAll() {
     vendors = [];
     snap.forEach(function(doc) { vendors.push({id:doc.id, ...doc.data()}); });
   }, function(err) { console.warn("vendors:", err); });
+
+  // Technicians (équipe champ)
+  db.collection("technicians").onSnapshot(function(snap) {
+    technicians = [];
+    snap.forEach(function(doc) { technicians.push({id:doc.id, ...doc.data()}); });
+    // Rafraîchir l'onglet équipe si ouvert dans TSI'I OCAM
+    var modal = document.getElementById("modal-sanny-champ");
+    if (modal && scOnglet === "equipe") { renderACModal(modal); }
+  }, function(err) { console.warn("technicians:", err); });
 
   // Toutes les données en temps réel
   ["stock_v2","stock_mvts","stock_journees","messages","reglement","settings","evaluations","catalogues","comm_payments","annonces"].forEach(function(docName) {
@@ -2108,8 +2117,8 @@ function renderACModal(modal) {
   });
   var tabStyle = function(id) {
     return scOnglet === id
-      ? "flex:1;padding:9px 2px;background:linear-gradient(135deg,#1a4a08,#2d7a1a);color:#d8f0b0;border:none;border-radius:9px;font-size:10px;font-weight:700;cursor:pointer"
-      : "flex:1;padding:9px 2px;background:#061504;color:#5a8a4a;border:none;border-radius:9px;font-size:10px;cursor:pointer";
+      ? "flex:1;padding:6px 2px;background:linear-gradient(135deg,#1a4a08,#2d7a1a);color:#d8f0b0;border:none;border-radius:8px;font-size:9px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2"
+      : "flex:1;padding:6px 2px;background:#061504;color:#5a8a4a;border:none;border-radius:8px;font-size:9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2";
   };
   var alertBadge = totalAl > 0
     ? '<div class="' + (hasDanger ? "stock-alert-blink" : "") + '" style="background:' + (hasDanger ? "transparent" : "#d5803a") + ';color:#fff;border-radius:50%;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;padding:0 4px">' + totalAl + '</div>'
@@ -2121,15 +2130,17 @@ function renderACModal(modal) {
   html += alertBadge;
   html += '<button onclick="closeModal(\'modal-sanny-champ\')" style="background:none;color:#8a8070;font-size:20px;padding:4px 8px;border:none">✕</button>';
   html += '</div>';
-  html += '<div style="display:flex;gap:5px;padding:7px 10px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
-  html += '<button onclick="scSetOnglet(\'dashboard\')" style="' + tabStyle("dashboard") + '">🏠 Accueil</button>';
-  html += '<button onclick="scSetOnglet(\'parcelles\')" style="' + tabStyle("parcelles") + '">🌿 Parcelles</button>';
-  html += '<button onclick="scSetOnglet(\'journal\')" style="' + tabStyle("journal") + '">📋 Journal</button>';
-  html += '<button onclick="scSetOnglet(\'alertes\')" style="' + tabStyle("alertes") + '">⚠️' + (totalAl > 0 ? ' ' + totalAl : '') + '</button>';
-  html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '">📖 Guide</button>';
-  html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '">📸 IA</button>';
-  html += '<button onclick="scSetOnglet(\'technicien\')" style="' + tabStyle("technicien") + '">👷 Fiche</button>';
-  html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '">👥 Équipe</button>';
+  html += '<div style="display:flex;gap:3px;padding:5px 8px 2px;flex-shrink:0">';
+  html += '<button onclick="scSetOnglet(\'dashboard\')" style="' + tabStyle("dashboard") + '"><span style="font-size:15px">🏠</span>Accueil</button>';
+  html += '<button onclick="scSetOnglet(\'parcelles\')" style="' + tabStyle("parcelles") + '"><span style="font-size:15px">🌿</span>Parcelles</button>';
+  html += '<button onclick="scSetOnglet(\'journal\')" style="' + tabStyle("journal") + '"><span style="font-size:15px">📋</span>Journal</button>';
+  html += '<button onclick="scSetOnglet(\'alertes\')" style="' + tabStyle("alertes") + '"><span style="font-size:15px">⚠️</span>' + (totalAl > 0 ? 'Alertes ' + totalAl : 'Alertes') + '</button>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
+  html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '"><span style="font-size:15px">📖</span>Guide</button>';
+  html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '"><span style="font-size:15px">📸</span>Caméra IA</button>';
+  html += '<button onclick="scSetOnglet(\'technicien\')" style="' + tabStyle("technicien") + '"><span style="font-size:15px">👷</span>Ma fiche</button>';
+  html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '"><span style="font-size:15px">👥</span>Équipe</button>';
   html += '</div>';
   html += '<div id="sc-content" style="flex:1;overflow-y:auto;padding:12px;background:#020a01">';
   html += scRenderOnglet(scOnglet, parcelles, observations);
@@ -7875,8 +7886,8 @@ function scRenderCamera() {
   return '<div style="padding:4px">' +
     '<div style="text-align:center;margin-bottom:14px">' +
     '<div style="font-size:36px;margin-bottom:6px">📸</div>' +
-    '<div style="font-size:14px;font-weight:700;color:#a8d880">Diagnostic IA — Parasites & Maladies</div>' +
-    '<div style="font-size:11px;color:#5a8a4a;margin-top:4px">Prenez une photo de votre plant pour un diagnostic instantané</div>' +
+    '<div style="font-size:14px;font-weight:700;color:#a8d880">Diagnostic IA — Parasites, Maladies & Maturité</div>' +
+    '<div style="font-size:11px;color:#5a8a4a;margin-top:4px">Prenez une photo de votre plant ou vos piments pour un diagnostic instantané</div>' +
     '</div>' +
     '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:14px;padding:16px;margin-bottom:12px">' +
     '<div style="font-size:11px;color:#6a9a50;margin-bottom:10px">📌 Parcelle concernée (optionnel)</div>' +
@@ -7939,12 +7950,12 @@ async function acLancerDiagnostic() {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
-        system: "Tu es un agronome expert spécialisé en pathologie végétale, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\"}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}.",
+        system: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true ou false}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}.",
         messages: [{
           role: "user",
           content: [
             { type: "image", source: { type: "base64", media_type: "image/jpeg", data: _camImageBase64 } },
-            { type: "text", text: "Analyse cette photo de piment sous abri. Identifie tout parasite, maladie ou symptôme anormal visible. Réponds uniquement en JSON." }
+            { type: "text", text: "Analyse cette photo de piment sous abri. 1) Identifie tout parasite, maladie ou symptôme anormal visible. 2) Évalue la maturité des piments visibles et indique s'ils sont prêts à récolter. Réponds uniquement en JSON." }
           ]
         }]
       })
@@ -7993,6 +8004,21 @@ function acAfficherResultatDiag(result) {
     html += '<div style="background:#061010;border-radius:10px;padding:12px;margin-bottom:12px">';
     html += '<div style="font-size:10px;color:#5ab8a8;font-weight:700;margin-bottom:6px">🛡️ PRÉVENTION</div>';
     html += '<div style="font-size:12px;color:#c8d8b0;line-height:1.6">' + escapeHtml(result.prevention) + '</div></div>';
+  }
+  // Bloc maturité
+  if (result.maturite && result.maturite !== "Non applicable") {
+    var matCol = result.maturite === "Prêt à récolter" ? "#7ac97a" : result.maturite === "Sur-mûr" ? "#ff8040" : result.maturite === "En cours" ? "#d5a03a" : "#8a8a8a";
+    var matIcon = result.maturite === "Prêt à récolter" ? "🧺" : result.maturite === "Sur-mûr" ? "⚠️" : result.maturite === "En cours" ? "🌶️" : "🌱";
+    html += '<div style="background:#0a1a05;border:2px solid ' + matCol + '55;border-radius:12px;padding:14px;margin-bottom:12px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+    html += '<span style="font-size:20px">' + matIcon + '</span>';
+    html += '<div><div style="font-size:13px;font-weight:700;color:' + matCol + '">Maturité : ' + escapeHtml(result.maturite) + '</div>';
+    if (result.recolte_recommandee) html += '<div style="font-size:10px;color:#7ac97a;font-weight:700">✅ RÉCOLTE RECOMMANDÉE</div>';
+    html += '</div></div>';
+    if (result.maturite_detail) {
+      html += '<div style="font-size:12px;color:#c8d8b0;line-height:1.6">' + escapeHtml(result.maturite_detail) + '</div>';
+    }
+    html += '</div>';
   }
   // Bouton enregistrer comme observation maladie
   var parcelleId = (document.getElementById("cam-parcelle")||{}).value || "";
