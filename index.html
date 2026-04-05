@@ -7963,13 +7963,11 @@ async function acLancerDiagnostic() {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
+        system: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}.",
         messages: [{
-          role: "system",
-          content: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}."
-        }, {
           role: "user",
           content: [
-            { type: "image_url", image_url: { url: "data:image/jpeg;base64," + _camImageBase64 } },
+            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: _camImageBase64 } },
             { type: "text", text: "Analyse cette photo de piment. 1) Identifie tout parasite, maladie ou symptôme anormal visible. 2) Évalue la maturité des piments visibles et indique s'ils sont prêts à récolter. Réponds uniquement en JSON." }
           ]
         }]
@@ -8244,6 +8242,37 @@ function scRenderEquipeListe() {
   return html;
 }
 
+var _scTechPhotoBase64 = null;
+
+function scTechChangerPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement("canvas");
+      var MAX = 400;
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      _scTechPhotoBase64 = canvas.toDataURL("image/jpeg", 0.7);
+      var preview = document.getElementById("sc-tech-photo-preview");
+      if (preview) preview.innerHTML = '<img src="' + _scTechPhotoBase64 + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+      // Sauvegarder la photo immédiatement
+      if (_scEquipeTechId && window.db) {
+        window.db.collection("technicians").doc(_scEquipeTechId).update({ photo: _scTechPhotoBase64 })
+          .then(function() { showToast("📸 Photo mise à jour !"); })
+          .catch(function(e) { showToast("Erreur: " + e.message, true); });
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function scRenderEquipeDetail(techId) {
   var tech = (technicians||[]).find(function(t){return t.id===techId;});
   if (!tech) return '<div style="padding:20px;color:#ff8080">Technicien introuvable</div>';
@@ -8252,15 +8281,24 @@ function scRenderEquipeDetail(techId) {
   
   var html = '<button onclick="scEquipePage(\'liste\')" style="background:none;border:none;color:#5a8a4a;font-size:20px;cursor:pointer;margin-bottom:10px">← Retour</button>';
   html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:14px;margin-bottom:14px">';
-  html += '<div style="display:flex;align-items:center;gap:10px">';
-  html += '<div style="width:50px;height:50px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden">';
+  html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
+  // Avatar cliquable pour changer la photo
+  html += '<div style="position:relative;flex-shrink:0">';
+  html += '<div id="sc-tech-photo-preview" onclick="document.getElementById(\'sc-tech-photo-input\').click()" style="width:64px;height:64px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;cursor:pointer">';
   html += tech.photo ? '<img src="'+tech.photo+'" style="width:100%;height:100%;object-fit:cover">' : '👷';
-  html += '</div><div>';
+  html += '</div>';
+  html += '<div onclick="document.getElementById(\'sc-tech-photo-input\').click()" style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:#1a4a08;border:2px solid #061504;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer">📷</div>';
+  html += '<input type="file" id="sc-tech-photo-input" accept="image/*" style="display:none" onchange="scTechChangerPhoto(this)">';
+  html += '</div>';
+  html += '<div style="flex:1">';
   html += '<div style="font-size:15px;font-weight:700;color:#a8d880">'+escapeHtml(tech.name||"")+'</div>';
   html += '<div style="font-size:11px;color:#5a8a4a;font-family:monospace">'+tech.code+'</div>';
   if (tech.phone) html += '<div style="font-size:11px;color:#4a7a3a">📞 '+escapeHtml(tech.phone)+'</div>';
   if (tech.specialite) html += '<div style="font-size:11px;color:#4a7a3a">🔧 '+escapeHtml(tech.specialite)+'</div>';
-  html += '</div></div></div>';
+  html += '</div></div>';
+  // Bouton Modifier le profil
+  html += '<button onclick="scEquipePage(\'modifier\',\''+tech.id+'\')" style="width:100%;background:#0a1a08;border:1px solid #2a5a1a55;color:#a8d880;border-radius:8px;padding:9px;font-size:12px;font-weight:600;cursor:pointer">✏️ Modifier le profil</button>';
+  html += '</div>';
 
   if (fiches.length === 0) {
     html += '<div style="color:#3a6a2a;text-align:center;padding:20px;font-size:12px">Aucune fiche soumise</div>';
@@ -8288,6 +8326,14 @@ function scRenderEquipeForm() {
   html += '<div style="font-size:14px;font-weight:700;color:#a8d880;margin-bottom:14px">'+(isEdit?"✏️ Modifier":"+ Nouveau Technicien")+'</div>';
   
   html += '<div style="display:grid;gap:10px">';
+  // Photo technicien
+  html += '<div style="text-align:center;margin-bottom:4px">';
+  html += '<div onclick="document.getElementById(\'sc-tech-form-photo-input\').click()" id="sc-tech-form-photo-preview" style="width:72px;height:72px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;cursor:pointer;margin:0 auto 6px">';
+  html += (tech && tech.photo) ? '<img src="'+tech.photo+'" style="width:100%;height:100%;object-fit:cover">' : '👷';
+  html += '</div>';
+  html += '<div style="font-size:10px;color:#5a8a4a;cursor:pointer" onclick="document.getElementById(\'sc-tech-form-photo-input\').click()">📷 Changer la photo</div>';
+  html += '<input type="file" id="sc-tech-form-photo-input" accept="image/*" style="display:none" onchange="scTechFormPhoto(this)">';
+  html += '</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   html += '<div><label style="font-size:10px;color:#5a8a4a">PRÉNOM *</label><input id="sc-tech-prenom" value="'+(tech?(tech.firstName||(tech.name||"").split(" ")[0]):"")+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="Prénom"></div>';
   html += '<div><label style="font-size:10px;color:#5a8a4a">NOM *</label><input id="sc-tech-nom" value="'+(tech?(tech.lastName||(tech.name||"").split(" ").slice(1).join(" ")):"")+'" style="width:100%;background:#061504;border:1px solid #2a5a1a;color:#c8d8b0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:4px" placeholder="Nom"></div>';
@@ -8336,6 +8382,30 @@ function scEquipeSupprimer(techId) {
   }).catch(function(e){ showToast("Erreur: "+e.message, true); });
 }
 
+var _scTechFormPhotoBase64 = null;
+
+function scTechFormPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement("canvas");
+      var MAX = 400; var w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      _scTechFormPhotoBase64 = canvas.toDataURL("image/jpeg", 0.7);
+      var preview = document.getElementById("sc-tech-form-photo-preview");
+      if (preview) preview.innerHTML = '<img src="' + _scTechFormPhotoBase64 + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 var _scTechGenCode = "";
 var _scTechGenPass = "";
 
@@ -8371,6 +8441,8 @@ async function scEquipeSauvegarder() {
       name:prenom+" "+nom,
       phone:tel, specialite:specialite, champ:champ
     };
+    if (_scTechFormPhotoBase64) updated.photo = _scTechFormPhotoBase64;
+    _scTechFormPhotoBase64 = null;
     try {
       await window.db.collection("technicians").doc(_scEquipeTechId).update(updated);
       showToast("✅ Technicien modifié !");
@@ -8388,6 +8460,8 @@ async function scEquipeSauvegarder() {
     role:"technicien", suspended:false,
     createdAt:new Date().toLocaleDateString("fr-FR")
   };
+  if (_scTechFormPhotoBase64) tech.photo = _scTechFormPhotoBase64;
+  _scTechFormPhotoBase64 = null;
   var techEmail = _scTechGenCode.toLowerCase()+"-tech@monfermier.app";
   tech.authEmail = techEmail;
   
