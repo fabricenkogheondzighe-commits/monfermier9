@@ -951,7 +951,10 @@ function goHome() {
     renderVendorHome();
   } else if(currentUser && currentUser.role === "technicien") {
     showPage("page-tech-home");
-    setTimeout(function(){ renderTechHome(); startTechRealtimeSync(); }, 50);
+    setTimeout(function(){
+      window.renderTechHome && window.renderTechHome();
+      window.startTechRealtimeSync && window.startTechRealtimeSync();
+    }, 200);
   } else {
     showPage("page-home");
     renderHome();
@@ -1101,7 +1104,6 @@ function doLogin() {
 }
 
 function onLogin() {
-  try {
   var badge = document.getElementById("user-badge");
   var logout = document.getElementById("logout-btn");
   badge.textContent = currentUser.role==="admin" ? "👑 Admin" : currentUser.role==="technicien" ? "🌿 "+currentUser.name : "👤 "+currentUser.name;
@@ -1113,15 +1115,17 @@ function onLogin() {
 
   if(currentUser.role === "technicien") {
     showPage("page-tech-home");
-    function _doRenderTech() {
-      if(window.renderTechHome) {
-        window.renderTechHome();
-        if(window.startTechRealtimeSync) window.startTechRealtimeSync();
-      } else {
-        setTimeout(_doRenderTech, 100);
-      }
+    // Appel direct - les scripts sont tous chargés au moment du clic
+    if(typeof renderTechHome === "function") {
+      renderTechHome();
+      if(typeof startTechRealtimeSync === "function") startTechRealtimeSync();
+    } else if(window.renderTechHome) {
+      window.renderTechHome();
+      if(window.startTechRealtimeSync) window.startTechRealtimeSync();
+    } else {
+      var c = document.getElementById("tech-home-content");
+      if(c) c.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px;background:#1a0505;border-radius:10px">❌ renderTechHome introuvable dans: ' + Object.keys(window).filter(function(k){return k.indexOf("render")>-1;}).join(", ") + '</div>';
     }
-    _doRenderTech();
   } else if(currentUser.role === "vendor") {
     var vendor = vendors.find(function(v){ return v.code===currentUser.code; });
     enregistrerAlerteConnexion(vendor);
@@ -1134,12 +1138,6 @@ function onLogin() {
   } else {
     showPage("page-home");
     renderHome();
-  }
-  } catch(e) {
-    // Afficher l'erreur sur la page tech si technicien
-    var techContent = document.getElementById("tech-home-content");
-    if(techContent) techContent.innerHTML = '<div style="padding:20px;color:#ff8080;font-size:13px;background:#1a0505;border-radius:10px">⚠️ Erreur onLogin: ' + e.message + '</div>';
-    console.error("onLogin error:", e);
   }
 }
 
