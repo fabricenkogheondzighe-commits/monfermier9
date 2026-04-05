@@ -985,7 +985,7 @@ function renderTechHome() {
     {icon:"📋",label:"Journal terrain",fn:"scSetOngletDirect('journal')"},
     {icon:"⚠️",label:"Alertes"+(alertes>0?" ("+alertes+")":""),fn:"scSetOngletDirect('alertes')"},
     {icon:"📸",label:"Diagnostic IA",fn:"scSetOngletDirect('camera')"},
-    {icon:"👷",label:"Ma fiche du jour",fn:"scSetOngletDirect('technicien')"},
+    {icon:"📊",label:"Suivi équipe",fn:"scSetOngletDirect('suivi')"},
   ];
   mods.forEach(function(m){
     html += '<button onclick="'+m.fn+'" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">';
@@ -2151,7 +2151,7 @@ function renderACModal(modal) {
   html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
   html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '"><span style="font-size:15px">📖</span>Guide</button>';
   html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '"><span style="font-size:15px">📸</span>Caméra IA</button>';
-  html += '<button onclick="scSetOnglet(\'technicien\')" style="' + tabStyle("technicien") + '"><span style="font-size:15px">👷</span>Ma fiche</button>';
+  html += '<button onclick="scSetOnglet(\'suivi\')" style="' + tabStyle("suivi") + '"><span style="font-size:15px">📊</span>Suivi</button>';
   html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '"><span style="font-size:15px">👥</span>Équipe</button>';
   html += '</div>';
   html += '<div id="sc-content" style="flex:1;overflow-y:auto;padding:12px;background:#020a01">';
@@ -2174,6 +2174,7 @@ function scRenderOnglet(onglet, parcelles, observations) {
   if (onglet === "alertes")    return scRenderAlertes(parcelles, observations);
   if (onglet === "guide")      return scRenderGuide();
   if (onglet === "camera")     return scRenderCamera();
+  if (onglet === "suivi")      return scRenderSuivi();
   if (onglet === "technicien") return scRenderFicheTech();
   if (onglet === "equipe")     return scRenderEquipe();
   return "";
@@ -7961,23 +7962,27 @@ async function acLancerDiagnostic() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 1024,
-        system: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé sous abri en Afrique centrale (Gabon). Analyse la photo fournie et réponds UNIQUEMENT en JSON valide avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description de la couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true}. Si l'image n'est pas une plante, retourne {\"erreur\": \"Image non reconnue comme plante\"}.",
+        model: "claude-sonnet-4-6",
+        max_tokens: 1200,
+        system: "Tu es un agronome expert spécialisé en pathologie végétale ET en évaluation de maturité, particulièrement pour le piment (Capsicum) cultivé en Afrique centrale (Gabon). Analyse la photo et réponds UNIQUEMENT en JSON valide (sans balises markdown) avec cette structure exacte : {\"parasite\": \"nom du parasite ou maladie ou Aucun visible\", \"certitude\": \"Élevée|Moyenne|Faible\", \"symptomes\": \"description des symptômes visibles\", \"urgence\": \"Critique|Élevée|Modérée|Faible\", \"traitement\": \"traitement recommandé avec doses précises\", \"prevention\": \"mesures préventives\", \"stade\": \"stade d'infestation si applicable\", \"maturite\": \"Immature|En cours|Prêt à récolter|Sur-mûr|Non applicable\", \"maturite_detail\": \"description couleur, taille, fermeté et conseils de récolte\", \"recolte_recommandee\": true}. Si l'image n'est pas une plante retourne {\"erreur\": \"Image non reconnue comme plante\"}.",
         messages: [{
           role: "user",
           content: [
             { type: "image", source: { type: "base64", media_type: "image/jpeg", data: _camImageBase64 } },
-            { type: "text", text: "Analyse cette photo de piment. 1) Identifie tout parasite, maladie ou symptôme anormal visible. 2) Évalue la maturité des piments visibles et indique s'ils sont prêts à récolter. Réponds uniquement en JSON." }
+            { type: "text", text: "Analyse cette photo de piment. 1) Identifie tout parasite, maladie ou symptôme visible. 2) Évalue la maturité et si les piments sont prêts à récolter. Réponds uniquement en JSON pur sans balises." }
           ]
         }]
       })
     });
     var data = await response.json();
     var raw = "";
-    if (data.choices && data.choices[0]) raw = data.choices[0].message.content || "{}";
-    else if (data.content && data.content[0]) raw = data.content[0].text || "{}";
+    // Format Anthropic natif
+    if (data.content && data.content[0] && data.content[0].text) raw = data.content[0].text;
+    // Format OpenAI/proxy
+    else if (data.choices && data.choices[0]) raw = data.choices[0].message && data.choices[0].message.content ? data.choices[0].message.content : "{}";
+    // Fallback
     else raw = "{}";
+    if (!raw || raw.trim() === "") raw = "{}";
     var clean = raw.replace(/```json|```/g, "").trim();
     var result = JSON.parse(clean);
     if (btn) { btn.textContent = "🔬 Lancer le diagnostic IA"; btn.disabled = false; }
@@ -8081,6 +8086,204 @@ var TACHES_DEFAUT = [
   "📊 Comptage plants",
   "🔧 Maintenance équipements"
 ];
+
+// ═══════════════════════════════════════════════════════════
+// TSI'I OCAM — ONGLET SUIVI (supervision chef / admin)
+// ═══════════════════════════════════════════════════════════
+var _suiviSousOnglet = "fiches";
+
+function scRenderSuivi() {
+  var today = new Date().toISOString().split("T")[0];
+  var fiches = _fichesCache || [];
+
+  // ── En-tête ──────────────────────────────────────────────
+  var html = '<div style="padding:4px">';
+  html += '<div style="text-align:center;margin-bottom:14px">';
+  html += '<div style="font-size:30px;margin-bottom:4px">📊</div>';
+  html += '<div style="font-size:14px;font-weight:700;color:#a8d880">Suivi de l\'Équipe</div>';
+  html += '<div style="font-size:11px;color:#5a8a4a;margin-top:2px">Contrôle du travail des techniciens en temps réel</div>';
+  html += '</div>';
+
+  // ── Sous-onglets ──────────────────────────────────────────
+  var tabs = [
+    {id:"fiches",   icon:"📋", label:"Fiches du jour"},
+    {id:"technicien",icon:"👷",label:"Par technicien"},
+    {id:"parcelle", icon:"🌿", label:"Par parcelle"},
+    {id:"problemes",icon:"⚠️", label:"Problèmes"},
+    {id:"stats",    icon:"📈", label:"Statistiques"}
+  ];
+  html += '<div style="display:flex;overflow-x:auto;gap:6px;margin-bottom:14px;padding-bottom:4px;scrollbar-width:none">';
+  tabs.forEach(function(t) {
+    var active = _suiviSousOnglet === t.id;
+    html += '<button onclick="scSuiviTab(\'' + t.id + '\')" style="flex-shrink:0;padding:7px 12px;background:' + (active ? 'linear-gradient(135deg,#1a4a08,#2d7a1a)' : '#061504') + ';border:1px solid ' + (active ? '#3a8a1a' : '#1a3a1222') + ';color:' + (active ? '#d8f0b0' : '#6a9a50') + ';border-radius:20px;font-size:11px;font-weight:' + (active ? '700' : '400') + ';cursor:pointer;white-space:nowrap">' + t.icon + ' ' + t.label + '</button>';
+  });
+  html += '</div>';
+
+  // ── Contenu selon sous-onglet ─────────────────────────────
+  if (_suiviSousOnglet === "fiches") {
+    // Fiches du jour
+    var fichesAujourd = fiches.filter(function(f){ return f.date === today; });
+    var techs = scGetTechniciensList();
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+    html += '<div style="font-size:12px;color:#a8d880;font-weight:700">📅 ' + new Date().toLocaleDateString("fr-FR", {weekday:"long",day:"numeric",month:"long"}) + '</div>';
+    html += '<div style="font-size:11px;background:#0a2008;border:1px solid #2a5a1a44;color:#7ac97a;border-radius:8px;padding:3px 10px">' + fichesAujourd.length + ' fiche(s)</div>';
+    html += '</div>';
+    if (fichesAujourd.length === 0) {
+      html += '<div style="text-align:center;padding:30px 20px;color:#3a6a2a;font-size:13px">Aucune fiche soumise aujourd\'hui encore.</div>';
+    } else {
+      fichesAujourd.forEach(function(f) {
+        var hasProb = f.problemes && f.problemes.length > 0 && !f.problemes.includes("RAS — Tout va bien");
+        var borderCol = hasProb ? "#d5a03a" : "#2a5a1a";
+        html += '<div style="background:#061504;border:1px solid ' + borderCol + '44;border-radius:12px;padding:12px;margin-bottom:10px">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+        html += '<div style="font-size:13px;font-weight:700;color:#a8d880">👤 ' + escapeHtml(f.technicien || "Technicien") + '</div>';
+        html += '<div style="font-size:10px;color:#5a8a4a">' + (f.heure || "") + '</div>';
+        html += '</div>';
+        if (f.parcelles && f.parcelles.length > 0) {
+          html += '<div style="font-size:11px;color:#c8d8b0;margin-bottom:6px">🌿 ' + f.parcelles.map(function(p){ return escapeHtml(p); }).join(", ") + '</div>';
+        }
+        if (f.taches && f.taches.length > 0) {
+          html += '<div style="font-size:11px;color:#c8d8b0;margin-bottom:6px">✅ ' + f.taches.length + ' tâche(s) réalisée(s)</div>';
+        }
+        if (hasProb) {
+          html += '<div style="font-size:11px;color:#d5a03a;background:#1a0f00;border-radius:6px;padding:6px 8px">⚠️ ' + f.problemes.join(", ") + '</div>';
+        }
+        if (f.commentaire) {
+          html += '<div style="font-size:11px;color:#8ab870;margin-top:6px;font-style:italic">📝 ' + escapeHtml(f.commentaire.substring(0,80)) + (f.commentaire.length > 80 ? "..." : "") + '</div>';
+        }
+        html += '</div>';
+      });
+    }
+
+  } else if (_suiviSousOnglet === "technicien") {
+    // Par technicien
+    var techs = scGetTechniciensList();
+    if (techs.length === 0) {
+      html += '<div style="text-align:center;padding:30px 20px;color:#3a6a2a;font-size:13px">Aucun technicien enregistré.</div>';
+    } else {
+      techs.forEach(function(tech) {
+        var fichesTech = fiches.filter(function(f){ return f.technicien === tech.name || f.techCode === tech.code; });
+        var ficheTodayT = fichesTech.find(function(f){ return f.date === today; });
+        var totalFiches = fichesTech.length;
+        var probCount = fichesTech.filter(function(f){ return f.problemes && f.problemes.length > 0 && !f.problemes.includes("RAS — Tout va bien"); }).length;
+        html += '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:12px;padding:12px;margin-bottom:10px">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+        html += '<div style="font-size:13px;font-weight:700;color:#a8d880">👤 ' + escapeHtml(tech.name) + '</div>';
+        html += '<div style="font-size:10px;background:' + (ficheTodayT ? '#0a2008' : '#1a0a00') + ';border:1px solid ' + (ficheTodayT ? '#2a5a1a' : '#5a2a0044') + ';color:' + (ficheTodayT ? '#7ac97a' : '#d5a03a') + ';border-radius:8px;padding:3px 8px">' + (ficheTodayT ? '✅ Fiche soumise' : '⏳ Pas encore') + '</div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:12px">';
+        html += '<div style="font-size:11px;color:#c8d8b0">📋 ' + totalFiches + ' fiche(s) total</div>';
+        if (probCount > 0) html += '<div style="font-size:11px;color:#d5a03a">⚠️ ' + probCount + ' problème(s)</div>';
+        html += '</div>';
+        if (ficheTodayT && ficheTodayT.parcelles && ficheTodayT.parcelles.length > 0) {
+          html += '<div style="font-size:11px;color:#6a9a50;margin-top:6px">🌿 Aujourd\'hui : ' + ficheTodayT.parcelles.join(", ") + '</div>';
+        }
+        html += '</div>';
+      });
+    }
+
+  } else if (_suiviSousOnglet === "parcelle") {
+    // Par parcelle
+    var parcelles = getParcelles();
+    if (parcelles.length === 0) {
+      html += '<div style="text-align:center;padding:30px 20px;color:#3a6a2a;font-size:13px">Aucune parcelle enregistrée.</div>';
+    } else {
+      parcelles.forEach(function(p) {
+        var fichesParcelle = fiches.filter(function(f){ return f.parcelles && f.parcelles.indexOf && (f.parcelles.indexOf(p.nom) >= 0 || f.parcelles.indexOf(p.id) >= 0); });
+        html += '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:12px;padding:12px;margin-bottom:10px">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+        html += '<div style="font-size:13px;font-weight:700;color:#a8d880">🌿 ' + escapeHtml(p.nom) + '</div>';
+        html += '<div style="font-size:10px;color:#5a8a4a">' + fichesParcelle.length + ' intervention(s)</div>';
+        html += '</div>';
+        if (fichesParcelle.length > 0) {
+          var derniere = fichesParcelle.sort(function(a,b){ return b.date > a.date ? 1 : -1; })[0];
+          html += '<div style="font-size:11px;color:#c8d8b0">Dernière intervention : ' + (derniere.date || "?") + ' par ' + escapeHtml(derniere.technicien || "?") + '</div>';
+        } else {
+          html += '<div style="font-size:11px;color:#3a6a2a">Aucune intervention enregistrée</div>';
+        }
+        html += '</div>';
+      });
+    }
+
+  } else if (_suiviSousOnglet === "problemes") {
+    // Fiches avec problèmes
+    var fichesProb = fiches.filter(function(f){ return f.problemes && f.problemes.length > 0 && !f.problemes.includes("RAS — Tout va bien"); });
+    fichesProb.sort(function(a,b){ return b.date > a.date ? 1 : -1; });
+    html += '<div style="font-size:12px;color:#d5a03a;font-weight:700;margin-bottom:10px">⚠️ ' + fichesProb.length + ' fiche(s) avec problème(s)</div>';
+    if (fichesProb.length === 0) {
+      html += '<div style="text-align:center;padding:30px 20px;color:#3a6a2a;font-size:13px">✅ Aucun problème signalé — Tout va bien !</div>';
+    } else {
+      fichesProb.slice(0, 20).forEach(function(f) {
+        html += '<div style="background:#1a0800;border:1px solid #d5a03a33;border-radius:12px;padding:12px;margin-bottom:10px">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+        html += '<div style="font-size:12px;font-weight:700;color:#d5a03a">⚠️ ' + escapeHtml(f.technicien || "?") + '</div>';
+        html += '<div style="font-size:10px;color:#5a8a4a">' + (f.date || "") + '</div>';
+        html += '</div>';
+        html += '<div style="font-size:11px;color:#ffb070">' + f.problemes.join(" · ") + '</div>';
+        if (f.commentaire) html += '<div style="font-size:11px;color:#a8a080;margin-top:4px;font-style:italic">📝 ' + escapeHtml(f.commentaire.substring(0,60)) + (f.commentaire.length>60?"...":"") + '</div>';
+        html += '</div>';
+      });
+    }
+
+  } else if (_suiviSousOnglet === "stats") {
+    // Statistiques globales
+    var techs = scGetTechniciensList();
+    var totalFiches = fiches.length;
+    var fichesAujourdS = fiches.filter(function(f){ return f.date === today; });
+    var totalProbs = fiches.filter(function(f){ return f.problemes && f.problemes.length > 0 && !f.problemes.includes("RAS — Tout va bien"); }).length;
+    var techsActifs = techs.filter(function(t){ return fiches.find(function(f){ return f.technicien===t.name || f.techCode===t.code; }); }).length;
+
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+    var kpis = [
+      {label:"Fiches totales", val:totalFiches, icon:"📋", col:"#7ac97a"},
+      {label:"Aujourd'hui", val:fichesAujourdS.length, icon:"📅", col:"#5ab8a8"},
+      {label:"Problèmes signalés", val:totalProbs, icon:"⚠️", col:"#d5a03a"},
+      {label:"Techniciens actifs", val:techsActifs + "/" + techs.length, icon:"👷", col:"#a8d880"}
+    ];
+    kpis.forEach(function(k) {
+      html += '<div style="background:#061504;border:1px solid ' + k.col + '33;border-radius:12px;padding:14px;text-align:center">';
+      html += '<div style="font-size:22px;margin-bottom:4px">' + k.icon + '</div>';
+      html += '<div style="font-size:20px;font-weight:700;color:' + k.col + '">' + k.val + '</div>';
+      html += '<div style="font-size:10px;color:#5a8a4a;margin-top:2px">' + k.label + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Top techniciens (classement par fiches)
+    if (techs.length > 0) {
+      html += '<div style="font-size:11px;color:#a8d880;font-weight:700;margin-bottom:8px">🏆 Activité par technicien</div>';
+      var techRanking = techs.map(function(t) {
+        return {
+          name: t.name,
+          count: fiches.filter(function(f){ return f.technicien===t.name || f.techCode===t.code; }).length
+        };
+      }).sort(function(a,b){ return b.count - a.count; });
+      techRanking.forEach(function(t, i) {
+        var bar = Math.round((totalFiches > 0 ? t.count / Math.max.apply(null, techRanking.map(function(x){return x.count;})) : 0) * 100);
+        html += '<div style="margin-bottom:8px">';
+        html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:#c8d8b0;margin-bottom:3px"><span>' + (i===0?"🥇":i===1?"🥈":i===2?"🥉":"  ") + ' ' + escapeHtml(t.name) + '</span><span style="color:#7ac97a">' + t.count + ' fiche(s)</span></div>';
+        html += '<div style="background:#0a1a08;border-radius:4px;height:6px"><div style="background:linear-gradient(90deg,#1a4a08,#2d7a1a);height:6px;border-radius:4px;width:' + bar + '%"></div></div>';
+        html += '</div>';
+      });
+    }
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function scSuiviTab(tab) {
+  _suiviSousOnglet = tab;
+  if (window.scSetOnglet) scSetOnglet("suivi");
+}
+
+function scGetTechniciensList() {
+  // Récupère la liste des techniciens depuis localStorage (créés via onglet Équipe)
+  try {
+    var data = JSON.parse(localStorage.getItem("sc_equipe") || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch(e) { return []; }
+}
 
 function scRenderFicheTech() {
   var today = new Date().toISOString().split("T")[0];
