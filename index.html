@@ -1798,15 +1798,22 @@ async function sannyEnvoyerAvecImage(base64Data, mimeType, fileName, typeName) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
+        system: getSannySystem(),
         messages: [
-          { role: 'system', content: getSannySystem() },
           ...iaConversation.slice(0, -0),
           {
             role: 'user',
             content: [
-              { type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + base64Data } },
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: mimeType,
+                  data: base64Data
+                }
+              },
               { type: 'text', text: prompt }
             ]
           }
@@ -1815,8 +1822,8 @@ async function sannyEnvoyerAvecImage(base64Data, mimeType, fileName, typeName) {
     });
     var data = await response.json();
     var reponse = '';
-    if (data.choices && data.choices[0]) reponse = data.choices[0].message.content || '';
-    else if (data.content && data.content[0]) reponse = data.content[0].text || '';
+    if (data.content && data.content[0]) reponse = data.content[0].text || '';
+    else if (data.choices && data.choices[0]) reponse = data.choices[0].message && data.choices[0].message.content ? data.choices[0].message.content : '';
     if (!reponse) reponse = 'Désolé, je n\'ai pas pu analyser cette image.';
 
     iaConversation.push({ role: 'user', content: prompt });
@@ -8460,7 +8467,23 @@ function scRenderEquipeDetail(techId) {
   html += '<div style="font-size:11px;color:#5a8a4a;font-family:monospace">'+tech.code+'</div>';
   if (tech.phone) html += '<div style="font-size:11px;color:#4a7a3a">📞 '+escapeHtml(tech.phone)+'</div>';
   if (tech.specialite) html += '<div style="font-size:11px;color:#4a7a3a">🔧 '+escapeHtml(tech.specialite)+'</div>';
-  html += '</div></div></div>';
+  html += '</div></div>';
+  // === BLOC IDENTIFIANTS + PARTAGE ===
+  html += '<div style="margin-top:12px;background:#040d03;border:1px solid #4a8a3044;border-radius:10px;padding:12px">';
+  html += '<div style="font-size:10px;color:#5a8a4a;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">🔑 IDENTIFIANTS DE CONNEXION</div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+  html += '<span style="font-size:11px;color:#5a8a4a">CODE</span>';
+  html += '<span style="font-size:18px;font-weight:700;color:#a8d880;font-family:monospace;letter-spacing:3px">'+escapeHtml(tech.code||"—")+'</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  html += '<span style="font-size:11px;color:#5a8a4a">MOT DE PASSE</span>';
+  html += '<span style="font-size:18px;font-weight:700;color:#7ac97a;font-family:monospace;letter-spacing:3px">'+escapeHtml(tech.password||"—")+'</span></div>';
+  if (tech.phone) {
+    var _msgWA = "Bonjour "+(tech.name||"")+" !\n\nVoici vos identifiants Mon Fermier (Tsi'i Ocam) :\n🔑 Code : "+(tech.code||"")+"\n🔒 Mot de passe : "+(tech.password||"—")+"\n\nBonne journée !";
+    html += '<a href="https://wa.me/'+tech.phone.replace(/\D/g,"")+'?text='+encodeURIComponent(_msgWA)+'" target="_blank" style="display:block;width:100%;background:linear-gradient(135deg,#128c3e,#25d366);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:8px;box-sizing:border-box">💬 Envoyer par WhatsApp</a>';
+  }
+  html += '<button onclick="scCopierIdentifiantsTech(\''+escapeHtml(tech.code||"")+'\',\''+escapeHtml(tech.password||"—")+'\')" style="width:100%;background:#061504;border:1px solid #4a8a3055;color:#a8d880;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;box-sizing:border-box">📋 Copier les identifiants</button>';
+  html += '</div>';
+  html += '</div>';
 
   if (fiches.length === 0) {
     html += '<div style="color:#3a6a2a;text-align:center;padding:20px;font-size:12px">Aucune fiche soumise</div>';
@@ -8602,6 +8625,15 @@ async function scEquipeSauvegarder() {
     _scTechGenCode = ""; _scTechGenPass = "";
     scEquipePage("liste");
   } catch(e) { showToast("Erreur: "+e.message, true); }
+}
+
+function scCopierIdentifiantsTech(code, pass) {
+  var txt = "Code: " + code + "  |  Mot de passe: " + pass;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(function(){ showToast("✅ Identifiants copiés !"); }).catch(function(){ showToast("Code: "+code+" | MDP: "+pass); });
+  } else {
+    showToast("Code: "+code+" | MDP: "+pass);
+  }
 }
 
 function scEquipeEnvoyerTache() {
