@@ -1820,6 +1820,23 @@ async function sannyEnvoyerAvecImage(base64Data, mimeType, fileName, typeName) {
         ]
       })
     });
+    // ── Vérification HTTP status ──
+    if (!response.ok) {
+      var errBodyV = "";
+      try { errBodyV = await response.text(); } catch(_) {}
+      var lV=document.getElementById('ia-loading'); if(lV)lV.remove();
+      var errMsgV=document.createElement('div');
+      errMsgV.style.cssText='display:flex;justify-content:flex-start;margin-bottom:10px';
+      errMsgV.innerHTML='<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%">' +
+        '<div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR HTTP ' + response.status + ' — Sanny [Vision]</div>' +
+        '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:4px">🔴 ' + escapeHtml(response.status + ' ' + response.statusText) + '</div>' +
+        '<div style="color:#ffaa66;font-family:monospace;font-size:10px;word-break:break-all;max-height:60px;overflow:auto;margin-bottom:4px">' + escapeHtml(errBodyV.substring(0,200)) + '</div>' +
+        '<div style="color:#cc6666;font-size:10px">📌 ' + (response.status===404 ? 'Route /api/Sanny absente.' : response.status===401||response.status===403 ? 'Clé API refusée.' : response.status===429 ? 'Rate limit.' : 'Erreur serveur.') + '</div>' +
+        '</div>';
+      messagesEl.appendChild(errMsgV);
+      messagesEl.scrollTop=messagesEl.scrollHeight;
+      return;
+    }
     var data = await response.json();
     var reponse = '';
     if (data.content && data.content[0]) reponse = data.content[0].text || '';
@@ -1845,7 +1862,12 @@ async function sannyEnvoyerAvecImage(base64Data, mimeType, fileName, typeName) {
     if (l) l.remove();
     var errMsg = document.createElement('div');
     errMsg.style.cssText = 'display:flex;justify-content:flex-start;margin-bottom:10px';
-    errMsg.innerHTML = '<div style="background:#2e0505;border:1px solid #c9202044;border-radius:12px;padding:10px 14px;font-size:12px;color:#ff6666">❌ Impossible d\'analyser l\'image. Vérifiez votre connexion.</div>';
+    var errCode = e && e.message ? e.message : String(e);
+    errMsg.innerHTML = '<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%">' +
+      '<div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR — Sanny [Vision Image]</div>' +
+      '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:4px">🔴 ' + escapeHtml(errCode) + '</div>' +
+      '<div style="color:#cc6666;font-size:10px;margin-top:6px">📌 Cause probable : image trop lourde, modèle vision non disponible ou /api/Sanny KO.</div>' +
+      '</div>';
     messagesEl.appendChild(errMsg);
   }
   messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -1987,6 +2009,23 @@ async function envoyerQuestionIA(question) {
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"llama3-70b-8192",max_tokens:1500,messages:[{role:"system",content:getSannySystem()},...iaConversation]})
     });
+    // ── Vérification HTTP status ──
+    if (!response.ok) {
+      var errBody2 = "";
+      try { errBody2 = await response.text(); } catch(_) {}
+      var l0=document.getElementById("ia-loading"); if(l0)l0.remove();
+      var errMsg0=document.createElement("div");
+      errMsg0.style.cssText="display:flex;justify-content:flex-start;margin-bottom:10px";
+      errMsg0.innerHTML='<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%">' +
+        '<div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR HTTP ' + response.status + ' — Sanny [Chat]</div>' +
+        '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:4px">🔴 ' + escapeHtml(response.status + ' ' + response.statusText) + '</div>' +
+        '<div style="color:#ffaa66;font-family:monospace;font-size:10px;word-break:break-all;max-height:60px;overflow:auto;margin-bottom:4px">' + escapeHtml(errBody2.substring(0,200)) + '</div>' +
+        '<div style="color:#cc6666;font-size:10px">📌 ' + (response.status===404 ? 'Route /api/Sanny absente du déploiement.' : response.status===401||response.status===403 ? 'Clé API refusée.' : response.status===429 ? 'Rate limit dépassé.' : 'Erreur serveur.') + '</div>' +
+        '</div>';
+      messagesEl.appendChild(errMsg0);
+      messagesEl.scrollTop=messagesEl.scrollHeight;
+      return;
+    }
     var data=await response.json();
     var reponse=data.choices&&data.choices[0]?data.choices[0].message.content:"Désolé, je n'ai pas pu répondre. Réessayez.";
     iaConversation.push({role:"assistant",content:reponse});
@@ -2000,7 +2039,12 @@ async function envoyerQuestionIA(question) {
     var l=document.getElementById("ia-loading"); if(l)l.remove();
     var errMsg=document.createElement("div");
     errMsg.style.cssText="display:flex;justify-content:flex-start;margin-bottom:10px";
-    errMsg.innerHTML='<div style="background:#2e0505;border:1px solid #c9202044;border-radius:12px;padding:10px 14px;font-size:12px;color:#ff6666">❌ Sanny ne répond pas. Vérifiez votre connexion internet.</div>';
+    var errCode = e && e.message ? e.message : String(e);
+    errMsg.innerHTML='<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%">' +
+      '<div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR — Sanny [Chat]</div>' +
+      '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:4px">🔴 ' + escapeHtml(errCode) + '</div>' +
+      '<div style="color:#cc6666;font-size:10px;margin-top:6px">📌 Cause probable : route /api/Sanny introuvable, clé API manquante ou timeout réseau.</div>' +
+      '</div>';
     messagesEl.appendChild(errMsg);
   }
   messagesEl.scrollTop=messagesEl.scrollHeight;
@@ -7984,6 +8028,20 @@ async function acLancerDiagnostic() {
         }]
       })
     });
+    // ── Vérification HTTP status ──
+    if (!response.ok) {
+      var errBody = "";
+      try { errBody = await response.text(); } catch(_) {}
+      if (btn) { btn.textContent = "🔬 Lancer le diagnostic IA"; btn.disabled = false; }
+      if (res) res.innerHTML =
+        '<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:14px;font-size:12px">' +
+        '<div style="color:#ff4444;font-weight:700;margin-bottom:8px">❌ ERREUR HTTP ' + response.status + ' — Caméra IA</div>' +
+        '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:6px">🔴 ' + escapeHtml(response.status + ' ' + response.statusText) + '</div>' +
+        '<div style="color:#ffaa66;font-family:monospace;font-size:10px;word-break:break-all;margin-bottom:6px;max-height:80px;overflow:auto">' + escapeHtml(errBody.substring(0, 300)) + '</div>' +
+        '<div style="color:#cc6666;font-size:10px">📌 ' + (response.status===404 ? 'Route /api/Sanny introuvable sur ce déploiement.' : response.status===401||response.status===403 ? 'Clé API refusée — vérifiez ANTHROPIC_API_KEY sur Vercel.' : response.status===429 ? 'Quota API dépassé ou rate limit.' : 'Erreur serveur — consultez les logs Vercel.') + '</div>' +
+        '</div>';
+      return;
+    }
     var data = await response.json();
     console.log("[CaméraIA] Réponse proxy:", JSON.stringify(data).substring(0, 400));
     var raw = "";
@@ -8007,7 +8065,13 @@ async function acLancerDiagnostic() {
     acAfficherResultatDiag(result);
   } catch(e) {
     if (btn) { btn.textContent = "🔬 Lancer le diagnostic IA"; btn.disabled = false; }
-    if (res) res.innerHTML = '<div style="background:#1a0505;border:1px solid #8a202044;border-radius:12px;padding:14px;font-size:12px;color:#ff8888">❌ Erreur d\'analyse. Vérifiez votre connexion et réessayez.</div>';
+    var errCode = e && e.message ? e.message : String(e);
+    if (res) res.innerHTML =
+      '<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:14px;font-size:12px">' +
+      '<div style="color:#ff4444;font-weight:700;margin-bottom:8px">❌ ERREUR — Caméra IA [Diagnostic]</div>' +
+      '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:6px">🔴 ' + escapeHtml(errCode) + '</div>' +
+      '<div style="color:#cc6666;font-size:10px;margin-top:4px">📌 Cause probable : /api/Sanny introuvable, clé API Anthropic manquante sur Vercel, ou modèle "claude-sonnet-4-6" invalide (vérifiez le nom exact).</div>' +
+      '</div>';
   }
 }
 
@@ -9333,6 +9397,68 @@ if ('serviceWorker' in navigator) {
     if (banner) { banner.remove(); banner = null; }
     deferredPrompt = null;
   });
+})();
+</script>
+
+<!-- ═══════ SYSTÈME DEBUG GLOBAL ═══════ -->
+<div id="debug-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#0d0000;border-top:3px solid #ff2222;max-height:45vh;overflow-y:auto;font-family:monospace;font-size:11px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#1a0000;border-bottom:1px solid #ff222244;position:sticky;top:0">
+    <span style="color:#ff4444;font-weight:700;font-size:13px">🐛 DEBUG — Journal des erreurs</span>
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('debug-log').innerHTML=''" style="background:#330000;border:1px solid #ff222244;color:#ff8888;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px">🗑 Vider</button>
+      <button onclick="document.getElementById('debug-panel').style.display='none'" style="background:#330000;border:1px solid #ff222244;color:#ff8888;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px">✕ Fermer</button>
+    </div>
+  </div>
+  <div id="debug-log" style="padding:10px 14px;color:#ff9999;line-height:1.8"></div>
+</div>
+
+<button id="debug-toggle-btn" onclick="toggleDebugPanel()" title="Journal d'erreurs" style="display:none;position:fixed;bottom:14px;right:14px;z-index:99998;width:38px;height:38px;border-radius:50%;background:#330000;border:2px solid #ff2222;color:#ff4444;font-size:17px;cursor:pointer;box-shadow:0 0 12px #ff000055;align-items:center;justify-content:center">🐛</button>
+
+<script>
+(function() {
+  var _debugCount = 0;
+
+  function escSafe(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function addDebugEntry(type, msg, detail) {
+    _debugCount++;
+    var panel = document.getElementById('debug-panel');
+    var log = document.getElementById('debug-log');
+    var btn = document.getElementById('debug-toggle-btn');
+    if (!log) return;
+    var ts = new Date().toLocaleTimeString('fr-FR');
+    var col = type === 'ERR' ? '#ff4444' : type === 'WARN' ? '#ffaa44' : '#aaffaa';
+    var entry = '<div style="border-bottom:1px solid #330000;padding:6px 0">' +
+      '<span style="color:#555;font-size:10px">[' + ts + ']</span> ' +
+      '<span style="color:' + col + ';font-weight:700">[' + type + ']</span> ' +
+      '<span style="color:#ffcccc">' + escSafe(msg) + '</span>' +
+      (detail ? '<div style="color:#ff9966;font-size:10px;margin-top:3px;padding-left:12px;word-break:break-all">' + escSafe(detail) + '</div>' : '') +
+      '</div>';
+    log.innerHTML = entry + log.innerHTML;
+    if (panel) panel.style.display = 'block';
+    if (btn) { btn.style.display = 'flex'; btn.setAttribute('title', _debugCount + ' erreur(s)'); }
+  }
+
+  // Capture toutes les erreurs JS
+  window.addEventListener('error', function(ev) {
+    addDebugEntry('ERR', ev.message || 'Erreur JS',
+      (ev.filename ? ev.filename.split('/').pop() : '') + (ev.lineno ? ' ligne ' + ev.lineno : ''));
+  });
+
+  // Capture promesses rejetées
+  window.addEventListener('unhandledrejection', function(ev) {
+    var msg = ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason || 'Promise rejetée');
+    addDebugEntry('ERR', 'Promise rejetée — ' + msg, '');
+  });
+
+  // API globale pour usage manuel
+  window._debugLog = addDebugEntry;
+  window.toggleDebugPanel = function() {
+    var p = document.getElementById('debug-panel');
+    if (p) p.style.display = (p.style.display === 'none' ? 'block' : 'none');
+  };
 })();
 </script>
 
