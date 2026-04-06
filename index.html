@@ -7939,10 +7939,13 @@ function acChoisirGalerie() {
 }
 
 var _camImageBase64 = null;
+var _camMimeType = "image/jpeg";
 
 function acAnalyserPhoto(input) {
   var file = input.files[0];
   if (!file) return;
+  // Détecter le vrai type MIME (PNG, WebP, JPEG, etc.)
+  _camMimeType = file.type && file.type.startsWith("image/") ? file.type : "image/jpeg";
   var reader = new FileReader();
   reader.onload = function(e) {
     _camImageBase64 = e.target.result.split(",")[1];
@@ -7975,20 +7978,28 @@ async function acLancerDiagnostic() {
         messages: [{
           role: "user",
           content: [
-            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: _camImageBase64 } },
+            { type: "image", source: { type: "base64", media_type: _camMimeType, data: _camImageBase64 } },
             { type: "text", text: "Analyse cette photo de piment. 1) Identifie tout parasite, maladie ou symptôme visible. 2) Évalue la maturité et si les piments sont prêts à récolter. Réponds uniquement en JSON pur sans balises." }
           ]
         }]
       })
     });
     var data = await response.json();
+    console.log("[CaméraIA] Réponse proxy:", JSON.stringify(data).substring(0, 400));
     var raw = "";
-    // Format Anthropic natif
-    if (data.content && data.content[0] && data.content[0].text) raw = data.content[0].text;
-    // Format OpenAI/proxy
-    else if (data.choices && data.choices[0]) raw = data.choices[0].message && data.choices[0].message.content ? data.choices[0].message.content : "{}";
+    if (data.content && Array.isArray(data.content)) {
+      for (var i = 0; i < data.content.length; i++) {
+        if (data.content[i].type === "text" && data.content[i].text) { raw = data.content[i].text; break; }
+      }
+    }
+    // Format OpenAI/proxy (choices array)
+    if (!raw && data.choices && data.choices[0]) {
+      raw = (data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content : "";
+    }
+    // Format simple {text: "..."} ou {response: "..."}
+    if (!raw && data.text) raw = data.text;
+    if (!raw && data.response) raw = data.response;
     // Fallback
-    else raw = "{}";
     if (!raw || raw.trim() === "") raw = "{}";
     var clean = raw.replace(/```json|```/g, "").trim();
     var result = JSON.parse(clean);
