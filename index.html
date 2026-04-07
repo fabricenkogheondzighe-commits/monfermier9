@@ -1665,12 +1665,9 @@ function sannyHandleFile(input, type) {
   var isPDF = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
 
   if (isImage) {
-    // Read image as base64 and show preview + send to Sanny with vision
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var dataUrl = e.target.result;
+    // Compression avant envoi à Sanny (évite HTTP 413 sur Vercel)
+    compresserImageSanny(file, function(dataUrl, mime) {
       var base64 = dataUrl.split(',')[1];
-      var mime = file.type || 'image/jpeg';
 
       // Show image preview in chat
       var userMsg = document.createElement('div');
@@ -1685,8 +1682,7 @@ function sannyHandleFile(input, type) {
 
       // Send to Sanny with actual image data via vision-capable API call
       sannyEnvoyerAvecImage(base64, mime, file.name, typeName);
-    };
-    reader.readAsDataURL(file);
+    });
 
   } else if (isText) {
     // Read as text and send content
@@ -1820,23 +1816,6 @@ async function sannyEnvoyerAvecImage(base64Data, mimeType, fileName, typeName) {
         ]
       })
     });
-    // ── Vérification HTTP status ──
-    if (!response.ok) {
-      var errBodyV = "";
-      try { errBodyV = await response.text(); } catch(_) {}
-      var lV=document.getElementById('ia-loading'); if(lV)lV.remove();
-      var errMsgV=document.createElement('div');
-      errMsgV.style.cssText='display:flex;justify-content:flex-start;margin-bottom:10px';
-      errMsgV.innerHTML='<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%">' +
-        '<div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR HTTP ' + response.status + ' — Sanny [Vision]</div>' +
-        '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:4px">🔴 ' + escapeHtml(response.status + ' ' + response.statusText) + '</div>' +
-        '<div style="color:#ffaa66;font-family:monospace;font-size:10px;word-break:break-all;max-height:60px;overflow:auto;margin-bottom:4px">' + escapeHtml(errBodyV.substring(0,200)) + '</div>' +
-        '<div style="color:#cc6666;font-size:10px">📌 ' + (response.status===404 ? 'Route /api/Sanny absente.' : response.status===401||response.status===403 ? 'Clé API refusée.' : response.status===429 ? 'Rate limit.' : 'Erreur serveur.') + '</div>' +
-        '</div>';
-      messagesEl.appendChild(errMsgV);
-      messagesEl.scrollTop=messagesEl.scrollHeight;
-      return;
-    }
     var data = await response.json();
     var reponse = '';
     if (data.content && data.content[0]) reponse = data.content[0].text || '';
@@ -1866,7 +1845,7 @@ async function sannyEnvoyerAvecImage(base64Data, mimeType, fileName, typeName) {
     errMsg.innerHTML = '<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%">' +
       '<div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR — Sanny [Vision Image]</div>' +
       '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:4px">🔴 ' + escapeHtml(errCode) + '</div>' +
-      '<div style="color:#cc6666;font-size:10px;margin-top:6px">📌 Cause probable : image trop lourde, modèle vision non disponible ou /api/Sanny KO.</div>' +
+      '<div style="color:#cc6666;font-size:10px;margin-top:6px">📌 Image trop lourde, modèle vision KO ou /api/Sanny indisponible.</div>' +
       '</div>';
     messagesEl.appendChild(errMsg);
   }
@@ -2009,22 +1988,12 @@ async function envoyerQuestionIA(question) {
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"llama3-70b-8192",max_tokens:1500,messages:[{role:"system",content:getSannySystem()},...iaConversation]})
     });
-    // ── Vérification HTTP status ──
     if (!response.ok) {
-      var errBody2 = "";
-      try { errBody2 = await response.text(); } catch(_) {}
-      var l0=document.getElementById("ia-loading"); if(l0)l0.remove();
-      var errMsg0=document.createElement("div");
-      errMsg0.style.cssText="display:flex;justify-content:flex-start;margin-bottom:10px";
-      errMsg0.innerHTML='<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%">' +
-        '<div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR HTTP ' + response.status + ' — Sanny [Chat]</div>' +
-        '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:4px">🔴 ' + escapeHtml(response.status + ' ' + response.statusText) + '</div>' +
-        '<div style="color:#ffaa66;font-family:monospace;font-size:10px;word-break:break-all;max-height:60px;overflow:auto;margin-bottom:4px">' + escapeHtml(errBody2.substring(0,200)) + '</div>' +
-        '<div style="color:#cc6666;font-size:10px">📌 ' + (response.status===404 ? 'Route /api/Sanny absente du déploiement.' : response.status===401||response.status===403 ? 'Clé API refusée.' : response.status===429 ? 'Rate limit dépassé.' : 'Erreur serveur.') + '</div>' +
-        '</div>';
-      messagesEl.appendChild(errMsg0);
-      messagesEl.scrollTop=messagesEl.scrollHeight;
-      return;
+      var errBodyC=""; try { errBodyC=await response.text(); } catch(_){}
+      var lC=document.getElementById("ia-loading"); if(lC)lC.remove();
+      var eC=document.createElement("div"); eC.style.cssText="display:flex;justify-content:flex-start;margin-bottom:10px";
+      eC.innerHTML='<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%"><div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR HTTP '+response.status+' — Sanny</div><div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all">🔴 '+escapeHtml(response.status+' '+response.statusText)+'</div><div style="color:#ffaa66;font-size:10px;margin-top:4px;word-break:break-all">'+escapeHtml(errBodyC.substring(0,150))+'</div><div style="color:#cc6666;font-size:10px;margin-top:4px">📌 '+(response.status===404?'Route /api/Sanny absente.':response.status===401||response.status===403?'Clé API refusée.':response.status===429?'Rate limit.':'Erreur serveur — logs Vercel.')+'</div></div>';
+      messagesEl.appendChild(eC); messagesEl.scrollTop=messagesEl.scrollHeight; return;
     }
     var data=await response.json();
     var reponse=data.choices&&data.choices[0]?data.choices[0].message.content:"Désolé, je n'ai pas pu répondre. Réessayez.";
@@ -2043,7 +2012,7 @@ async function envoyerQuestionIA(question) {
     errMsg.innerHTML='<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:12px 14px;font-size:12px;max-width:90%">' +
       '<div style="color:#ff4444;font-weight:700;margin-bottom:6px">❌ ERREUR — Sanny [Chat]</div>' +
       '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:4px">🔴 ' + escapeHtml(errCode) + '</div>' +
-      '<div style="color:#cc6666;font-size:10px;margin-top:6px">📌 Cause probable : route /api/Sanny introuvable, clé API manquante ou timeout réseau.</div>' +
+      '<div style="color:#cc6666;font-size:10px;margin-top:6px">📌 Route /api/Sanny introuvable, clé API manquante ou timeout réseau.</div>' +
       '</div>';
     messagesEl.appendChild(errMsg);
   }
@@ -7985,22 +7954,54 @@ function acChoisirGalerie() {
 var _camImageBase64 = null;
 var _camMimeType = "image/jpeg";
 
+// ── Compression image universelle (évite HTTP 413 Vercel) ───────────────────
+// maxW/maxH : dimensions max en px | qualite : 0.0-1.0 JPEG
+function _compressImg(file, maxW, maxH, qualite, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > maxW || h > maxH) {
+        var ratio = Math.min(maxW / w, maxH / h);
+        w = Math.round(w * ratio); h = Math.round(h * ratio);
+      }
+      var cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      var dUrl = cv.toDataURL("image/jpeg", qualite);
+      var ko = Math.round((dUrl.length * 3 / 4) / 1024);
+      console.log("[ImgCompress] " + img.width + "x" + img.height + "→" + w + "x" + h + " ~" + ko + "Ko");
+      callback(dUrl, "image/jpeg");
+    };
+    img.onerror = function() { callback(e.target.result, file.type || "image/jpeg"); };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+// Alias pour la caméra IA (max 1024px, qualité 0.72)
+function compresserImage(file, maxW, maxH, qualite, callback) { _compressImg(file, maxW, maxH, qualite, callback); }
+// Alias pour Sanny (max 800px, qualité 0.70 — plus conservateur)
+function compresserImageSanny(file, callback) { _compressImg(file, 800, 800, 0.70, callback); }
+
 function acAnalyserPhoto(input) {
   var file = input.files[0];
   if (!file) return;
-  // Détecter le vrai type MIME (PNG, WebP, JPEG, etc.)
-  _camMimeType = file.type && file.type.startsWith("image/") ? file.type : "image/jpeg";
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    _camImageBase64 = e.target.result.split(",")[1];
-    var img = document.getElementById("cam-preview-img");
-    if (img) img.src = e.target.result;
+
+  // Afficher "compression en cours" dans la zone résultat
+  var res = document.getElementById("cam-result-zone");
+  if (res) res.innerHTML = '<div style="font-size:11px;color:#6a9a50;text-align:center;padding:8px">⚙️ Optimisation de l\'image...</div>';
+
+  // Compression : max 1024x1024, qualité 0.72 → ~300-600 Ko en général
+  compresserImage(file, 1024, 1024, 0.72, function(dataUrl, mime) {
+    _camImageBase64 = dataUrl.split(",")[1];
+    _camMimeType = mime;
+    var imgEl = document.getElementById("cam-preview-img");
+    if (imgEl) imgEl.src = dataUrl;
     var zone = document.getElementById("cam-preview-zone");
     if (zone) zone.style.display = "block";
-    var res = document.getElementById("cam-result-zone");
     if (res) res.innerHTML = "";
-  };
-  reader.readAsDataURL(file);
+  });
 }
 
 async function acLancerDiagnostic() {
@@ -8033,12 +8034,21 @@ async function acLancerDiagnostic() {
       var errBody = "";
       try { errBody = await response.text(); } catch(_) {}
       if (btn) { btn.textContent = "🔬 Lancer le diagnostic IA"; btn.disabled = false; }
+      var hint413 = response.status === 413
+        ? '📌 Image encore trop lourde malgré la compression. Essayez avec une photo de qualité inférieure.'
+        : response.status === 404
+        ? '📌 Route /api/Sanny introuvable sur ce déploiement Vercel.'
+        : response.status === 401 || response.status === 403
+        ? '📌 Clé API Anthropic refusée — vérifiez ANTHROPIC_API_KEY sur Vercel.'
+        : response.status === 429
+        ? '📌 Quota API dépassé ou rate limit — réessayez dans quelques secondes.'
+        : '📌 Erreur serveur — consultez les logs Vercel.';
       if (res) res.innerHTML =
         '<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:14px;font-size:12px">' +
         '<div style="color:#ff4444;font-weight:700;margin-bottom:8px">❌ ERREUR HTTP ' + response.status + ' — Caméra IA</div>' +
         '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:6px">🔴 ' + escapeHtml(response.status + ' ' + response.statusText) + '</div>' +
         '<div style="color:#ffaa66;font-family:monospace;font-size:10px;word-break:break-all;margin-bottom:6px;max-height:80px;overflow:auto">' + escapeHtml(errBody.substring(0, 300)) + '</div>' +
-        '<div style="color:#cc6666;font-size:10px">📌 ' + (response.status===404 ? 'Route /api/Sanny introuvable sur ce déploiement.' : response.status===401||response.status===403 ? 'Clé API refusée — vérifiez ANTHROPIC_API_KEY sur Vercel.' : response.status===429 ? 'Quota API dépassé ou rate limit.' : 'Erreur serveur — consultez les logs Vercel.') + '</div>' +
+        '<div style="color:#cc6666;font-size:10px">' + hint413 + '</div>' +
         '</div>';
       return;
     }
@@ -8070,7 +8080,7 @@ async function acLancerDiagnostic() {
       '<div style="background:#1a0000;border:2px solid #ff2222;border-radius:12px;padding:14px;font-size:12px">' +
       '<div style="color:#ff4444;font-weight:700;margin-bottom:8px">❌ ERREUR — Caméra IA [Diagnostic]</div>' +
       '<div style="color:#ff8888;font-family:monospace;font-size:11px;word-break:break-all;margin-bottom:6px">🔴 ' + escapeHtml(errCode) + '</div>' +
-      '<div style="color:#cc6666;font-size:10px;margin-top:4px">📌 Cause probable : /api/Sanny introuvable, clé API Anthropic manquante sur Vercel, ou modèle "claude-sonnet-4-6" invalide (vérifiez le nom exact).</div>' +
+      '<div style="color:#cc6666;font-size:10px;margin-top:4px">📌 Vérifiez /api/Sanny et ANTHROPIC_API_KEY sur Vercel.</div>' +
       '</div>';
   }
 }
@@ -9400,7 +9410,7 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 
-<!-- ═══════ SYSTÈME DEBUG GLOBAL ═══════ -->
+<!-- ═══════ PANNEAU DEBUG GLOBAL ═══════ -->
 <div id="debug-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#0d0000;border-top:3px solid #ff2222;max-height:45vh;overflow-y:auto;font-family:monospace;font-size:11px">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#1a0000;border-bottom:1px solid #ff222244;position:sticky;top:0">
     <span style="color:#ff4444;font-weight:700;font-size:13px">🐛 DEBUG — Journal des erreurs</span>
@@ -9411,54 +9421,26 @@ if ('serviceWorker' in navigator) {
   </div>
   <div id="debug-log" style="padding:10px 14px;color:#ff9999;line-height:1.8"></div>
 </div>
-
 <button id="debug-toggle-btn" onclick="toggleDebugPanel()" title="Journal d'erreurs" style="display:none;position:fixed;bottom:14px;right:14px;z-index:99998;width:38px;height:38px;border-radius:50%;background:#330000;border:2px solid #ff2222;color:#ff4444;font-size:17px;cursor:pointer;box-shadow:0 0 12px #ff000055;align-items:center;justify-content:center">🐛</button>
 
 <script>
 (function() {
-  var _debugCount = 0;
-
-  function escSafe(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  function addDebugEntry(type, msg, detail) {
-    _debugCount++;
-    var panel = document.getElementById('debug-panel');
-    var log = document.getElementById('debug-log');
-    var btn = document.getElementById('debug-toggle-btn');
+  var _dc = 0;
+  function escS(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function dbg(type, msg, detail) {
+    _dc++;
+    var log=document.getElementById('debug-log'), btn=document.getElementById('debug-toggle-btn'), panel=document.getElementById('debug-panel');
     if (!log) return;
-    var ts = new Date().toLocaleTimeString('fr-FR');
-    var col = type === 'ERR' ? '#ff4444' : type === 'WARN' ? '#ffaa44' : '#aaffaa';
-    var entry = '<div style="border-bottom:1px solid #330000;padding:6px 0">' +
-      '<span style="color:#555;font-size:10px">[' + ts + ']</span> ' +
-      '<span style="color:' + col + ';font-weight:700">[' + type + ']</span> ' +
-      '<span style="color:#ffcccc">' + escSafe(msg) + '</span>' +
-      (detail ? '<div style="color:#ff9966;font-size:10px;margin-top:3px;padding-left:12px;word-break:break-all">' + escSafe(detail) + '</div>' : '') +
-      '</div>';
-    log.innerHTML = entry + log.innerHTML;
-    if (panel) panel.style.display = 'block';
-    if (btn) { btn.style.display = 'flex'; btn.setAttribute('title', _debugCount + ' erreur(s)'); }
+    var ts=new Date().toLocaleTimeString('fr-FR');
+    var col=type==='ERR'?'#ff4444':type==='WARN'?'#ffaa44':'#aaffaa';
+    log.innerHTML='<div style="border-bottom:1px solid #330000;padding:6px 0"><span style="color:#555;font-size:10px">['+ts+']</span> <span style="color:'+col+';font-weight:700">['+type+']</span> <span style="color:#ffcccc">'+escS(msg)+'</span>'+(detail?'<div style="color:#ff9966;font-size:10px;margin-top:2px;padding-left:10px;word-break:break-all">'+escS(detail)+'</div>':'')+'</div>'+log.innerHTML;
+    if(panel)panel.style.display='block';
+    if(btn){btn.style.display='flex';btn.title=_dc+' erreur(s)';}
   }
-
-  // Capture toutes les erreurs JS
-  window.addEventListener('error', function(ev) {
-    addDebugEntry('ERR', ev.message || 'Erreur JS',
-      (ev.filename ? ev.filename.split('/').pop() : '') + (ev.lineno ? ' ligne ' + ev.lineno : ''));
-  });
-
-  // Capture promesses rejetées
-  window.addEventListener('unhandledrejection', function(ev) {
-    var msg = ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason || 'Promise rejetée');
-    addDebugEntry('ERR', 'Promise rejetée — ' + msg, '');
-  });
-
-  // API globale pour usage manuel
-  window._debugLog = addDebugEntry;
-  window.toggleDebugPanel = function() {
-    var p = document.getElementById('debug-panel');
-    if (p) p.style.display = (p.style.display === 'none' ? 'block' : 'none');
-  };
+  window.addEventListener('error',function(ev){ dbg('ERR',ev.message||'Erreur JS',(ev.filename||'').split('/').pop()+(ev.lineno?' L'+ev.lineno:'')); });
+  window.addEventListener('unhandledrejection',function(ev){ dbg('ERR','Promise rejetée — '+(ev.reason&&ev.reason.message?ev.reason.message:String(ev.reason||'')),''); });
+  window._debugLog=dbg;
+  window.toggleDebugPanel=function(){ var p=document.getElementById('debug-panel'); if(p)p.style.display=(p.style.display==='none'?'block':'none'); };
 })();
 </script>
 
