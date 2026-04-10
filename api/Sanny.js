@@ -1,5 +1,5 @@
-// api/Sanny.js — Proxy Anthropic pour Vercel
-// La clé API est dans Vercel → Settings → Environment Variables → ANTHROPIC_API_KEY
+// api/Sanny.js — Proxy Gemini pour Vercel
+// La clé API est dans Vercel → Settings → Environment Variables → GEMINI_API_KEY
 
 export default async function handler(req, res) {
   // CORS
@@ -10,37 +10,18 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "Clé API manquante côté serveur" });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: "Clé API Gemini manquante côté serveur" });
 
   try {
-    // Parser le body manuellement si nécessaire
+    // Parser le body
     let body = req.body;
     if (typeof body === "string") {
       try { body = JSON.parse(body); } catch(e) { return res.status(400).json({ error: "JSON invalide" }); }
     }
     if (!body) return res.status(400).json({ error: "Body vide" });
 
-    // Traiter les messages
     let messages = body.messages || [];
-
-    // Convertir image_url (OpenAI) → image base64 (Anthropic) si nécessaire
-    messages = messages.map(msg => {
-      if (msg.role === "user" && Array.isArray(msg.content)) {
-        const newContent = msg.content.map(item => {
-          if (item.type === "image_url" && item.image_url && item.image_url.url) {
-            const dataUrl = item.image_url.url;
-            const match = dataUrl.match(/^data:(image\/[\w+]+);base64,(.+)$/s);
-            if (match) {
-              return { type: "image", source: { type: "base64", media_type: match[1], data: match[2] } };
-            }
-          }
-          return item;
-        });
-        return { ...msg, content: newContent };
-      }
-      return msg;
-    });
 
     // Extraire le system prompt
     let systemPrompt = body.system || null;
@@ -52,30 +33,97 @@ export default async function handler(req, res) {
       }
     }
 
-    // Payload final pour Anthropic
-    const payload = {
-      model: body.model || "claude-sonnet-4-5",
-      max_tokens: body.max_tokens || 1024,
-      messages: messages
-    };
-    if (systemPrompt) payload.system = systemPrompt;
+    // Convertir messages au format Gemini
+    const geminiContents = messages.map(msg => {
+      const role = msg.role === "assistant" ? "model" : "user";
 
-    // Appel Anthropic
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      if (typeof msg.content === "string") {
+        return { role, parts: [{ text: msg.content }] };
+      }
+
+      if (Array.isArray(msg.content)) {
+        const parts = msg.content.map(item => {
+          if (item.type === "text") {
+            return { text: item.text };
+          }
+          // Image base64 (format Anthropic)
+          if (item.type === "image" && item.source?.type === "base64") {
+            return {
+              inlineData: {
+                mimeType: item.source.media_type,
+                data: item.source.data
+              }
+            };
+          }
+          // Image URL base64 (format OpenAI)
+          if (item.type === "image_url" && item.image_url?.url) {
+            const dataUrl = item.image_url.url;
+            const match = dataUrl.match(/^data:(image\/[\w+]+);base64,(.+)$/s);
+            if (match) {
+              return {
+                inlineData: {
+                  mimeType: match[1],
+                  data: match[2]
+                }
+              };
+            }
+          }
+          return { text: "" };
+        });
+        return { role, parts };
+      }
+
+      return { role, parts: [{ text: String(msg.content) }] };
+    });
+
+    // Payload Gemini
+    const payload = {
+      contents: geminiContents,
+      generationConfig: {
+        maxOutputTokens: body.max_tokens || 1024,
+        temperature: 0.7
+      }
+    };
+
+    // Ajouter system prompt si présent
+    if (systemPrompt) {
+      payload.systemInstruction = {
+        parts: [{ text: systemPrompt }]
+      };
+    }
+
+    // Appel API Gemini
+    const model = "gemini-2.0-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
     const data = await response.json();
-    return res.status(response.status).json(data);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.error?.message || "Erreur Gemini" });
+    }
+
+    // Convertir réponse Gemini → format Anthropic (compatible avec ton frontend)
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const anthropicFormat = {
+      id: "gemini-response",
+      type: "message",
+      role: "assistant",
+      content: [{ type: "text", text }],
+      model: model,
+      stop_reason: "end_turn",
+      usage: { input_tokens: 0, output_tokens: 0 }
+    };
+
+    return res.status(200).json(anthropicFormat);
 
   } catch (err) {
-    console.error("Erreur proxy Sanny:", err);
+    console.error("Erreur proxy Gemini:", err);
     return res.status(500).json({ error: "Erreur serveur", detail: err.message });
   }
 }
