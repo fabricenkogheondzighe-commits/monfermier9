@@ -1,5 +1,5 @@
-// api/Sanny.js — Proxy Gemini pour Vercel
-// La clé API est dans Vercel → Settings → Environment Variables → GEMINI_API_KEY
+// api/Sanny.js — Proxy OpenRouter pour Vercel
+// La clé API est dans Vercel → Settings → Environment Variables → OPENROUTER_API_KEY
 
 export default async function handler(req, res) {
   // CORS
@@ -10,11 +10,10 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "Clé API Gemini manquante côté serveur" });
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: "Clé API OpenRouter manquante côté serveur" });
 
   try {
-    // Parser le body
     let body = req.body;
     if (typeof body === "string") {
       try { body = JSON.parse(body); } catch(e) { return res.status(400).json({ error: "JSON invalide" }); }
@@ -33,89 +32,73 @@ export default async function handler(req, res) {
       }
     }
 
-    // Convertir messages au format Gemini
-    const geminiContents = messages.map(msg => {
-      const role = msg.role === "assistant" ? "model" : "user";
+    // Convertir les messages au format OpenAI/OpenRouter
+    const openaiMessages = [];
 
+    if (systemPrompt) {
+      openaiMessages.push({ role: "system", content: systemPrompt });
+    }
+
+    for (const msg of messages) {
       if (typeof msg.content === "string") {
-        return { role, parts: [{ text: msg.content }] };
-      }
-
-      if (Array.isArray(msg.content)) {
+        openaiMessages.push({ role: msg.role, content: msg.content });
+      } else if (Array.isArray(msg.content)) {
         const parts = msg.content.map(item => {
           if (item.type === "text") {
-            return { text: item.text };
+            return { type: "text", text: item.text };
           }
-          // Image base64 (format Anthropic)
+          // Image base64 format Anthropic
           if (item.type === "image" && item.source?.type === "base64") {
             return {
-              inlineData: {
-                mimeType: item.source.media_type,
-                data: item.source.data
+              type: "image_url",
+              image_url: {
+                url: `data:${item.source.media_type};base64,${item.source.data}`
               }
             };
           }
-          // Image URL base64 (format OpenAI)
-          if (item.type === "image_url" && item.image_url?.url) {
-            const dataUrl = item.image_url.url;
-            const match = dataUrl.match(/^data:(image\/[\w+]+);base64,(.+)$/s);
-            if (match) {
-              return {
-                inlineData: {
-                  mimeType: match[1],
-                  data: match[2]
-                }
-              };
-            }
+          // Image URL base64 format OpenAI
+          if (item.type === "image_url") {
+            return item;
           }
-          return { text: "" };
+          return { type: "text", text: "" };
         });
-        return { role, parts };
+        openaiMessages.push({ role: msg.role, content: parts });
       }
-
-      return { role, parts: [{ text: String(msg.content) }] };
-    });
-
-    // Payload Gemini
-    const payload = {
-      contents: geminiContents,
-      generationConfig: {
-        maxOutputTokens: body.max_tokens || 1024,
-        temperature: 0.7
-      }
-    };
-
-    // Ajouter system prompt si présent
-    if (systemPrompt) {
-      payload.systemInstruction = {
-        parts: [{ text: systemPrompt }]
-      };
     }
 
-    // Appel API Gemini
-    const model = "gemini-2.0-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    // Payload OpenRouter
+    const payload = {
+      model: "google/gemini-2.0-flash-exp:free",
+      max_tokens: body.max_tokens || 1024,
+      messages: openaiMessages
+    };
 
-    const response = await fetch(url, {
+    // Appel API OpenRouter
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://monfermier9.vercel.app",
+        "X-Title": "Mon Fermier"
+      },
       body: JSON.stringify(payload)
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || "Erreur Gemini" });
+      return res.status(response.status).json({ error: data.error?.message || "Erreur OpenRouter" });
     }
 
-    // Convertir réponse Gemini → format Anthropic (compatible avec ton frontend)
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    // Convertir réponse OpenRouter → format Anthropic
+    const text = data.choices?.[0]?.message?.content || "";
     const anthropicFormat = {
-      id: "gemini-response",
+      id: "openrouter-response",
       type: "message",
       role: "assistant",
       content: [{ type: "text", text }],
-      model: model,
+      model: payload.model,
       stop_reason: "end_turn",
       usage: { input_tokens: 0, output_tokens: 0 }
     };
@@ -123,7 +106,7 @@ export default async function handler(req, res) {
     return res.status(200).json(anthropicFormat);
 
   } catch (err) {
-    console.error("Erreur proxy Gemini:", err);
+    console.error("Erreur proxy OpenRouter:", err);
     return res.status(500).json({ error: "Erreur serveur", detail: err.message });
   }
 }
