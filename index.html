@@ -1060,11 +1060,54 @@ function doLogin() {
     return;
   }
 
+  // Technicien — vérifier d'abord si le code correspond à un technicien
+  function tryTechLogin() {
+    var tech = technicians.find(function(t){ return t.code && t.code.toUpperCase()===code; });
+    if(tech) {
+      // Vérifier le mot de passe du technicien
+      if(tech.password && tech.password === pass) {
+        if(tech.suspended) {
+          err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
+          err.style.display = "block";
+          err.style.padding = "10px"; err.style.borderRadius = "8px";
+          err.style.background = "#2e050533"; err.style.border = "1px solid #c9202066";
+          return;
+        }
+        currentUser = {code: tech.code, name: tech.name, role: "technicien", techId: tech.id};
+        onLogin();
+        return true;
+      } else {
+        // Essayer Firebase Auth pour le technicien
+        var techEmail = tech.code.toLowerCase().replace(/[^a-z0-9]/g,"") + "-" + tech.id.slice(-4) + "@monfermier.app";
+        window._firebaseLoginVendor(techEmail, pass).then(function() {
+          if(tech.suspended) {
+            window._firebaseLogout();
+            err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
+            err.style.display = "block";
+            err.style.padding = "10px"; err.style.borderRadius = "8px";
+            err.style.background = "#2e050533"; err.style.border = "1px solid #c9202066";
+            return;
+          }
+          currentUser = {code: tech.code, name: tech.name, role: "technicien", techId: tech.id};
+          onLogin();
+        }).catch(function() {
+          err.textContent = "Code ou mot de passe technicien incorrect";
+          err.style.display = "block";
+        });
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Vendeur — d'abord chercher dans la liste chargée de Firestore
   function tryVendorLogin() {
+    // Vérifier d'abord si c'est un technicien
+    if(tryTechLogin()) return;
+
     var vendor = vendors.find(function(v){ return v.code===code; });
     if(!vendor) {
-      err.textContent = "Code vendeur introuvable";
+      err.textContent = "Code introuvable (vendeur ou technicien)";
       err.style.display = "block";
       return;
     }
