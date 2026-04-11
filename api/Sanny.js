@@ -21,7 +21,6 @@ export default async function handler(req, res) {
 
     let messages = body.messages || [];
 
-    // Extraire le system prompt
     let systemPrompt = body.system || null;
     if (!systemPrompt) {
       const sysMsg = messages.find(m => m.role === "system");
@@ -31,7 +30,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Convertir messages au format OpenAI
     const openaiMessages = [];
     if (systemPrompt) openaiMessages.push({ role: "system", content: systemPrompt });
 
@@ -52,7 +50,7 @@ export default async function handler(req, res) {
     }
 
     const payload = {
-      model: "google/gemma-4-27b-it:free",
+      model: "openrouter/auto",
       max_tokens: body.max_tokens || 1024,
       messages: openaiMessages
     };
