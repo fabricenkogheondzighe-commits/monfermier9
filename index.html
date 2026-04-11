@@ -702,7 +702,7 @@ window.addEventListener('load', function() {
 // SDK FIREBASE (vrai SDK — cloud)
 // ═══════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const FIREBASE_CONFIG = {
@@ -739,8 +739,13 @@ window.db = {
           delete: function() { return deleteDoc(docRef); },
           onSnapshot: function(cb, errCb) {
             return onSnapshot(docRef, function(snap) {
-              cb({ data: function(){ return snap.exists() ? snap.data() : null; }, id: snap.id });
+              cb({ data: function(){ return snap.exists() ? snap.data() : null; }, id: snap.id, exists: snap.exists() });
             }, errCb || function(){});
+          },
+          get: function() {
+            return getDoc(docRef).then(function(snap) {
+              return { data: function(){ return snap.exists() ? snap.data() : null; }, id: snap.id, exists: snap.exists() };
+            });
           }
         };
       }
