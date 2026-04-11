@@ -1070,113 +1070,82 @@ function doLogin() {
     return;
   }
 
-  // Technicien — vérifier d'abord si le code correspond à un technicien
-  function tryTechLogin() {
-    var tech = technicians.find(function(t){ return t.code && t.code.toUpperCase()===code; });
+  // Connexion unifiée — cherche d'abord technicien, ensuite vendeur
+  function tryLogin() {
+    var btn = document.querySelector(".btn-login");
+
+    // 1. Chercher dans technicians
+    var tech = technicians.find(function(t){ return t.code && t.code.toUpperCase() === code; });
     if(tech) {
-      // Vérifier le mot de passe du technicien
-      if(tech.password && tech.password === pass) {
-        if(tech.suspended) {
-          err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
-          err.style.display = "block";
-          err.style.padding = "10px"; err.style.borderRadius = "8px";
-          err.style.background = "#2e050533"; err.style.border = "1px solid #c9202066";
-          return;
-        }
-        currentUser = {code: tech.code, name: tech.name, role: "technicien", techId: tech.id};
-        onLogin();
-        return true;
-      } else {
-        // Essayer Firebase Auth pour le technicien
-        var techEmail = tech.code.toLowerCase().replace(/[^a-z0-9]/g,"") + "-" + tech.id.slice(-4) + "@monfermier.app";
-        window._firebaseLoginVendor(techEmail, pass).then(function() {
-          if(tech.suspended) {
-            window._firebaseLogout();
-            err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
-            err.style.display = "block";
-            err.style.padding = "10px"; err.style.borderRadius = "8px";
-            err.style.background = "#2e050533"; err.style.border = "1px solid #c9202066";
-            return;
-          }
-          currentUser = {code: tech.code, name: tech.name, role: "technicien", techId: tech.id};
-          onLogin();
-        }).catch(function() {
-          err.textContent = "Code ou mot de passe technicien incorrect";
-          err.style.display = "block";
-        });
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // Vendeur — d'abord chercher dans la liste chargée de Firestore
-  function tryVendorLogin() {
-    // Vérifier d'abord si c'est un technicien
-    if(tryTechLogin()) return;
-
-    var vendor = vendors.find(function(v){ return v.code===code; });
-    if(!vendor) {
-      err.textContent = "Code introuvable (vendeur ou technicien)";
-      err.style.display = "block";
-      return;
-    }
-    // Connexion Firebase Auth avec email du vendeur
-    var vendorEmail = vendor.code.toLowerCase().replace(/[^a-z0-9]/g,"")+"-"+vendor.id.slice(-4)+"@monfermier.app";
-    window._firebaseLoginVendor(vendorEmail, pass).then(function() {
-      if(vendor.suspended) {
-        window._firebaseLogout();
-        err.innerHTML="⛔ Compte suspendu. Contactez la direction.";
-        err.style.display="block";
-        err.style.padding="10px"; err.style.borderRadius="8px";
-        err.style.background="#2e050533"; err.style.border="1px solid #c9202066";
+      if(tech.suspended) {
+        err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
+        err.style.display = "block";
         return;
       }
-      currentUser = {code:vendor.code, name:vendor.name, role:"vendor", vendorId:vendor.id};
-      onLogin();
-    }).catch(function() {
-      // Fallback : vérifier le mot de passe local (migration)
-      if(vendor.password === pass) {
-        if(vendor.suspended) {
-          err.innerHTML="⛔ Compte suspendu. Contactez la direction.";
-          err.style.display="block";
-          err.style.padding="10px"; err.style.borderRadius="8px";
-          err.style.background="#2e050533"; err.style.border="1px solid #c9202066";
-          return;
-        }
-        currentUser = {code:vendor.code, name:vendor.name, role:"vendor", vendorId:vendor.id};
+      if(tech.password && tech.password === pass) {
+        currentUser = {code: tech.code, name: tech.name, role: "technicien", techId: tech.id};
         onLogin();
+        return;
       } else {
-        err.textContent = "Code ou mot de passe incorrect";
+        err.textContent = "Mot de passe technicien incorrect";
         err.style.display = "block";
+        return;
       }
-    });
+    }
+
+    // 2. Chercher dans vendors
+    var vendor = vendors.find(function(v){ return v.code === code; });
+    if(vendor) {
+      if(vendor.suspended) {
+        err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
+        err.style.display = "block";
+        return;
+      }
+      var vendorEmail = vendor.code.toLowerCase().replace(/[^a-z0-9]/g,"") + "-" + vendor.id.slice(-4) + "@monfermier.app";
+      window._firebaseLoginVendor(vendorEmail, pass).then(function() {
+        currentUser = {code: vendor.code, name: vendor.name, role: "vendor", vendorId: vendor.id};
+        onLogin();
+      }).catch(function() {
+        if(vendor.password === pass) {
+          currentUser = {code: vendor.code, name: vendor.name, role: "vendor", vendorId: vendor.id};
+          onLogin();
+        } else {
+          err.textContent = "Code ou mot de passe incorrect";
+          err.style.display = "block";
+          if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        }
+      });
+      return;
+    }
+
+    // 3. Rien trouvé
+    err.textContent = "Code introuvable";
+    err.style.display = "block";
+    if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
   }
 
-  // Attendre que les vendors soient chargés si besoin
-  if(vendors.length > 0) {
-    tryVendorLogin();
-  } else {
-    // Attendre que Firebase charge avec retries (max 10s)
+  // Attendre que Firebase charge technicians ET vendors (max 10s)
+  function tryVendorLogin() {
     var btn = document.querySelector(".btn-login");
-    if(btn) { btn.textContent = "Connexion..."; btn.disabled = true; }
-    var attempts = 0;
-    var maxAttempts = 20; // 20 x 500ms = 10 secondes max
-    var interval = setInterval(function() {
-      attempts++;
-      if(vendors.length > 0) {
-        clearInterval(interval);
-        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        tryVendorLogin();
-      } else if(attempts >= maxAttempts) {
-        clearInterval(interval);
-        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        // Dernier essai même si vendors vide
-        tryVendorLogin();
-      }
-    }, 500);
+
+    // Si les deux listes sont vides, attendre
+    if(technicians.length === 0 && vendors.length === 0) {
+      if(btn) { btn.textContent = "Connexion..."; btn.disabled = true; }
+      var attempts = 0;
+      var interval = setInterval(function() {
+        attempts++;
+        if(technicians.length > 0 || vendors.length > 0 || attempts >= 20) {
+          clearInterval(interval);
+          if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+          tryLogin();
+        }
+      }, 500);
+    } else {
+      tryLogin();
+    }
   }
-}
+
+  tryVendorLogin();
 
 function onLogin() {
   var badge = document.getElementById("user-badge");
