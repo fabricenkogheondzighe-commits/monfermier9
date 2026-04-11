@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     }
 
     const payload = {
-      model: "meta-llama/llama-4-scout:free",
+      model: "google/gemma-4-27b-it:free",
       max_tokens: body.max_tokens || 1024,
       messages: openaiMessages
     };
