@@ -962,53 +962,68 @@ function renderTechHome() {
   if(nameEl) nameEl.textContent = (currentUser.name||"Technicien") + " · Technicien";
   var content = document.getElementById("tech-home-content");
   if(!content) {
-    // Réessayer si le DOM n'est pas encore prêt
     setTimeout(function(){ renderTechHome(); }, 200);
     return;
   }
+  try {
 
   var today = new Date().toISOString().split("T")[0];
   var ficheExistante = null;
-  try { ficheExistante = JSON.parse(localStorage.getItem("fiche_tech_"+today)||"null"); } catch(e){}
-  var parcelles = getParcelles ? getParcelles() : [];
-  var observations = getObservations ? getObservations() : [];
-  var alertes = observations.filter(function(o){
+  try { ficheExistante = JSON.parse(localStorage.getItem("fiche_tech_"+today)||"null"); } catch(eInner){}
+  var parcelles = typeof getParcelles === "function" ? getParcelles() : [];
+  var observations = typeof getObservations === "function" ? getObservations() : [];
+  var nAlertes = observations.filter(function(o){
     var cutoff = new Date(Date.now()-7*86400000).toISOString().split("T")[0];
     return o.type==="maladie" && o.date>=cutoff;
   }).length;
 
+  var ficheColor = ficheExistante ? "#2a5a1a44" : "#8a202044";
+  var ficheIcon  = ficheExistante ? "✅" : "❌";
+  var ficheLabel = ficheExistante ? "Fiche OK" : "À remplir";
+  var ficheTextColor = ficheExistante ? "#7ac97a" : "#ff8080";
+  var alerteBorder = nAlertes > 0 ? "#d5701a44" : "#2a5a1a44";
+  var alerteColor  = nAlertes > 0 ? "#ff8040" : "#5a8a4a";
+
   var html = "";
 
   // KPIs
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">';
-  html += '<div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">🌿</div><div style="font-size:18px;font-weight:700;color:#a8d880">'+parcelles.length+'</div><div style="font-size:9px;color:#5a8a4a">PARCELLES</div></div>';
-  html += '<div style="background:#061504;border:1px solid '+(alertes>0?"#d5701a44":"#2a5a1a44")+'44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">⚠️</div><div style="font-size:18px;font-weight:700;color:'+(alertes>0?"#ff8040":"#5a8a4a")+'">'+alertes+'</div><div style="font-size:9px;color:#5a8a4a">ALERTES</div></div>';
-  html += '<div style="background:#061504;border:1px solid '+(ficheExistante?"#2a5a1a44":"#8a202044")+'44;border-radius:10px;padding:10px;text-align:center"><div style="font-size:20px">'+(ficheExistante?"✅":"❌")+'</div><div style="font-size:11px;font-weight:700;color:'+(ficheExistante?"#7ac97a":"#ff8080")+'">'+(ficheExistante?"Fiche OK":"À remplir")+'</div><div style="font-size:9px;color:#5a8a4a">FICHE JOUR</div></div>';
-  html += '</div>';
+  html += "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px'>";
+  html += "<div style='background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center'><div style='font-size:20px'>🌿</div><div style='font-size:18px;font-weight:700;color:#a8d880'>" + parcelles.length + "</div><div style='font-size:9px;color:#5a8a4a'>PARCELLES</div></div>";
+  html += "<div style='background:#061504;border:1px solid " + alerteBorder + ";border-radius:10px;padding:10px;text-align:center'><div style='font-size:20px'>⚠️</div><div style='font-size:18px;font-weight:700;color:" + alerteColor + "'>" + nAlertes + "</div><div style='font-size:9px;color:#5a8a4a'>ALERTES</div></div>";
+  html += "<div style='background:#061504;border:1px solid " + ficheColor + ";border-radius:10px;padding:10px;text-align:center'><div style='font-size:20px'>" + ficheIcon + "</div><div style='font-size:11px;font-weight:700;color:" + ficheTextColor + "'>" + ficheLabel + "</div><div style='font-size:9px;color:#5a8a4a'>FICHE JOUR</div></div>";
+  html += "</div>";
 
   // Accès rapide
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
-  var mods = [
-    {icon:"🏠",label:"Tableau de bord",fn:"scSetOngletDirect('dashboard')"},
-    {icon:"🌿",label:"Mes parcelles",fn:"scSetOngletDirect('parcelles')"},
-    {icon:"📋",label:"Journal terrain",fn:"scSetOngletDirect('journal')"},
-    {icon:"⚠️",label:"Alertes"+(alertes>0?" ("+alertes+")":""),fn:"scSetOngletDirect('alertes')"},
-    {icon:"📸",label:"Diagnostic IA",fn:"scSetOngletDirect('camera')"},
-    {icon:"📊",label:"Suivi équipe",fn:"scSetOngletDirect('suivi')"},
-  ];
-  mods.forEach(function(m){
-    html += '<button onclick="'+m.fn+'" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">';
-    html += '<div style="font-size:24px">'+m.icon+'</div>';
-    html += '<div style="font-size:12px;font-weight:600;color:#a8d880;text-align:center">'+m.label+'</div>';
-    html += '</button>';
-  });
-  html += '</div>';
+  var btnStyle = "background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%";
+  var alertLabel = nAlertes > 0 ? "Alertes (" + nAlertes + ")" : "Alertes";
+  html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px'>";
+  html += "<button data-onglet='dashboard' class='tech-mod-btn' style='" + btnStyle + "'><div style='font-size:24px'>🏠</div><div style='font-size:12px;font-weight:600;color:#a8d880'>Tableau de bord</div></button>";
+  html += "<button data-onglet='parcelles' class='tech-mod-btn' style='" + btnStyle + "'><div style='font-size:24px'>🌿</div><div style='font-size:12px;font-weight:600;color:#a8d880'>Mes parcelles</div></button>";
+  html += "<button data-onglet='journal' class='tech-mod-btn' style='" + btnStyle + "'><div style='font-size:24px'>📋</div><div style='font-size:12px;font-weight:600;color:#a8d880'>Journal terrain</div></button>";
+  html += "<button data-onglet='alertes' class='tech-mod-btn' style='" + btnStyle + "'><div style='font-size:24px'>⚠️</div><div style='font-size:12px;font-weight:600;color:#a8d880'>" + alertLabel + "</div></button>";
+  html += "<button data-onglet='camera' class='tech-mod-btn' style='" + btnStyle + "'><div style='font-size:24px'>📸</div><div style='font-size:12px;font-weight:600;color:#a8d880'>Diagnostic IA</div></button>";
+  html += "<button data-onglet='suivi' class='tech-mod-btn' style='" + btnStyle + "'><div style='font-size:24px'>📊</div><div style='font-size:12px;font-weight:600;color:#a8d880'>Suivi équipe</div></button>";
+  html += "</div>";
 
-  // Bouton Tsi'i Ocam complet
-  html += '<button onclick="openSannyChamp()" style="width:100%;background:linear-gradient(135deg,#0a2008,#1a4a08);border:2px solid #4a8a3055;color:#a8d880;padding:16px;border-radius:14px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">';
-  html += "🌶️ Ouvrir Tsi'i Ocam complet</button>";
+  // Bouton Tsi-i Ocam complet
+  html += "<button id='tech-btn-sanny' style='width:100%;background:linear-gradient(135deg,#0a2008,#1a4a08);border:2px solid #4a8a3055;color:#a8d880;padding:16px;border-radius:14px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px'>🌶️ Ouvrir Tsi-i Ocam complet</button>";
 
   content.innerHTML = html;
+
+  // Attacher les événements après injection HTML (évite les problèmes onclick inline)
+  content.querySelectorAll(".tech-mod-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var onglet = btn.getAttribute("data-onglet");
+      if(onglet) scSetOngletDirect(onglet);
+    });
+  });
+  var sannyBtn = document.getElementById("tech-btn-sanny");
+  if(sannyBtn) sannyBtn.addEventListener("click", function(){ openSannyChamp(); });
+
+  } catch(e) {
+    content.innerHTML = "<div style='color:#ff8080;padding:20px;text-align:center'><div style='font-size:30px'>⚠️</div><div style='margin-top:10px;font-size:13px'>Erreur affichage: " + (e.message||String(e)) + "</div></div>";
+    console.error("renderTechHome error:", e);
+  }
 }
 
 function scSetOngletDirect(onglet) {
