@@ -1246,6 +1246,9 @@ function doLogout() {
 // ═══════════════════════════════════════
 function loadAll() {
   // Clients
+  // Charger données Tsi'i Ocam depuis Firebase
+  loadACDataFromFirebase();
+
   db.collection("clients").onSnapshot(function(snap) {
     clients = [];
     snap.forEach(function(doc) { clients.push({id:doc.id, ...doc.data()}); });
@@ -2064,12 +2067,32 @@ var MALADIES_GUIDE = [
   { nom:"Mildiou",           symp:"Taches jaunes dessus, feutrage blanc dessous",     trait:"Mancozèbe + Cymoxanil 2g/L, traitement préventif en saison humide" }
 ];
 
-// ── Persistance données ───────────────────────────────────
+// ── Persistance données — Firebase + localStorage fallback ──
+var _acDataCache = null;
+
 function getACData() {
+  if (_acDataCache !== null) return _acDataCache;
   try { return JSON.parse(localStorage.getItem("tsiiocam_v1") || "{}"); } catch(e) { return {}; }
 }
 function saveACData(data) {
+  _acDataCache = data;
   localStorage.setItem("tsiiocam_v1", JSON.stringify(data));
+  if (window.db) {
+    window.db.collection("app_data").doc("tsiiocam_v1").set({ data: JSON.stringify(data) }).catch(function(e){ console.warn("Firebase tsiiocam:", e); });
+  }
+}
+function loadACDataFromFirebase() {
+  if (!window.db) return;
+  window.db.collection("app_data").doc("tsiiocam_v1").get().then(function(docSnap) {
+    if (docSnap.exists && docSnap.data().data) {
+      try {
+        var data = JSON.parse(docSnap.data().data);
+        _acDataCache = data;
+        localStorage.setItem("tsiiocam_v1", JSON.stringify(data));
+        console.log("[Firebase] tsiiocam_v1 chargé");
+      } catch(e) { console.warn("Erreur parse tsiiocam:", e); }
+    }
+  }).catch(function(e){ console.warn("Firebase load tsiiocam:", e); });
 }
 function getParcelles() { return getACData().parcelles || []; }
 function saveParcelles(parcelles) { var d=getACData(); d.parcelles=parcelles; saveACData(d); }
@@ -7939,6 +7962,7 @@ function scRenderCamera() {
     '<img id="cam-preview-img" style="width:100%;border-radius:10px;max-height:220px;object-fit:cover;margin-bottom:10px">' +
     '<button onclick="acLancerDiagnostic()" id="cam-btn-analyser" style="width:100%;background:linear-gradient(135deg,#1a4a08,#2d7a1a);color:#d8f0b0;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer">🔬 Lancer le diagnostic IA</button>' +
     '</div>' +
+    '<button onclick="acAfficherHistorique()" style="width:100%;background:#0a1a08;border:1px solid #2a5a1a;color:#a8d880;border-radius:10px;padding:10px;font-size:12px;cursor:pointer;margin-bottom:10px">📋 Voir l'historique des diagnostics</button>' +
     '<div id="cam-result-zone"></div>' +
     '</div>';
 }
@@ -8140,6 +8164,93 @@ function acAfficherResultatDiag(result) {
   }
   html += '</div>';
   res.innerHTML = html;
+
+  // Sauvegarder automatiquement dans l'historique
+  acSauvegarderDiagnostic(result);
+}
+
+function acSauvegarderDiagnostic(result) {
+  try {
+    var historique = JSON.parse(localStorage.getItem("mf_cam_historique") || "[]");
+    var parcelleId = (document.getElementById("cam-parcelle")||{}).value || "";
+    var parcelleName = "";
+    if (parcelleId) { var parcelles = getParcelles(); var p = parcelles.find(function(x){ return x.id === parcelleId; }); if (p) parcelleName = p.nom; }
+    historique.unshift({ id: "diag_" + Date.now(), date: new Date().toISOString(), parasite: result.parasite || "Inconnu", certitude: result.certitude || "", urgence: result.urgence || "", symptomes: result.symptomes || "", traitement: result.traitement || "", prevention: result.prevention || "", maturite: result.maturite || "", maturite_detail: result.maturite_detail || "", recolte_recommandee: result.recolte_recommandee || false, parcelleId: parcelleId, parcelleName: parcelleName });
+    if (historique.length > 50) historique = historique.slice(0, 50);
+    localStorage.setItem("mf_cam_historique", JSON.stringify(historique));
+    if (window.db) {
+      window.db.collection("app_data").doc("cam_historique").set({ data: JSON.stringify(historique) }).catch(function(e){ console.warn("Firebase cam_historique:", e); });
+    }
+  } catch(e) { console.error("Erreur sauvegarde historique:", e); }
+}
+
+function acAfficherHistorique() {
+  var res = document.getElementById("cam-result-zone");
+  if (!res) return;
+  // Charger depuis Firebase si disponible
+  if (window.db) {
+    window.db.collection("app_data").doc("cam_historique").get().then(function(docSnap) {
+      var historique = [];
+      if (docSnap.exists && docSnap.data().data) {
+        try { historique = JSON.parse(docSnap.data().data); localStorage.setItem("mf_cam_historique", JSON.stringify(historique)); } catch(e) {}
+      } else {
+        try { historique = JSON.parse(localStorage.getItem("mf_cam_historique") || "[]"); } catch(e) {}
+      }
+      _acAfficherHistoriqueHTML(historique, res);
+    }).catch(function() {
+      var historique = []; try { historique = JSON.parse(localStorage.getItem("mf_cam_historique") || "[]"); } catch(e) {}
+      _acAfficherHistoriqueHTML(historique, res);
+    });
+    return;
+  }
+  var historique = []; try { historique = JSON.parse(localStorage.getItem("mf_cam_historique") || "[]"); } catch(e) {}
+  if (historique.length === 0) { res.innerHTML = '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:14px;padding:20px;text-align:center;color:#6a9a50;font-size:13px">Aucun diagnostic enregistre.</div>'; return; }
+  var html = '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:14px;padding:14px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:13px;font-weight:700;color:#a8d880">Historique Diagnostics ((' + historique.length + ')</div><button onclick="acEffacerHistorique()" style="background:none;border:1px solid #ff444444;color:#ff8888;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer">Effacer</button></div>';
+  historique.forEach(function(d) {
+    var urgCol = d.urgence==="Critique" ? "#ff4040" : d.urgence==="Elevee" ? "#ff8040" : d.urgence==="Moderee" ? "#d5a03a" : "#7ac97a";
+    var dateStr = new Date(d.date).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"});
+    html += '<div style="background:#0a1a08;border-radius:10px;padding:12px;margin-bottom:8px;border-left:3px solid ' + urgCol + '"><div style="font-size:12px;font-weight:700;color:' + urgCol + '">' + escapeHtml(d.parasite) + '</div><div style="font-size:10px;color:#5a8a4a">' + dateStr + '</div>';
+    if (d.parcelleName) html += '<div style="font-size:10px;color:#6a9a50">' + escapeHtml(d.parcelleName) + '</div>';
+    if (d.urgence) html += '<div style="font-size:10px;color:' + urgCol + '">Urgence: ' + escapeHtml(d.urgence) + '</div>';
+    if (d.maturite && d.maturite !== "Non applicable") html += '<div style="font-size:10px;color:#d5a03a">Maturite: ' + escapeHtml(d.maturite) + '</div>';
+    if (d.symptomes) html += '<div style="font-size:11px;color:#a8c890;margin-top:4px">' + escapeHtml(d.symptomes.substring(0,100)) + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  res.innerHTML = html;
+}
+
+function _acAfficherHistoriqueHTML(historique, res) {
+  if (historique.length === 0) {
+    res.innerHTML = '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:14px;padding:20px;text-align:center;color:#6a9a50;font-size:13px">Aucun diagnostic enregistre.</div>';
+    return;
+  }
+  var html = '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:14px;padding:14px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:13px;font-weight:700;color:#a8d880">Historique Diagnostics (' + historique.length + ')</div><button onclick="acEffacerHistorique()" style="background:none;border:1px solid #ff444444;color:#ff8888;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer">Effacer</button></div>';
+  historique.forEach(function(d) {
+    var urgCol = d.urgence==="Critique" ? "#ff4040" : d.urgence==="Elevee" ? "#ff8040" : d.urgence==="Moderee" ? "#d5a03a" : "#7ac97a";
+    var dateStr = new Date(d.date).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"});
+    html += '<div style="background:#0a1a08;border-radius:10px;padding:12px;margin-bottom:8px;border-left:3px solid ' + urgCol + '">';
+    html += '<div style="font-size:12px;font-weight:700;color:' + urgCol + '">' + escapeHtml(d.parasite) + '</div>';
+    html += '<div style="font-size:10px;color:#5a8a4a">' + dateStr + '</div>';
+    if (d.parcelleName) html += '<div style="font-size:10px;color:#6a9a50">' + escapeHtml(d.parcelleName) + '</div>';
+    if (d.urgence) html += '<div style="font-size:10px;color:' + urgCol + '">Urgence: ' + escapeHtml(d.urgence) + ' · Certitude: ' + escapeHtml(d.certitude) + '</div>';
+    if (d.maturite && d.maturite !== "Non applicable") html += '<div style="font-size:10px;color:#d5a03a">Maturite: ' + escapeHtml(d.maturite) + '</div>';
+    if (d.symptomes) html += '<div style="font-size:11px;color:#a8c890;margin-top:4px">' + escapeHtml(d.symptomes.substring(0,120)) + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  res.innerHTML = html;
+}
+
+function acEffacerHistorique() {
+  if (!confirm("Effacer tout l'historique ?")) return;
+  localStorage.removeItem("mf_cam_historique");
+  if (window.db) window.db.collection("app_data").doc("cam_historique").delete().catch(function(){});
+  acAfficherHistorique();
+}
+// FIN HISTORIQUE
 }
 
 function acEnregistrerDiagObs() {
