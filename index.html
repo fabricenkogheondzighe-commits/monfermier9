@@ -961,7 +961,11 @@ function renderTechHome() {
   var nameEl = document.getElementById("tech-home-name");
   if(nameEl) nameEl.textContent = (currentUser.name||"Technicien") + " · Technicien";
   var content = document.getElementById("tech-home-content");
-  if(!content) return;
+  if(!content) {
+    // Réessayer si le DOM n'est pas encore prêt
+    setTimeout(function(){ renderTechHome(); }, 200);
+    return;
+  }
 
   var today = new Date().toISOString().split("T")[0];
   var ficheExistante = null;
@@ -1175,11 +1179,11 @@ function onLogin() {
   badge.style.display = "block";
   logout.style.display = "block";
 
-  startMessagesListener();
+  try { startMessagesListener(); } catch(e) { console.warn("startMessagesListener:", e); }
 
   if(currentUser.role === "technicien") {
     showPage("page-tech-home");
-    renderTechHome();
+    setTimeout(function(){ renderTechHome(); }, 300);
   } else if(currentUser.role === "vendor") {
     var vendor = vendors.find(function(v){ return v.code===currentUser.code; });
     enregistrerAlerteConnexion(vendor);
