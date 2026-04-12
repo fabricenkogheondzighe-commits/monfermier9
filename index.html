@@ -959,9 +959,18 @@ function goHome() {
 function renderTechHome() {
   if(!currentUser || currentUser.role !== "technicien") return;
 
-  // Mettre à jour le nom
+  // Mettre à jour le nom et la photo
   var nameEl = document.getElementById("tech-home-name");
   if(nameEl) nameEl.textContent = (currentUser.name || "Technicien") + " · Technicien";
+  var avatarEl = document.getElementById("tech-home-avatar");
+  if(avatarEl) {
+    var techData = technicians.find(function(t){ return t.id === currentUser.techId; });
+    if(techData && techData.photo) {
+      avatarEl.innerHTML = '<img src="' + techData.photo + '" style="width:100%;height:100%;object-fit:cover">';
+    } else {
+      avatarEl.innerHTML = "👷";
+    }
+  }
 
   // Mettre à jour les KPIs
   try {
@@ -1000,6 +1009,7 @@ function renderTechHome() {
       "tbtn-journal":   "journal",
       "tbtn-alertes":   "alertes",
       "tbtn-camera":    "camera",
+      "tbtn-diagnostics": "diagnostics",
     };
     Object.keys(btns).forEach(function(id) {
       var el = document.getElementById(id);
@@ -8031,7 +8041,9 @@ function _renderDiagPage(historique, zone) {
   }
   var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
   html += '<div style="font-size:12px;color:#5a8a4a">' + historique.length + ' diagnostic(s)</div>';
-  html += '<button onclick="acEffacerHistorique();scSetOnglet(\'diagnostics\')" style="background:none;border:1px solid #ff444444;color:#ff8888;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer">🗑️ Effacer tout</button>';
+  if(!currentUser || currentUser.role !== "technicien") {
+    html += '<button onclick="acEffacerHistorique();scSetOnglet(\'diagnostics\')" style="background:none;border:1px solid #ff444444;color:#ff8888;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer">🗑️ Effacer tout</button>';
+  }
   html += '</div>';
   historique.forEach(function(d) {
     var urgCol = d.urgence==="Critique" ? "#ff4040" : d.urgence==="Élevée" ? "#ff8040" : d.urgence==="Modérée" ? "#d5a03a" : "#7ac97a";
@@ -8347,7 +8359,9 @@ function _renderHistoriqueHTML(historique, res) {
   var html = '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:14px;padding:14px">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
   html += '<div style="font-size:13px;font-weight:700;color:#a8d880">📋 Historique (' + historique.length + ')</div>';
-  html += '<button onclick="acEffacerHistorique()" style="background:none;border:1px solid #ff444444;color:#ff8888;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer">🗑️ Effacer</button>';
+  if(!currentUser || currentUser.role !== "technicien") {
+    html += '<button onclick="acEffacerHistorique()" style="background:none;border:1px solid #ff444444;color:#ff8888;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer">🗑️ Effacer</button>';
+  }
   html += '</div>';
   historique.forEach(function(d) {
     var urgCol = d.urgence==="Critique" ? "#ff4040" : d.urgence==="Élevée" ? "#ff8040" : d.urgence==="Modérée" ? "#d5a03a" : "#7ac97a";
@@ -9726,7 +9740,7 @@ if ('serviceWorker' in navigator) {
 <div id="page-tech-home" class="page" style="background:#040d03;min-height:100vh">
   <div style="background:linear-gradient(135deg,#061504,#0a2008);border-bottom:1px solid #2a5a1a44;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
     <div style="display:flex;align-items:center;gap:10px">
-      <div style="font-size:26px">🌶️</div>
+      <div id="tech-home-avatar" style="width:42px;height:42px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0">👷</div>
       <div>
         <div style="font-size:15px;font-weight:700;color:#a8d880">Tsi'i Ocam</div>
         <div id="tech-home-name" style="font-size:10px;color:#5a8a4a;letter-spacing:1px">Chargement...</div>
@@ -9780,13 +9794,14 @@ if ('serviceWorker' in navigator) {
         <div style="font-size:24px">📸</div>
         <div style="font-size:12px;font-weight:600;color:#a8d880">Diagnostic IA</div>
       </button>
+      <button id="tbtn-diagnostics" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">🔬</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880">Historique diag.</div>
+      </button>
 
     </div>
 
-    <!-- Bouton Tsi-i Ocam -->
-    <button id="tbtn-sanny" style="width:100%;background:linear-gradient(135deg,#0a2008,#1a4a08);border:2px solid #4a8a3055;color:#a8d880;padding:16px;border-radius:14px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">
-      🌶️ Ouvrir Tsi-i Ocam complet
-    </button>
+
 
   </div>
 </div>
