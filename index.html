@@ -1034,24 +1034,49 @@ function doLogin() {
 
   if(!code || !pass) { err.textContent="Remplissez tous les champs"; err.style.display="block"; return; }
 
-  // Attendre que Firebase Auth soit prêt
-  if(!window._firebaseLoginVendor) {
-    var btn = document.querySelector(".btn-login");
-    if(btn) { btn.textContent = "Chargement..."; btn.disabled = true; }
-    var waitAttempts = 0;
-    var waitInterval = setInterval(function() {
-      waitAttempts++;
-      if(window._firebaseLoginVendor) {
-        clearInterval(waitInterval);
+  var btn = document.querySelector(".btn-login");
+
+  // --- TECHNICIEN : vérification locale immédiate, pas besoin de Firebase Auth ---
+  if(technicians.length > 0) {
+    var tech = technicians.find(function(t){ return t.code && t.code.toUpperCase() === code; });
+    if(tech) {
+      if(tech.suspended) {
+        err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
+        err.style.display = "block";
+        return;
+      }
+      if(tech.password === pass) {
+        currentUser = {code: tech.code, name: tech.name, role: "technicien", techId: tech.id};
+        onLogin();
+        return;
+      } else {
+        err.textContent = "Mot de passe technicien incorrect";
+        err.style.display = "block";
+        return;
+      }
+    }
+  } else if(code !== ADMIN_CODE) {
+    // technicians pas encore chargé — attendre
+    if(btn) { btn.textContent = "Connexion..."; btn.disabled = true; }
+    var _waitTech = setInterval(function() {
+      if(technicians.length > 0 || vendors.length > 0) {
+        clearInterval(_waitTech);
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
         doLogin();
-      } else if(waitAttempts >= 40) {
-        clearInterval(waitInterval);
-        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        err.textContent = "Erreur : Firebase non disponible. Vérifiez votre connexion.";
-        err.style.display = "block";
       }
-    }, 250);
+    }, 200);
+    // Timeout 8s
+    setTimeout(function(){ clearInterval(_waitTech); if(btn){ btn.textContent="Se connecter"; btn.disabled=false; } }, 8000);
+    return;
+  }
+
+  // Attendre Firebase Auth pour Admin et Vendeurs
+  if(!window._firebaseLoginVendor) {
+    if(btn) { btn.textContent = "Connexion..."; btn.disabled = true; }
+    _waitForFirebase(function() {
+      if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+      doLogin();
+    });
     return;
   }
 
@@ -1146,6 +1171,7 @@ function doLogin() {
   }
 
   tryVendorLogin();
+}
 
 function onLogin() {
   var badge = document.getElementById("user-badge");
