@@ -2240,25 +2240,31 @@ function renderACModal(modal) {
   html += alertBadge;
   html += '<button onclick="closeModal(\'modal-sanny-champ\')" style="background:none;color:#8a8070;font-size:20px;padding:4px 8px;border:none">✕</button>';
   html += '</div>';
-  html += '<div style="display:flex;gap:3px;padding:5px 8px 2px;flex-shrink:0">';
-  html += '<button onclick="scSetOnglet(\'dashboard\')" style="' + tabStyle("dashboard") + '"><span style="font-size:15px">🏠</span>Accueil</button>';
-  html += '<button onclick="scSetOnglet(\'parcelles\')" style="' + tabStyle("parcelles") + '"><span style="font-size:15px">🌿</span>Parcelles</button>';
-  html += '<button onclick="scSetOnglet(\'journal\')" style="' + tabStyle("journal") + '"><span style="font-size:15px">📋</span>Journal</button>';
-  html += '<button onclick="scSetOnglet(\'alertes\')" style="' + tabStyle("alertes") + '"><span style="font-size:15px">⚠️</span>' + (totalAl > 0 ? 'Alertes ' + totalAl : 'Alertes') + '</button>';
-  html += '</div>';
-  html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
-  html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '"><span style="font-size:15px">📖</span>Guide</button>';
-  html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '"><span style="font-size:15px">📸</span>Caméra IA</button>';
-  // Suivi et Équipe réservés admin uniquement
-  if(!currentUser || currentUser.role !== "technicien") {
+  // Barre d'onglets : cachée pour technicien (navigation via espace technicien)
+  var isTech = currentUser && currentUser.role === "technicien";
+  if(!isTech) {
+    html += '<div style="display:flex;gap:3px;padding:5px 8px 2px;flex-shrink:0">';
+    html += '<button onclick="scSetOnglet(\'dashboard\')" style="' + tabStyle("dashboard") + '"><span style="font-size:15px">🏠</span>Accueil</button>';
+    html += '<button onclick="scSetOnglet(\'parcelles\')" style="' + tabStyle("parcelles") + '"><span style="font-size:15px">🌿</span>Parcelles</button>';
+    html += '<button onclick="scSetOnglet(\'journal\')" style="' + tabStyle("journal") + '"><span style="font-size:15px">📋</span>Journal</button>';
+    html += '<button onclick="scSetOnglet(\'alertes\')" style="' + tabStyle("alertes") + '"><span style="font-size:15px">⚠️</span>' + (totalAl > 0 ? 'Alertes ' + totalAl : 'Alertes') + '</button>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
+    html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '"><span style="font-size:15px">📖</span>Guide</button>';
+    html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '"><span style="font-size:15px">📸</span>Caméra IA</button>';
     html += '<button onclick="scSetOnglet(\'suivi\')" style="' + tabStyle("suivi") + '"><span style="font-size:15px">📊</span>Suivi</button>';
     html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '"><span style="font-size:15px">👥</span>Équipe</button>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
+    html += '<button onclick="scSetOnglet(\'diagnostics\')" style="' + tabStyle("diagnostics") + '"><span style="font-size:15px">🔬</span>Diagnostics IA</button>';
+    html += '</div>';
+  } else {
+    // Technicien : juste un bouton retour discret + séparateur
+    html += '<div style="display:flex;align-items:center;padding:6px 10px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
+    html += '<button onclick="closeModal(\'modal-sanny-champ\')" style="background:#061504;border:1px solid #2a5a1a44;color:#6a9a50;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer">← Retour</button>';
+    html += '<span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:#a8d880">' + (scOnglet === "dashboard" ? "🏠 Accueil" : scOnglet === "parcelles" ? "🌿 Parcelles" : scOnglet === "journal" ? "📋 Journal" : scOnglet === "alertes" ? "⚠️ Alertes" : scOnglet === "guide" ? "📖 Guide" : scOnglet === "camera" ? "📸 Caméra IA" : scOnglet === "diagnostics" ? "🔬 Diagnostics IA" : "") + '</span>';
+    html += '</div>';
   }
-  html += '</div>';
-  // 3ème ligne du menu — Diagnostics
-  html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
-  html += '<button onclick="scSetOnglet(\'diagnostics\')" style="' + tabStyle("diagnostics") + '"><span style="font-size:15px">🔬</span>Diagnostics IA</button>';
-  html += '</div>';
   html += '<div id="sc-content" style="flex:1;overflow-y:auto;padding:12px;background:#020a01">';
   html += scRenderOnglet(scOnglet, parcelles, observations);
   html += '</div>';
