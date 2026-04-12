@@ -6992,76 +6992,6 @@ function generatePDFReport() {
 
 <div class="footer">Mon Fermier — Rapport généré automatiquement — ${now.toLocaleString("fr-FR")}</div>
 
-<!-- ═══════════════════════════════════════
-     PAGE TECHNICIEN — ACCUEIL
-═══════════════════════════════════════ -->
-<div id="page-tech-home" class="page" style="background:#040d03;min-height:100vh">
-  <div style="background:linear-gradient(135deg,#061504,#0a2008);border-bottom:1px solid #2a5a1a44;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="font-size:26px">🌶️</div>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:#a8d880">Tsi'i Ocam</div>
-        <div id="tech-home-name" style="font-size:10px;color:#5a8a4a;letter-spacing:1px">Chargement...</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div id="tech-sync-dot" style="width:8px;height:8px;border-radius:50%;background:#7ac97a"></div>
-      <button onclick="doLogout()" style="background:#0a1a08;border:1px solid #2a5a1a44;color:#5a8a4a;padding:7px 12px;border-radius:8px;font-size:11px">Déconnexion</button>
-    </div>
-  </div>
-  <div id="tech-home-content" style="padding:16px">
-
-    <!-- KPIs statiques, mis à jour par renderTechHome() -->
-    <div id="tech-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
-      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px">🌿</div>
-        <div id="tech-kpi-parcelles" style="font-size:18px;font-weight:700;color:#a8d880">0</div>
-        <div style="font-size:9px;color:#5a8a4a">PARCELLES</div>
-      </div>
-      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px">⚠️</div>
-        <div id="tech-kpi-alertes" style="font-size:18px;font-weight:700;color:#5a8a4a">0</div>
-        <div style="font-size:9px;color:#5a8a4a">ALERTES</div>
-      </div>
-      <div style="background:#061504;border:1px solid #8a202044;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px" id="tech-kpi-fiche-icon">❌</div>
-        <div id="tech-kpi-fiche-label" style="font-size:11px;font-weight:700;color:#ff8080">À remplir</div>
-        <div style="font-size:9px;color:#5a8a4a">FICHE JOUR</div>
-      </div>
-    </div>
-
-    <!-- Boutons modules -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <button id="tbtn-dashboard" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">🏠</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Tableau de bord</div>
-      </button>
-      <button id="tbtn-parcelles" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">🌿</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Mes parcelles</div>
-      </button>
-      <button id="tbtn-journal" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📋</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Journal terrain</div>
-      </button>
-      <button id="tbtn-alertes" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">⚠️</div>
-        <div id="tbtn-alertes-label" style="font-size:12px;font-weight:600;color:#a8d880">Alertes</div>
-      </button>
-      <button id="tbtn-camera" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📸</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Diagnostic IA</div>
-      </button>
-
-    </div>
-
-    <!-- Bouton Tsi-i Ocam -->
-    <button id="tbtn-sanny" style="width:100%;background:linear-gradient(135deg,#0a2008,#1a4a08);border:2px solid #4a8a3055;color:#a8d880;padding:16px;border-radius:14px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">
-      🌶️ Ouvrir Tsi-i Ocam complet
-    </button>
-
-  </div>
-</div>
 
 </body>
 </html>`;
@@ -9775,6 +9705,79 @@ if ('serviceWorker' in navigator) {
   window.toggleDebugPanel=function(){ var p=document.getElementById('debug-panel'); if(p)p.style.display=(p.style.display==='none'?'block':'none'); };
 })();
 </script>
+
+
+<!-- ═══════════════════════════════════════
+     PAGE TECHNICIEN — ACCUEIL
+═══════════════════════════════════════ -->
+<div id="page-tech-home" class="page" style="background:#040d03;min-height:100vh">
+  <div style="background:linear-gradient(135deg,#061504,#0a2008);border-bottom:1px solid #2a5a1a44;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:26px">🌶️</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#a8d880">Tsi'i Ocam</div>
+        <div id="tech-home-name" style="font-size:10px;color:#5a8a4a;letter-spacing:1px">Chargement...</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="tech-sync-dot" style="width:8px;height:8px;border-radius:50%;background:#7ac97a"></div>
+      <button onclick="doLogout()" style="background:#0a1a08;border:1px solid #2a5a1a44;color:#5a8a4a;padding:7px 12px;border-radius:8px;font-size:11px">Déconnexion</button>
+    </div>
+  </div>
+  <div id="tech-home-content" style="padding:16px">
+
+    <!-- KPIs statiques, mis à jour par renderTechHome() -->
+    <div id="tech-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px">🌿</div>
+        <div id="tech-kpi-parcelles" style="font-size:18px;font-weight:700;color:#a8d880">0</div>
+        <div style="font-size:9px;color:#5a8a4a">PARCELLES</div>
+      </div>
+      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px">⚠️</div>
+        <div id="tech-kpi-alertes" style="font-size:18px;font-weight:700;color:#5a8a4a">0</div>
+        <div style="font-size:9px;color:#5a8a4a">ALERTES</div>
+      </div>
+      <div style="background:#061504;border:1px solid #8a202044;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px" id="tech-kpi-fiche-icon">❌</div>
+        <div id="tech-kpi-fiche-label" style="font-size:11px;font-weight:700;color:#ff8080">À remplir</div>
+        <div style="font-size:9px;color:#5a8a4a">FICHE JOUR</div>
+      </div>
+    </div>
+
+    <!-- Boutons modules -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <button id="tbtn-dashboard" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">🏠</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880">Tableau de bord</div>
+      </button>
+      <button id="tbtn-parcelles" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">🌿</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880">Mes parcelles</div>
+      </button>
+      <button id="tbtn-journal" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">📋</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880">Journal terrain</div>
+      </button>
+      <button id="tbtn-alertes" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">⚠️</div>
+        <div id="tbtn-alertes-label" style="font-size:12px;font-weight:600;color:#a8d880">Alertes</div>
+      </button>
+      <button id="tbtn-camera" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">📸</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880">Diagnostic IA</div>
+      </button>
+
+    </div>
+
+    <!-- Bouton Tsi-i Ocam -->
+    <button id="tbtn-sanny" style="width:100%;background:linear-gradient(135deg,#0a2008,#1a4a08);border:2px solid #4a8a3055;color:#a8d880;padding:16px;border-radius:14px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">
+      🌶️ Ouvrir Tsi-i Ocam complet
+    </button>
+
+  </div>
+</div>
+
 
 </body>
 </html>
