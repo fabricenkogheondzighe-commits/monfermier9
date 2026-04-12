@@ -1046,37 +1046,46 @@ function doLogin() {
 
   var btn = document.querySelector(".btn-login");
 
-  // --- TECHNICIEN : vérification locale immédiate, pas besoin de Firebase Auth ---
-  if(technicians.length > 0) {
-    var tech = technicians.find(function(t){ return t.code && t.code.toUpperCase() === code; });
-    if(tech) {
-      if(tech.suspended) {
-        err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
-        err.style.display = "block";
-        return;
-      }
-      if(tech.password === pass) {
-        currentUser = {code: tech.code, name: tech.name, role: "technicien", techId: tech.id};
-        onLogin();
-        return;
-      } else {
-        err.textContent = "Mot de passe technicien incorrect";
-        err.style.display = "block";
-        return;
-      }
+  // --- TECHNICIEN : vérification locale immédiate ---
+  // Chercher dans technicians (chargés ou non)
+  var techFound = technicians.find(function(t){ return t.code && t.code.toUpperCase() === code; });
+  
+  if(techFound) {
+    // Code reconnu comme technicien
+    if(techFound.suspended) {
+      err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
+      err.style.display = "block";
+      return;
     }
-  } else if(code !== ADMIN_CODE) {
-    // technicians pas encore chargé — attendre
+    if(techFound.password === pass) {
+      currentUser = {code: techFound.code, name: techFound.name, role: "technicien", techId: techFound.id};
+      onLogin();
+      return;
+    } else {
+      err.textContent = "Mot de passe incorrect";
+      err.style.display = "block";
+      return;
+    }
+  }
+
+  // Techniciens pas encore chargés ET ce n'est pas l'admin → attendre Firestore
+  if(technicians.length === 0 && code !== ADMIN_CODE) {
     if(btn) { btn.textContent = "Connexion..."; btn.disabled = true; }
+    var _waitCount = 0;
     var _waitTech = setInterval(function() {
-      if(technicians.length > 0 || vendors.length > 0) {
+      _waitCount++;
+      var techNow = technicians.find(function(t){ return t.code && t.code.toUpperCase() === code; });
+      if(techNow) {
+        clearInterval(_waitTech);
+        if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
+        doLogin();
+      } else if(technicians.length > 0 || vendors.length > 0 || _waitCount >= 40) {
+        // Données chargées mais code non trouvé → continuer vers vendeur
         clearInterval(_waitTech);
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
         doLogin();
       }
-    }, 200);
-    // Timeout 8s
-    setTimeout(function(){ clearInterval(_waitTech); if(btn){ btn.textContent="Se connecter"; btn.disabled=false; } }, 8000);
+    }, 250);
     return;
   }
 
