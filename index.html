@@ -2249,8 +2249,11 @@ function renderACModal(modal) {
   html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
   html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '"><span style="font-size:15px">📖</span>Guide</button>';
   html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '"><span style="font-size:15px">📸</span>Caméra IA</button>';
-  html += '<button onclick="scSetOnglet(\'suivi\')" style="' + tabStyle("suivi") + '"><span style="font-size:15px">📊</span>Suivi</button>';
-  html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '"><span style="font-size:15px">👥</span>Équipe</button>';
+  // Suivi et Équipe réservés admin uniquement
+  if(!currentUser || currentUser.role !== "technicien") {
+    html += '<button onclick="scSetOnglet(\'suivi\')" style="' + tabStyle("suivi") + '"><span style="font-size:15px">📊</span>Suivi</button>';
+    html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '"><span style="font-size:15px">👥</span>Équipe</button>';
+  }
   html += '</div>';
   // 3ème ligne du menu — Diagnostics
   html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
@@ -2264,6 +2267,10 @@ function renderACModal(modal) {
 }
 
 function scSetOnglet(onglet) {
+  // Bloquer Suivi et Équipe pour les techniciens
+  if(currentUser && currentUser.role === "technicien" && (onglet === "suivi" || onglet === "equipe")) {
+    return;
+  }
   scOnglet = onglet;
   var modal = document.getElementById("modal-sanny-champ");
   if (modal) renderACModal(modal);
