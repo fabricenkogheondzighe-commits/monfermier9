@@ -8826,6 +8826,7 @@ function scRenderSuivi() {
   // ── Sous-onglets ──────────────────────────────────────────
   var tabs = [
     {id:"fiches",   icon:"📋", label:"Fiches du jour"},
+    {id:"taches",   icon:"📌", label:"Tâches effectuées"},
     {id:"technicien",icon:"👷",label:"Par technicien"},
     {id:"parcelle", icon:"🌿", label:"Par parcelle"},
     {id:"problemes",icon:"⚠️", label:"Problèmes"},
@@ -8839,7 +8840,82 @@ function scRenderSuivi() {
   html += '</div>';
 
   // ── Contenu selon sous-onglet ─────────────────────────────
-  if (_suiviSousOnglet === "fiches") {
+  if (_suiviSousOnglet === "taches") {
+    var tachesFaites = (_techTachesCache || []).filter(function(t){ return t.faite; });
+    var tachesEnAttente = (_techTachesCache || []).filter(function(t){ return !t.faite; });
+    var rapports = _rapportsTachesCache || [];
+    var nonLus = rapports.filter(function(r){ return !r.lu; }).length;
+
+    // KPIs
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">';
+    html += '<div style="background:#061504;border:1px solid #a8d88033;border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px">✅</div><div style="font-size:18px;font-weight:700;color:#a8d880">' + tachesFaites.length + '</div><div style="font-size:10px;color:#5a8a4a">Effectuées</div></div>';
+    html += '<div style="background:#061504;border:1px solid #d5a03a33;border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px">⏳</div><div style="font-size:18px;font-weight:700;color:#d5a03a">' + tachesEnAttente.length + '</div><div style="font-size:10px;color:#5a8a4a">En attente</div></div>';
+    html += '<div style="background:#061504;border:1px solid #ff808033;border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px">🔴</div><div style="font-size:18px;font-weight:700;color:' + (nonLus > 0 ? "#ff8080" : "#5a8a4a") + '">' + nonLus + '</div><div style="font-size:10px;color:#5a8a4a">Non lus</div></div>';
+    html += '</div>';
+
+    // Rapports de tâches effectuées
+    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:10px">📋 RAPPORTS DE TÂCHES EFFECTUÉES</div>';
+
+    if (rapports.length === 0) {
+      html += '<div style="text-align:center;padding:30px 20px;color:#3a6a2a">';
+      html += '<div style="font-size:36px;margin-bottom:8px">📭</div>';
+      html += '<div style="font-size:13px">Aucun rapport reçu</div>';
+      html += '<div style="font-size:11px;margin-top:6px;color:#2a5a2a">Les rapports apparaîtront ici quand le technicien marquera une tâche comme effectuée</div>';
+      html += '</div>';
+    } else {
+      rapports.forEach(function(r) {
+        var isNew = !r.lu;
+        html += '<div onclick="scVoirRapportTache(\'' + r.id + '\')" style="background:#061504;border:1px solid ' + (isNew ? "#c9a84c" : "#1a3a1222") + ';border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer">';
+
+        // Header
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+        html += '<div>';
+        html += '<div style="font-size:14px;font-weight:700;color:#a8d880">👷 ' + escapeHtml(r.technicien || "Technicien") + '</div>';
+        html += '<div style="font-size:10px;color:#5a8a4a">Code : ' + escapeHtml(r.techCode || "—") + '</div>';
+        html += '<div style="font-size:10px;color:#5a8a4a">' + r.date + ' à ' + (r.heure || "—") + '</div>';
+        html += '</div>';
+        html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">';
+        if (isNew) html += '<span style="background:#c9a84c;color:#0a0906;border-radius:8px;padding:2px 8px;font-size:9px;font-weight:700">NOUVEAU</span>';
+        var prioCol = r.tachePriorite === "urgente" ? "#ff4040" : r.tachePriorite === "haute" ? "#ff8040" : "#d5a03a";
+        html += '<span style="color:' + prioCol + ';font-size:9px;font-weight:700">' + (r.tachePriorite || "normale").toUpperCase() + '</span>';
+        html += '</div></div>';
+
+        // Tâche
+        html += '<div style="background:#0a1a08;border-radius:8px;padding:8px;margin-bottom:8px">';
+        html += '<div style="font-size:10px;color:#4a7a3a;margin-bottom:3px;font-weight:700">TÂCHE ASSIGNÉE</div>';
+        html += '<div style="font-size:12px;color:#a8d880">📌 ' + escapeHtml(r.tacheTitre || "—") + '</div>';
+        if (r.tacheParcelle) html += '<div style="font-size:11px;color:#4a7a3a;margin-top:2px">🌿 ' + escapeHtml(r.tacheParcelle) + '</div>';
+        html += '</div>';
+
+        // Ce qui a été fait (aperçu)
+        html += '<div style="font-size:12px;color:#c8e0b0;margin-bottom:6px">';
+        html += '<span style="color:#4a7a3a;font-size:10px;font-weight:700">✅ CE QUI A ÉTÉ FAIT : </span>';
+        html += escapeHtml((r.description || "").substring(0, 100)) + ((r.description || "").length > 100 ? "..." : "");
+        html += '</div>';
+
+        // Heures
+        if (r.heureDebut || r.heureFin) {
+          html += '<div style="font-size:11px;color:#5a8a4a">🕐 ' + (r.heureDebut || "?") + ' → ' + (r.heureFin || "?") + '</div>';
+        }
+
+        html += '<div style="margin-top:8px;font-size:10px;color:#4a8a3a;font-weight:700">Toucher pour voir le détail →</div>';
+        html += '</div>';
+      });
+    }
+
+    // Tâches en attente
+    if (tachesEnAttente.length > 0) {
+      html += '<div style="font-size:11px;font-weight:700;color:#d5a03a;margin:14px 0 10px">⏳ TÂCHES EN ATTENTE (' + tachesEnAttente.length + ')</div>';
+      tachesEnAttente.forEach(function(t) {
+        var prioCol = t.priorite === "urgente" ? "#ff4040" : t.priorite === "haute" ? "#ff8040" : "#d5a03a";
+        html += '<div style="background:#061504;border-left:3px solid ' + prioCol + ';border-radius:8px;padding:10px 12px;margin-bottom:8px">';
+        html += '<div style="font-size:12px;color:#e8d0a0">📌 ' + escapeHtml(t.texte || t.titre || "Tâche") + '</div>';
+        html += '<div style="font-size:10px;color:#5a7a3a;margin-top:4px">Échéance : ' + (t.dateLimite || "—") + '</div>';
+        html += '</div>';
+      });
+    }
+
+  } else if (_suiviSousOnglet === "fiches") {
     // Fiches du jour
     var fichesAujourd = fiches.filter(function(f){ return f.date === today; });
     var techs = scGetTechniciensList();
@@ -8994,6 +9070,76 @@ function scRenderSuivi() {
 function scSuiviTab(tab) {
   _suiviSousOnglet = tab;
   if (window.scSetOnglet) scSetOnglet("suivi");
+}
+
+function scVoirRapportTache(id) {
+  var r = (_rapportsTachesCache || []).find(function(x){ return x.id === id; });
+  if (!r) return;
+
+  // Marquer comme lu
+  if (!r.lu) {
+    r.lu = true;
+    if (window.db) window.db.collection("app_data").doc("rapport_tache_" + r.id).set({ data: JSON.stringify(r) }).catch(function(){});
+  }
+
+  var el = document.getElementById("sc-content");
+  if (!el) return;
+
+  var html = '<div style="padding:4px">';
+  html += '<button onclick="scSuiviTab(\'taches\')" style="background:#061504;border:1px solid #2a5a1a44;color:#6a9a50;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;margin-bottom:16px">← Retour aux tâches</button>';
+
+  // Infos technicien
+  html += '<div style="background:#061504;border:1px solid #a8d88033;border-radius:14px;padding:14px;margin-bottom:12px">';
+  html += '<div style="font-size:10px;color:#a8d880;letter-spacing:2px;font-weight:700;margin-bottom:10px">👷 TECHNICIEN</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  html += '<div><div style="font-size:10px;color:#4a7a3a">Nom</div><div style="font-size:14px;color:#a8d880;font-weight:700">' + escapeHtml(r.technicien || "—") + '</div></div>';
+  html += '<div><div style="font-size:10px;color:#4a7a3a">Code</div><div style="font-size:14px;color:#c9a84c;font-weight:700">' + escapeHtml(r.techCode || "—") + '</div></div>';
+  html += '<div><div style="font-size:10px;color:#4a7a3a">Date</div><div style="font-size:12px;color:#c8d8b0">' + r.date + '</div></div>';
+  html += '<div><div style="font-size:10px;color:#4a7a3a">Heure soumission</div><div style="font-size:12px;color:#c8d8b0">' + (r.heure || "—") + '</div></div>';
+  html += '</div></div>';
+
+  // Tâche assignée
+  html += '<div style="background:#0a1a08;border-radius:14px;padding:14px;margin-bottom:12px">';
+  html += '<div style="font-size:10px;color:#a8d880;letter-spacing:2px;font-weight:700;margin-bottom:8px">📌 TÂCHE ASSIGNÉE</div>';
+  html += '<div style="font-size:14px;font-weight:700;color:#a8d880;margin-bottom:6px">' + escapeHtml(r.tacheTitre || "—") + '</div>';
+  if (r.tacheDescription) html += '<div style="font-size:12px;color:#6a9a50;margin-bottom:6px">' + escapeHtml(r.tacheDescription) + '</div>';
+  if (r.tacheParcelle) html += '<div style="font-size:12px;color:#5a8a4a">🌿 Parcelle : ' + escapeHtml(r.tacheParcelle) + '</div>';
+  var prioCol = r.tachePriorite === "urgente" ? "#ff4040" : r.tachePriorite === "haute" ? "#ff8040" : "#d5a03a";
+  html += '<div style="margin-top:8px"><span style="background:' + prioCol + '22;color:' + prioCol + ';border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;border:1px solid ' + prioCol + '44">PRIORITÉ : ' + (r.tachePriorite || "normale").toUpperCase() + '</span></div>';
+  html += '</div>';
+
+  // Temps de travail
+  if (r.heureDebut || r.heureFin) {
+    html += '<div style="background:#061504;border-radius:14px;padding:14px;margin-bottom:12px">';
+    html += '<div style="font-size:10px;color:#a8d880;letter-spacing:2px;font-weight:700;margin-bottom:8px">🕐 TEMPS DE TRAVAIL</div>';
+    html += '<div style="display:flex;align-items:center;gap:14px">';
+    html += '<div><div style="font-size:10px;color:#4a7a3a">Début</div><div style="font-size:18px;font-weight:700;color:#c8d8b0">' + (r.heureDebut || "—") + '</div></div>';
+    html += '<div style="font-size:22px;color:#2a5a2a">→</div>';
+    html += '<div><div style="font-size:10px;color:#4a7a3a">Fin</div><div style="font-size:18px;font-weight:700;color:#c8d8b0">' + (r.heureFin || "—") + '</div></div>';
+    if (r.heureDebut && r.heureFin) {
+      var deb = r.heureDebut.split(":"); var fin = r.heureFin.split(":");
+      var mins = (parseInt(fin[0])*60+parseInt(fin[1])) - (parseInt(deb[0])*60+parseInt(deb[1]));
+      if (mins > 0) html += '<div style="margin-left:auto"><div style="font-size:10px;color:#4a7a3a">Durée</div><div style="font-size:18px;font-weight:700;color:#a8d880">' + Math.floor(mins/60) + 'h' + String(mins%60).padStart(2,'0') + '</div></div>';
+    }
+    html += '</div></div>';
+  }
+
+  // Ce qui a été fait
+  html += '<div style="background:#061504;border-radius:14px;padding:14px;margin-bottom:12px">';
+  html += '<div style="font-size:10px;color:#a8d880;letter-spacing:2px;font-weight:700;margin-bottom:8px">✅ CE QUI A ÉTÉ FAIT</div>';
+  html += '<div style="font-size:13px;color:#c8e0b0;line-height:1.7;white-space:pre-wrap">' + escapeHtml(r.description || "—") + '</div>';
+  html += '</div>';
+
+  // Résultat
+  if (r.resultat) {
+    html += '<div style="background:#061504;border-radius:14px;padding:14px">';
+    html += '<div style="font-size:10px;color:#a8d880;letter-spacing:2px;font-weight:700;margin-bottom:8px">📊 RÉSULTAT / OBSERVATIONS</div>';
+    html += '<div style="font-size:13px;color:#a8c890;line-height:1.7;white-space:pre-wrap">' + escapeHtml(r.resultat) + '</div>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function scGetTechniciensList() {
