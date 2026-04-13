@@ -8952,10 +8952,10 @@ function scRenderSuivi() {
       fichesAujourd.forEach(function(f) {
         var hasProb = f.problemes && f.problemes.length > 0 && !f.problemes.includes("RAS — Tout va bien");
         var borderCol = hasProb ? "#d5a03a" : "#2a5a1a";
-        html += '<div style="background:#061504;border:1px solid ' + borderCol + '44;border-radius:12px;padding:12px;margin-bottom:10px">';
+        html += '<div onclick="scVoirDetailFiche(\'' + escapeHtml(f.id) + '\')" style="background:#061504;border:1px solid ' + borderCol + '44;border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer">';
         html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
         html += '<div style="font-size:13px;font-weight:700;color:#a8d880">👤 ' + escapeHtml(f.technicien || "Technicien") + '</div>';
-        html += '<div style="font-size:10px;color:#5a8a4a">' + (f.heure || "") + '</div>';
+        html += '<div style="font-size:10px;color:#5a8a4a">' + (f.heure || "") + ' ›</div>';
         html += '</div>';
         if (f.parcelles && f.parcelles.length > 0) {
           html += '<div style="font-size:11px;color:#c8d8b0;margin-bottom:6px">🌿 ' + f.parcelles.map(function(p){ return escapeHtml(p); }).join(", ") + '</div>';
@@ -8969,6 +8969,7 @@ function scRenderSuivi() {
         if (f.commentaire) {
           html += '<div style="font-size:11px;color:#8ab870;margin-top:6px;font-style:italic">📝 ' + escapeHtml(f.commentaire.substring(0,80)) + (f.commentaire.length > 80 ? "..." : "") + '</div>';
         }
+        html += '<div style="font-size:10px;color:#3a6a2a;margin-top:6px;text-align:right">Toucher pour voir le détail →</div>';
         html += '</div>';
       });
     }
@@ -9088,6 +9089,98 @@ function scRenderSuivi() {
 
   html += '</div>';
   return html;
+}
+
+function scVoirDetailFiche(ficheId) {
+  var fiche = (_fichesCache || []).find(function(f){ return f.id === ficheId; });
+  if (!fiche) return;
+
+  var parcelles = getParcelles ? getParcelles() : [];
+  var modal = document.getElementById("modal-sanny-champ");
+  if (!modal) return;
+
+  var hasProb = fiche.problemes && fiche.problemes.length > 0 && !fiche.problemes.includes("RAS — Tout va bien");
+
+  var html = '<div style="padding:4px">';
+
+  // En-tête avec bouton retour
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">';
+  html += '<button onclick="scSuiviTab(\'fiches\')" style="background:#0a1a08;border:1px solid #2a5a1a;color:#a8d880;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer">← Retour</button>';
+  html += '<div style="font-size:14px;font-weight:700;color:#a8d880">📋 Fiche du ' + (fiche.date || "") + '</div>';
+  html += '</div>';
+
+  // Carte technicien
+  html += '<div style="background:#0a2008;border:1px solid #2a5a1a44;border-radius:12px;padding:12px;margin-bottom:12px">';
+  html += '<div style="font-size:13px;font-weight:700;color:#a8d880;margin-bottom:6px">👤 ' + escapeHtml(fiche.technicien || "—") + '</div>';
+  html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
+  html += '<div style="font-size:11px;color:#6a9a50">📅 ' + (fiche.date || "—") + '</div>';
+  html += '<div style="font-size:11px;color:#6a9a50">🕐 Soumis à ' + (fiche.heure || "—") + '</div>';
+  if (fiche.heureDebut || fiche.heureFin) {
+    html += '<div style="font-size:11px;color:#6a9a50">⏱ ' + (fiche.heureDebut || "?") + ' → ' + (fiche.heureFin || "?") + '</div>';
+  }
+  html += '</div></div>';
+
+  // Parcelles
+  if (fiche.parcelles && fiche.parcelles.length > 0) {
+    html += '<div style="background:#061504;border:1px solid #2a5a1a33;border-radius:12px;padding:12px;margin-bottom:10px">';
+    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:8px">🌿 PARCELLES TRAVAILLÉES</div>';
+    fiche.parcelles.forEach(function(pid) {
+      var p = parcelles.find(function(x){ return x.id === pid || x.nom === pid; });
+      html += '<div style="font-size:12px;color:#c8d8b0;padding:4px 0;border-bottom:1px solid #1a3a1211">• ' + escapeHtml(p ? p.nom : pid) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Tâches effectuées
+  if (fiche.taches && fiche.taches.length > 0) {
+    html += '<div style="background:#061504;border:1px solid #2a5a1a33;border-radius:12px;padding:12px;margin-bottom:10px">';
+    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:8px">✅ TÂCHES EFFECTUÉES (' + fiche.taches.length + ')</div>';
+    fiche.taches.forEach(function(t) {
+      html += '<div style="font-size:12px;color:#c8d8b0;padding:5px 0;border-bottom:1px solid #1a3a1211">✓ ' + escapeHtml(t) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Produits utilisés
+  if (fiche.produits && fiche.produits.trim()) {
+    html += '<div style="background:#061504;border:1px solid #2a5a1a33;border-radius:12px;padding:12px;margin-bottom:10px">';
+    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:6px">🧪 PRODUITS UTILISÉS</div>';
+    html += '<div style="font-size:12px;color:#c8d8b0">' + escapeHtml(fiche.produits) + '</div>';
+    html += '</div>';
+  }
+
+  // Récolte
+  if (fiche.recolte && fiche.recolte.kg > 0) {
+    var pRecolte = parcelles.find(function(x){ return x.id === fiche.recolte.parcelleId; });
+    html += '<div style="background:#061504;border:1px solid #4a8a3055;border-radius:12px;padding:12px;margin-bottom:10px">';
+    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:6px">🧺 RÉCOLTE DU JOUR</div>';
+    html += '<div style="font-size:13px;color:#d8f0b0;font-weight:700">' + fiche.recolte.kg + ' kg</div>';
+    if (pRecolte) html += '<div style="font-size:11px;color:#6a9a50;margin-top:4px">Parcelle : ' + escapeHtml(pRecolte.nom) + '</div>';
+    html += '</div>';
+  }
+
+  // Observations
+  if (fiche.commentaire && fiche.commentaire.trim()) {
+    html += '<div style="background:#061504;border:1px solid #2a5a1a33;border-radius:12px;padding:12px;margin-bottom:10px">';
+    html += '<div style="font-size:11px;font-weight:700;color:#a8d880;margin-bottom:6px">📝 OBSERVATIONS</div>';
+    html += '<div style="font-size:12px;color:#c8d8b0;line-height:1.6">' + escapeHtml(fiche.commentaire) + '</div>';
+    html += '</div>';
+  }
+
+  // Problèmes signalés
+  if (fiche.problemes && fiche.problemes.length > 0) {
+    var col = hasProb ? "#d5a03a" : "#7ac97a";
+    var bg = hasProb ? "#1a0f00" : "#0a2008";
+    html += '<div style="background:' + bg + ';border:1px solid ' + col + '44;border-radius:12px;padding:12px;margin-bottom:10px">';
+    html += '<div style="font-size:11px;font-weight:700;color:' + col + ';margin-bottom:8px">' + (hasProb ? "⚠️ PROBLÈMES SIGNALÉS" : "✅ STATUT") + '</div>';
+    fiche.problemes.forEach(function(prob) {
+      html += '<div style="font-size:12px;color:' + col + ';padding:4px 0">• ' + escapeHtml(prob) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  modal.innerHTML = html;
 }
 
 function scSuiviTab(tab) {
