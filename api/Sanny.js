@@ -1,14 +1,13 @@
 // api/Sanny.js — Proxy OpenRouter pour Vercel
 // La clé API est dans Vercel → Settings → Environment Variables → OPENROUTER_API_KEY
 
-// Augmente le timeout Vercel à 60s (nécessite plan Pro, sinon 10s sur Free)
 export const maxDuration = 60;
 
-// Modèles par ordre de priorité : rapide → fallback
+// Modèles valides et disponibles sur OpenRouter
 const MODELS = [
-  "meta-llama/llama-3.1-8b-instruct:free",   // Gratuit, très rapide
-  "mistralai/mistral-7b-instruct:free",        // Fallback gratuit
-  "nousresearch/hermes-3-llama-3.1-8b",        // Fallback payant rapide
+  "mistralai/mistral-7b-instruct",         // Rapide, fiable, pas de limite free
+  "meta-llama/llama-3.2-3b-instruct:free", // Gratuit, léger
+  "google/gemma-2-9b-it:free",             // Fallback gratuit Google
 ];
 
 export default async function handler(req, res) {
@@ -59,18 +58,18 @@ export default async function handler(req, res) {
       }
     }
 
-    // Choisir le modèle : priorité au modèle demandé si ce n'est pas "openrouter/auto"
+    // Si le frontend demande un modèle Claude spécifique (caméra IA), on l'utilise via OpenRouter
+    // Sinon on prend le premier modèle de la liste
     const requestedModel = body.model && body.model !== "openrouter/auto" ? body.model : null;
     const selectedModel = requestedModel || MODELS[0];
 
     const payload = {
       model: selectedModel,
-      max_tokens: Math.min(body.max_tokens || 600, 800), // Limité à 800 max pour éviter timeout
+      max_tokens: Math.min(body.max_tokens || 600, 1200),
       messages: openaiMessages,
       temperature: 0.7,
     };
 
-    // Tentative avec timeout de 8s pour laisser de la marge à Vercel Free
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
@@ -89,7 +88,6 @@ export default async function handler(req, res) {
       });
     } catch (fetchErr) {
       clearTimeout(timeoutId);
-      // Si timeout → réessayer avec le modèle fallback
       if (fetchErr.name === "AbortError") {
         return res.status(504).json({
           error: "Délai dépassé",
@@ -103,7 +101,6 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Si modèle indisponible, suggérer de réessayer
       const errMsg = data.error?.message || "Erreur OpenRouter";
       return res.status(response.status).json({
         error: errMsg,
