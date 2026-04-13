@@ -2397,8 +2397,11 @@ function acEffacerToutesRecoltes() {
 function scRenderDashboard(parcelles, observations) {
   var today = new Date().toISOString().split("T")[0];
   var totalAl = acTotalAlertes(parcelles, observations);
-  var totalKg = observations.filter(function(o){ return o.type === "recolte"; })
+  // Total récoltes : ancienne méthode (observations) + nouvelle (fiches techniciens)
+  var totalKgObs = observations.filter(function(o){ return o.type === "recolte"; })
     .reduce(function(s,o){ return s + (parseFloat(o.quantite)||0); }, 0);
+  var totalKgFiches = acGetRecoltes().reduce(function(s,r){ return s + (r.kg||0); }, 0);
+  var totalKg = totalKgObs + totalKgFiches;
   var parcellesActives = parcelles.filter(function(p){ return joursDepuisSemis(p.dateSemis) < 160; });
   var derniere7j = observations.filter(function(o){
     return (Date.now() - new Date(o.date).getTime()) < 7*86400000;
