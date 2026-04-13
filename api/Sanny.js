@@ -1,13 +1,12 @@
-// api/Sanny.js — Proxy OpenRouter pour Vercel
-// La clé API est dans Vercel → Settings → Environment Variables → OPENROUTER_API_KEY
+// api/Sanny.js — Proxy OpenRouter pour Sanny assistante (texte uniquement)
+// OPENROUTER_API_KEY dans Vercel → Settings → Environment Variables
 
 export const maxDuration = 60;
 
-// Modèles valides et disponibles sur OpenRouter
 const MODELS = [
-  "mistralai/mistral-7b-instruct",         // Rapide, fiable, pas de limite free
-  "meta-llama/llama-3.2-3b-instruct:free", // Gratuit, léger
-  "google/gemma-2-9b-it:free",             // Fallback gratuit Google
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "deepseek/deepseek-chat-v3-0324:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
 ];
 
 export default async function handler(req, res) {
@@ -29,7 +28,6 @@ export default async function handler(req, res) {
     if (!body) return res.status(400).json({ error: "Body vide" });
 
     let messages = body.messages || [];
-
     let systemPrompt = body.system || null;
     if (!systemPrompt) {
       const sysMsg = messages.find(m => m.role === "system");
@@ -46,32 +44,22 @@ export default async function handler(req, res) {
       if (typeof msg.content === "string") {
         openaiMessages.push({ role: msg.role, content: msg.content });
       } else if (Array.isArray(msg.content)) {
-        const parts = msg.content.map(item => {
-          if (item.type === "text") return { type: "text", text: item.text };
-          if (item.type === "image" && item.source?.type === "base64") {
-            return { type: "image_url", image_url: { url: `data:${item.source.media_type};base64,${item.source.data}` } };
-          }
-          if (item.type === "image_url") return item;
-          return { type: "text", text: "" };
-        });
-        openaiMessages.push({ role: msg.role, content: parts });
+        // Texte seulement pour Sanny
+        const text = msg.content.filter(i => i.type === "text").map(i => i.text).join("\n");
+        openaiMessages.push({ role: msg.role, content: text });
       }
     }
 
-    // Si le frontend demande un modèle Claude spécifique (caméra IA), on l'utilise via OpenRouter
-    // Sinon on prend le premier modèle de la liste
-    const requestedModel = body.model && body.model !== "openrouter/auto" ? body.model : null;
-    const selectedModel = requestedModel || MODELS[0];
-
+    const selectedModel = MODELS[0];
     const payload = {
       model: selectedModel,
-      max_tokens: Math.min(body.max_tokens || 600, 1200),
+      max_tokens: Math.min(body.max_tokens || 800, 1000),
       messages: openaiMessages,
       temperature: 0.7,
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 9000);
 
     let response;
     try {
@@ -81,7 +69,7 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${apiKey}`,
           "HTTP-Referer": "https://monfermier9.vercel.app",
-          "X-Title": "Mon Fermier"
+          "X-Title": "Mon Fermier — Sanny"
         },
         body: JSON.stringify(payload),
         signal: controller.signal
@@ -89,28 +77,21 @@ export default async function handler(req, res) {
     } catch (fetchErr) {
       clearTimeout(timeoutId);
       if (fetchErr.name === "AbortError") {
-        return res.status(504).json({
-          error: "Délai dépassé",
-          detail: "Le modèle IA met trop longtemps. Réessayez ou posez une question plus courte."
-        });
+        return res.status(504).json({ error: "Délai dépassé", detail: "Réessayez ou posez une question plus courte." });
       }
       throw fetchErr;
     }
     clearTimeout(timeoutId);
 
     const data = await response.json();
-
     if (!response.ok) {
       const errMsg = data.error?.message || "Erreur OpenRouter";
-      return res.status(response.status).json({
-        error: errMsg,
-        detail: response.status === 429 ? "Limite de requêtes atteinte. Attendez quelques secondes." : errMsg
-      });
+      return res.status(response.status).json({ error: errMsg, detail: errMsg });
     }
 
     const text = data.choices?.[0]?.message?.content || "";
     return res.status(200).json({
-      id: "openrouter-response",
+      id: "sanny-response",
       type: "message",
       role: "assistant",
       content: [{ type: "text", text }],
@@ -120,7 +101,7 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error("Erreur OpenRouter:", err);
+    console.error("Erreur Sanny:", err);
     return res.status(500).json({ error: "Erreur serveur", detail: err.message });
   }
 }
