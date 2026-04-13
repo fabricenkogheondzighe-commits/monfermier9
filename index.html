@@ -42,6 +42,14 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 @keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
 @keyframes stockBlink{0%,100%{background:linear-gradient(135deg,#3b0000,#6a0000);border-color:#ff2020;box-shadow:0 0 18px rgba(255,0,0,0.5)}50%{background:linear-gradient(135deg,#6a0000,#aa0000);border-color:#ff5555;box-shadow:0 0 32px rgba(255,50,50,0.8)}}
 .stock-alert-blink{animation:stockBlink 0.8s ease-in-out infinite !important;cursor:pointer !important;}
+@keyframes techAlertPulse{0%,100%{border-color:#ff402066;box-shadow:0 0 0 0 rgba(255,64,32,0.5);background:linear-gradient(135deg,#1a0500,#2a0a00)}50%{border-color:#ff6040;box-shadow:0 0 18px rgba(255,64,32,0.4);background:linear-gradient(135deg,#2a0a00,#3a1000)}}
+.tech-alert-blink{animation:techAlertPulse 1.1s ease-in-out infinite !important;cursor:pointer !important;}
+@keyframes techBadgePop{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(231,76,60,0.7)}50%{transform:scale(1.15);box-shadow:0 0 0 5px rgba(231,76,60,0)}}
+.tech-badge-anim{animation:techBadgePop 1.0s ease-in-out infinite !important;}
+@keyframes bellShake{0%,80%,100%{transform:rotate(0)}10%{transform:rotate(-10deg)}20%{transform:rotate(10deg)}30%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}50%{transform:rotate(-5deg)}60%{transform:rotate(5deg)}}
+.bell-shake{animation:bellShake 2s ease-in-out infinite !important;}
+@keyframes fichePulse{0%,100%{border-color:#e67e2266;background:linear-gradient(135deg,#0d0800,#1a1000)}50%{border-color:#e67e22;background:linear-gradient(135deg,#1a1000,#251800);box-shadow:0 0 12px rgba(230,126,34,0.2)}}
+.fiche-todo-blink{animation:fichePulse 2s ease-in-out infinite !important;}
 
 /* ═══════════════════════════════════════
    PAGES
@@ -130,34 +138,23 @@ input,select,textarea{font-family:inherit;outline:none;border:none}
 .admin-title{font-size:18px;font-weight:700;color:#c9a84c}
 .admin-tabs{
   display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
-  padding:12px 12px 0;
+  padding:14px 16px;
   position:sticky;top:56px;z-index:10;
   background:#000d1aee;backdrop-filter:blur(10px);
+  border-bottom:1px solid #c9a84c22;
 }
 .admin-tab{
   background:#0a0f1a;border:1px solid #1a2030;color:#4a5a7a;
-  padding:12px 4px 10px;border-radius:12px;font-size:10px;font-weight:700;
-  text-align:center;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;
-  position:relative;
+  padding:10px 4px;border-radius:10px;font-size:10px;font-weight:700;
+  text-align:center;cursor:pointer;transition:all 0.2s;
 }
-.admin-tab .tab-icon{font-size:20px;display:block;margin-bottom:4px}
-.admin-tab.active{background:linear-gradient(135deg,#001830,#002a50);border-color:#c9a84c88;color:#c9a84c;box-shadow:0 2px 12px rgba(201,168,76,0.15)}
+.admin-tab .tab-icon{font-size:16px;display:block;margin-bottom:3px}
+.admin-tab.active{background:linear-gradient(135deg,#001428,#002040);border-color:#c9a84c55;color:#c9a84c}
 .admin-tab:active{transform:scale(0.95)}
-.admin-tabs-sep{
-  padding:8px 12px 0;
-  background:#000d1aee;
-  display:flex;align-items:center;gap:8px;
-}
-.admin-tabs-sep-label{font-size:9px;color:#2a3a4a;letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
-.admin-tabs-sep-line{flex:1;height:1px;background:#1a2530}
-/* Rangée 2 des onglets */
+/* Rangée 2 des onglets - 3 colonnes centrées */
 .admin-tabs-row2{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
-  padding:0 12px;
-  background:#000d1aee;
-}
-.admin-tabs-bottom-border{
-  padding-bottom:12px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+  padding:0 16px 14px;
   background:#000d1aee;
   border-bottom:1px solid #c9a84c22;
 }
@@ -522,7 +519,6 @@ window.addEventListener('load', function() {
     <div class="admin-title">⚙️ Bureau Admin</div>
   </div>
   <!-- ONGLETS RANGÉE 1 : 4 colonnes -->
-  <!-- ONGLETS ADMIN REDESIGNÉS PAR CATÉGORIE -->
   <div class="admin-tabs" id="admin-tabs-row1">
     <button class="admin-tab" id="tab-clients" onclick="openTab('clients')">
       <span class="tab-icon">👥</span>Clients
@@ -530,71 +526,55 @@ window.addEventListener('load', function() {
     <button class="admin-tab" id="tab-vendors" onclick="openTab('vendors')">
       <span class="tab-icon">👨‍💼</span>Vendeurs
     </button>
-    <button class="admin-tab" id="tab-stock" onclick="openTab('stock')">
-      <span class="tab-icon">🏭</span>Stock
-    </button>
-    <button class="admin-tab" id="tab-terrain" onclick="openTab('terrain')" style="position:relative">
-      <span class="tab-icon">🌿</span>Terrain
-      <span id="tech-badge" style="display:none;position:absolute;top:5px;right:5px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center;line-height:1.4">0</span>
-    </button>
-  </div>
-  <!-- CATÉGORIE FINANCES -->
-  <div class="admin-tabs-sep">
-    <div class="admin-tabs-sep-label">Finances</div>
-    <div class="admin-tabs-sep-line"></div>
-  </div>
-  <div class="admin-tabs-row2" style="padding-top:6px">
-    <button class="admin-tab" id="tab-compta" onclick="openTab('compta')">
-      <span class="tab-icon">💰</span>Compta
-    </button>
-    <button class="admin-tab" id="tab-orders" onclick="openTab('orders')">
-      <span class="tab-icon">📦</span>Commandes
-    </button>
     <button class="admin-tab" id="tab-charts" onclick="openTab('charts')">
       <span class="tab-icon">📊</span>Graphiques
     </button>
-    <button class="admin-tab" id="tab-analyses" onclick="openTab('analyses')">
-      <span class="tab-icon">📈</span>Analyses
+    <button class="admin-tab" id="tab-compta" onclick="openTab('compta')">
+      <span class="tab-icon">💰</span>Compta
     </button>
   </div>
-  <!-- CATÉGORIE OUTILS -->
-  <div class="admin-tabs-sep">
-    <div class="admin-tabs-sep-label">Outils</div>
-    <div class="admin-tabs-sep-line"></div>
-  </div>
-  <div class="admin-tabs-row2" style="padding-top:6px">
-    <button class="admin-tab" id="tab-catalogue" onclick="openTab('catalogue')">
-      <span class="tab-icon">🛍️</span>Catalogue
+  <!-- ONGLETS RANGÉE 2 -->
+  <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr)">
+    <button class="admin-tab" id="tab-orders" onclick="openTab('orders')">
+      <span class="tab-icon">📦</span>Commandes
     </button>
     <button class="admin-tab" id="tab-calc" onclick="openTab('calc')">
       <span class="tab-icon">🧮</span>Calcul
     </button>
+    <button class="admin-tab" id="tab-stock" onclick="openTab('stock')">
+      <span class="tab-icon">🏭</span>Stock
+    </button>
+  </div>
+  <!-- ONGLETS RANGÉE 3 -->
+  <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
+    <button class="admin-tab" id="tab-analyses" onclick="openTab('analyses')">
+      <span class="tab-icon">📈</span>Analyses
+    </button>
     <button class="admin-tab" id="tab-rapports" onclick="openTab('rapports')">
       <span class="tab-icon">📄</span>Rapports
     </button>
-    <button class="admin-tab" id="tab-messages" onclick="openTab('messages')" style="position:relative">
-      <span class="tab-icon">💬</span>Messages
-      <span id="msg-badge-admin" style="display:none;position:absolute;top:5px;right:5px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">0</span>
+    <button class="admin-tab" id="tab-settings" onclick="openTab('settings')">
+      <span class="tab-icon">⚙️</span>Paramètres
     </button>
   </div>
-  <!-- CATÉGORIE ADMIN -->
-  <div class="admin-tabs-sep">
-    <div class="admin-tabs-sep-label">Administration</div>
-    <div class="admin-tabs-sep-line"></div>
+  <!-- ONGLETS RANGÉE 4 -->
+  <div class="admin-tabs-row2" style="grid-template-columns:repeat(3,1fr);padding-top:0">
+    <button class="admin-tab" id="tab-catalogue" onclick="openTab('catalogue')">
+      <span class="tab-icon">🛍️</span>Catalogue
+    </button>
+    <button class="admin-tab" id="tab-reglement" onclick="openTab('reglement')">
+      <span class="tab-icon">📜</span>Règlement
+    </button>
+    <button class="admin-tab" id="tab-messages" onclick="openTab('messages')" style="position:relative">
+      <span class="tab-icon">💬</span>Messages
+      <span id="msg-badge-admin" style="display:none;position:absolute;top:6px;right:6px;background:#ff4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center">0</span>
+    </button>
   </div>
-  <div class="admin-tabs-bottom-border">
-    <div class="admin-tabs-row2" style="padding-top:6px">
-      <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')">
-        <span class="tab-icon">📢</span>Annonces
-      </button>
-      <button class="admin-tab" id="tab-reglement" onclick="openTab('reglement')">
-        <span class="tab-icon">📜</span>Règlement
-      </button>
-      <button class="admin-tab" id="tab-settings" onclick="openTab('settings')">
-        <span class="tab-icon">⚙️</span>Paramètres
-      </button>
-      <div></div>
-    </div>
+  <!-- ONGLETS RANGÉE 5 : Annonces seul, centré -->
+  <div style="padding:4px 8px 0;display:flex;justify-content:center">
+    <button class="admin-tab" id="tab-annonces" onclick="openTab('annonces')" style="max-width:260px;width:100%">
+      <span class="tab-icon">📢</span>Annonces aux vendeurs
+    </button>
   </div>
   <div id="admin-content"></div>
 </div>
@@ -999,48 +979,62 @@ function renderTechHome() {
   if(content && !document.getElementById("tbtn-dashboard")) {
     content.innerHTML = `
     <div id="tech-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
-      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px">🌿</div>
-        <div id="tech-kpi-parcelles" style="font-size:18px;font-weight:700;color:#a8d880">0</div>
-        <div style="font-size:9px;color:#5a8a4a">PARCELLES</div>
+      <div style="background:#061504;border:1px solid #2a5a1a33;border-radius:12px;padding:12px 8px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#4a8a30,transparent);opacity:0.5"></div>
+        <div style="font-size:22px;margin-bottom:4px">🌿</div>
+        <div id="tech-kpi-parcelles" style="font-size:20px;font-weight:700;color:#a8d880;line-height:1">0</div>
+        <div style="font-size:9px;color:#4a7a3a;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px">Parcelles</div>
       </div>
-      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px">⚠️</div>
-        <div id="tech-kpi-alertes" style="font-size:18px;font-weight:700;color:#5a8a4a">0</div>
-        <div style="font-size:9px;color:#5a8a4a">MALADIES 7J</div>
+      <div style="background:#061504;border:1px solid #2a5a1a33;border-radius:12px;padding:12px 8px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#4a8a30,transparent);opacity:0.5"></div>
+        <div style="font-size:22px;margin-bottom:4px">🔬</div>
+        <div id="tech-kpi-alertes" style="font-size:20px;font-weight:700;color:#5a8a4a;line-height:1">0</div>
+        <div style="font-size:9px;color:#4a7a3a;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px">Maladies 7j</div>
       </div>
-      <div id="tech-kpi-taches-box" style="background:#061504;border:1px solid #d5a03a44;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px">📌</div>
-        <div id="tech-kpi-taches" style="font-size:18px;font-weight:700;color:#d5a03a">0</div>
-        <div style="font-size:9px;color:#5a8a4a">TÂCHES</div>
+      <div id="tech-kpi-taches-box" style="background:#061504;border:1px solid #d5a03a33;border-radius:12px;padding:12px 8px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#d5a03a,transparent);opacity:0.4"></div>
+        <div style="font-size:22px;margin-bottom:4px">📌</div>
+        <div id="tech-kpi-taches" style="font-size:20px;font-weight:700;color:#d5a03a;line-height:1">0</div>
+        <div style="font-size:9px;color:#8a7030;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px">Tâches</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <button id="tbtn-dashboard" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">🏠</div><div style="font-size:12px;font-weight:600;color:#a8d880">Tableau de bord</div>
+    <button id="tbtn-fiche" class="fiche-todo-blink" style="width:100%;border-radius:14px;padding:16px 14px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:14px;text-align:left">
+      <div style="width:46px;height:46px;border-radius:12px;background:rgba(230,126,34,0.15);border:1px solid rgba(230,126,34,0.35);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📋</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:#e8a84c" id="tbtn-fiche-label">Fiche du jour — À remplir ❌</div>
+        <div style="font-size:11px;color:#8a7040;margin-top:2px">À soumettre avant 18h00</div>
+      </div>
+      <div style="color:#e8a84c;font-size:18px;opacity:0.7">›</div>
+    </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <button id="tbtn-dashboard" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">🏠</div><div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Tableau de bord</div>
       </button>
-      <button id="tbtn-parcelles" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">🌿</div><div style="font-size:12px;font-weight:600;color:#a8d880">Mes parcelles</div>
+      <button id="tbtn-parcelles" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">🌿</div><div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Mes parcelles</div>
       </button>
-      <button id="tbtn-journal" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📋</div><div style="font-size:12px;font-weight:600;color:#a8d880">Journal terrain</div>
+      <button id="tbtn-journal" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">📗</div><div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Journal terrain</div>
       </button>
-      <button id="tbtn-alertes" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">⚠️</div><div style="font-size:12px;font-weight:600;color:#a8d880" id="tbtn-alertes-label">Alertes</div>
+      <button id="tbtn-alertes" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%;position:relative">
+        <div style="position:relative;display:inline-block">
+          <div style="font-size:26px" id="tbtn-alertes-icon">⚠️</div>
+          <span id="tbtn-alertes-badge" style="display:none;position:absolute;top:-4px;right:-8px;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px" class="tech-badge-anim bell-shake">0</span>
+        </div>
+        <div id="tbtn-alertes-label" style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Alertes</div>
       </button>
-      <button id="tbtn-camera" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📸</div><div style="font-size:12px;font-weight:600;color:#a8d880">Diagnostic IA</div>
+      <button id="tbtn-camera" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">📷</div><div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Diagnostic IA</div>
       </button>
-      <button id="tbtn-diagnostics" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">🔬</div><div style="font-size:12px;font-weight:600;color:#a8d880">Historique diag.</div>
+      <button id="tbtn-diagnostics" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">🔬</div><div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Historique diag.</div>
       </button>
-      <button id="tbtn-taches" style="background:#061504;border:2px solid #d5a03a55;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📌</div><div style="font-size:12px;font-weight:600;color:#d5a03a" id="tbtn-taches-label">Mes tâches</div>
-      </button>
-      <button id="tbtn-fiche" style="background:linear-gradient(135deg,#061504,#0a2808);border:2px solid #4a8a3055;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📋</div><div style="font-size:12px;font-weight:600;color:#a8d880" id="tbtn-fiche-label">Fiche du jour — À remplir ❌</div>
-      </button>
-    </div>`;
+    </div>
+    <button id="tbtn-taches" style="background:#071a05;border:2px solid #d5a03a44;border-radius:13px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%">
+      <div style="font-size:24px">📌</div>
+      <div style="font-size:13px;font-weight:600;color:#d5a03a" id="tbtn-taches-label">Mes tâches</div>
+      <div style="margin-left:auto;color:#d5a03a;font-size:16px;opacity:0.6">›</div>
+    </button>`;
   }
 
   // Mettre à jour le nom et la photo
@@ -1081,27 +1075,47 @@ function renderTechHome() {
     if(elTaches) elTaches.textContent = tachesEnAttente.length;
     if(elTachesBox) elTachesBox.style.borderColor = tachesEnAttente.length > 0 ? "#d5a03a" : "#2a5a1a44";
 
-    // Badge alerte sur le bouton Alertes — clignote si alertes actives
+    // Badge alerte sur le bouton Alertes — clignote + badge numérique si alertes actives
     var elAlerteBtn = document.getElementById("tbtn-alertes");
+    var elAlerteBadge = document.getElementById("tbtn-alertes-badge");
     var elAlerteLabel = document.getElementById("tbtn-alertes-label");
     if(elAlerteBtn) {
       if(nAlertes > 0) {
-        elAlerteBtn.className = "stock-alert-blink";
-        elAlerteBtn.style.cssText = "background:transparent;border:2px solid #ff402055;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%";
+        elAlerteBtn.className = "tech-alert-blink";
+        elAlerteBtn.style.cssText = "border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%;position:relative";
+        if(elAlerteBadge) {
+          elAlerteBadge.textContent = nAlertes;
+          elAlerteBadge.style.display = "flex";
+        }
       } else {
         elAlerteBtn.className = "";
-        elAlerteBtn.style.cssText = "background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%";
+        elAlerteBtn.style.cssText = "background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%;position:relative";
+        if(elAlerteBadge) elAlerteBadge.style.display = "none";
       }
     }
     if(elAlerteLabel) {
-      elAlerteLabel.textContent = nAlertes > 0 ? "⚠️ Alertes (" + nAlertes + ")" : "Alertes";
+      elAlerteLabel.textContent = nAlertes > 0 ? "Alertes (" + nAlertes + ")" : "Alertes";
       elAlerteLabel.style.color = nAlertes > 0 ? "#ff8040" : "#a8d880";
       elAlerteLabel.style.fontWeight = nAlertes > 0 ? "700" : "600";
     }
 
-    // Label fiche du jour
+    // Label et style fiche du jour
     var elFiche = document.getElementById("tbtn-fiche-label");
+    var elFicheBtn = document.getElementById("tbtn-fiche");
     if(elFiche) { elFiche.textContent = ficheExistante ? "Fiche du jour — Soumise ✅" : "Fiche du jour — À remplir ❌"; }
+    if(elFicheBtn) {
+      if(ficheExistante) {
+        elFicheBtn.className = "";
+        elFicheBtn.style.background = "linear-gradient(135deg,#071a05,#0c2808)";
+        elFicheBtn.style.border = "2px solid #4a8a3066";
+        if(elFiche) { elFiche.style.color = "#7ac97a"; }
+        var subLabel = elFicheBtn.querySelector("div:nth-child(2) > div:last-child");
+        if(subLabel) subLabel.textContent = "Soumise aujourd'hui ✅";
+      } else {
+        elFicheBtn.className = "fiche-todo-blink";
+        if(elFiche) { elFiche.style.color = "#e8a84c"; }
+      }
+    }
   } catch(e) {
     console.warn("renderTechHome KPIs:", e);
   }
@@ -3240,7 +3254,6 @@ function openTab(tab) {
     case "catalogue": renderTabCatalogue(content); break;
     case "annonces":  renderTabAnnonces(content);  break;
     case "technicien": renderTabTechnicien(content); break;
-    case "terrain": renderTabTerrain(content); break;
   }
 }
 
@@ -9370,25 +9383,66 @@ function acToggleProbleme(btn) {
 }
 
 function acRenderFicheSoumise(fiche) {
-  var html = '<div style="padding:4px;text-align:center">';
-  html += '<div style="font-size:36px;margin-bottom:10px">✅</div>';
-  html += '<div style="font-size:14px;font-weight:700;color:#7ac97a;margin-bottom:6px">Fiche soumise avec succès !</div>';
-  html += '<div style="font-size:11px;color:#5a8a4a;margin-bottom:16px">Soumise à ' + (fiche.heure||"") + ' — Votre admin a été notifié</div>';
-  html += '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:12px;padding:14px;text-align:left">';
-  html += '<div style="font-size:12px;font-weight:700;color:#a8d880;margin-bottom:8px">📋 Récapitulatif</div>';
-  if (fiche.technicien) html += '<div style="font-size:11px;color:#c8d8b0;margin-bottom:4px">👤 ' + escapeHtml(fiche.technicien) + '</div>';
-  if (fiche.heureDebut || fiche.heureFin) html += '<div style="font-size:11px;color:#c8d8b0;margin-bottom:4px">🕐 ' + (fiche.heureDebut||"?") + ' → ' + (fiche.heureFin||"?") + '</div>';
-  if (fiche.taches && fiche.taches.length > 0) {
-    html += '<div style="font-size:11px;color:#7ac97a;margin-top:8px;margin-bottom:4px">✅ ' + fiche.taches.length + ' tâche(s) effectuée(s)</div>';
-    fiche.taches.slice(0,4).forEach(function(t){ html += '<div style="font-size:10px;color:#6a9a50;margin-left:8px">• ' + escapeHtml(t) + '</div>'; });
-  }
-  if (fiche.problemes && fiche.problemes.length > 0) {
-    html += '<div style="font-size:11px;color:#ff9090;margin-top:8px">⚠️ ' + fiche.problemes.join(", ") + '</div>';
-  }
+  var hasProbleme = fiche.problemes && fiche.problemes.length > 0 && !fiche.problemes.includes("RAS — Tout va bien");
+  var html = '<div style="padding:4px">';
+
+  // Bandeau de confirmation
+  html += '<div style="background:linear-gradient(135deg,#071a05,#0d2a08);border:1px solid #3a7a2044;border-radius:14px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:12px">';
+  html += '<div style="width:44px;height:44px;border-radius:50%;background:rgba(76,175,53,0.15);border:1px solid rgba(76,175,53,0.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✅</div>';
+  html += '<div><div style="font-size:14px;font-weight:700;color:#7ac97a">Fiche soumise avec succès</div>';
+  html += '<div style="font-size:11px;color:#5a8a4a;margin-top:2px">Envoyée à ' + (fiche.heure||"—") + ' · Admin notifié</div></div>';
   html += '</div>';
-  html += '<div style="font-size:11px;color:#4a6a3a;margin-top:12px">Vous pouvez soumettre une nouvelle fiche demain</div>';
+
+  // Infos générales
+  html += '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:12px;overflow:hidden;margin-bottom:10px">';
+  html += '<div style="padding:10px 14px;background:#0a1e08;border-bottom:1px solid #1a3a1222;font-size:11px;font-weight:700;color:#6a9a50;text-transform:uppercase;letter-spacing:1px">👷 Informations</div>';
+  html += '<div style="padding:12px 14px">';
+  if (fiche.technicien) html += _ficheRow("Technicien", escapeHtml(fiche.technicien));
+  if (fiche.date) html += _ficheRow("Date", fiche.date);
+  if (fiche.heureDebut || fiche.heureFin) html += _ficheRow("Horaires", (fiche.heureDebut||"?") + " → " + (fiche.heureFin||"?"));
+  html += '</div></div>';
+
+  // Tâches
+  if (fiche.taches && fiche.taches.length > 0) {
+    html += '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:12px;overflow:hidden;margin-bottom:10px">';
+    html += '<div style="padding:10px 14px;background:#0a1e08;border-bottom:1px solid #1a3a1222;font-size:11px;font-weight:700;color:#6a9a50;text-transform:uppercase;letter-spacing:1px">✅ Tâches effectuées (' + fiche.taches.length + ')</div>';
+    html += '<div style="padding:10px 14px">';
+    fiche.taches.forEach(function(t){ html += '<div style="font-size:12px;color:#c8d8b0;padding:5px 0;border-bottom:1px solid #1a3a1211;display:flex;align-items:center;gap:8px"><span style="color:#5a9a40">✓</span>' + escapeHtml(t) + '</div>'; });
+    html += '</div></div>';
+  }
+
+  // Produits
+  if (fiche.produits) {
+    html += '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:12px;overflow:hidden;margin-bottom:10px">';
+    html += '<div style="padding:10px 14px;background:#0a1e08;border-bottom:1px solid #1a3a1222;font-size:11px;font-weight:700;color:#6a9a50;text-transform:uppercase;letter-spacing:1px">🧪 Produits utilisés</div>';
+    html += '<div style="padding:12px 14px;font-size:12px;color:#c8d8b0">' + escapeHtml(fiche.produits) + '</div></div>';
+  }
+
+  // Problèmes
+  if (hasProbleme) {
+    html += '<div style="background:linear-gradient(135deg,#1a0500,#2a0a00);border:1px solid #d55a1a44;border-radius:12px;overflow:hidden;margin-bottom:10px">';
+    html += '<div style="padding:10px 14px;background:#200800;border-bottom:1px solid #d55a1a22;font-size:11px;font-weight:700;color:#e08060;text-transform:uppercase;letter-spacing:1px">⚠️ Problèmes signalés</div>';
+    html += '<div style="padding:12px 14px">';
+    fiche.problemes.forEach(function(p){ html += '<div style="font-size:12px;color:#ff9070;padding:4px 0;display:flex;align-items:center;gap:6px"><span>▸</span>' + escapeHtml(p) + '</div>'; });
+    html += '</div></div>';
+  }
+
+  // Commentaire
+  if (fiche.commentaire) {
+    html += '<div style="background:#061504;border:1px solid #1a3a1222;border-radius:12px;overflow:hidden;margin-bottom:10px">';
+    html += '<div style="padding:10px 14px;background:#0a1e08;border-bottom:1px solid #1a3a1222;font-size:11px;font-weight:700;color:#6a9a50;text-transform:uppercase;letter-spacing:1px">💬 Observations</div>';
+    html += '<div style="padding:12px 14px;font-size:12px;color:#a8b8a0;line-height:1.7;font-style:italic">"' + escapeHtml(fiche.commentaire) + '"</div></div>';
+  }
+
+  html += '<div style="text-align:center;font-size:11px;color:#3a5a30;margin-top:8px;padding:8px">Vous pourrez soumettre une nouvelle fiche demain</div>';
   html += '</div>';
   return html;
+}
+
+function _ficheRow(label, val) {
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #1a3a1211">' +
+    '<span style="font-size:11px;color:#5a8a4a">' + label + '</span>' +
+    '<span style="font-size:12px;color:#c8d8b0;font-weight:500">' + val + '</span></div>';
 }
 
 function acSoumettreFiche() {
@@ -9489,234 +9543,6 @@ function acSoumettreFiche() {
 var _fichesCache = [];
 var _techTachesCache = [];
 
-// ═══════════════════════════════════════════════════════════
-// ONGLET TERRAIN (admin) — Fiches technicien + tâches + récoltes
-// ═══════════════════════════════════════════════════════════
-var _terrainSousOnglet = "fiches"; // fiches | taches | recoltes
-
-function renderTabTerrain(el) {
-  if(!el) return;
-
-  // Activer le listener si pas encore fait
-  if(window.db && !window._techListener) {
-    window._techListener = true;
-    window.db.collection("app_data").onSnapshot(function(snap) {
-      _fichesCache = [];
-      snap.forEach(function(doc) {
-        if(doc.id.startsWith("fiche_tech_")) {
-          try { _fichesCache.push(JSON.parse(doc.data().data || "{}")); } catch(e){}
-        }
-        if(doc.id === "tech_taches") {
-          try { _techTachesCache = JSON.parse(doc.data().data || "[]"); } catch(e){}
-        }
-      });
-      _fichesCache.sort(function(a,b){ return b.createdAt > a.createdAt ? 1 : -1; });
-      var nonLues = _fichesCache.filter(function(f){ return !f.lu; }).length;
-      var badge = document.getElementById("tech-badge");
-      if(badge) { badge.style.display = nonLues > 0 ? "flex" : "none"; badge.textContent = nonLues; }
-      if(document.getElementById("tab-terrain") && document.getElementById("tab-terrain").classList.contains("active")) {
-        renderTabTerrain(document.getElementById("admin-content"));
-      }
-    });
-  }
-
-  var today = new Date().toISOString().split("T")[0];
-  var fichesAujourdhui = _fichesCache.filter(function(f){ return f.date === today; });
-  var fichesNonLues = _fichesCache.filter(function(f){ return !f.lu; });
-  var tachesEnAttente = (_techTachesCache||[]).filter(function(t){ return !t.faite; });
-  var recoltes = (function(){ try { return JSON.parse(localStorage.getItem("mf_recoltes")||"[]"); } catch(e){ return []; } })();
-  var totalKgRecoltes = recoltes.reduce(function(s,r){ return s + (r.kg||0); }, 0);
-
-  var tabStyle = function(id) {
-    return _terrainSousOnglet === id
-      ? "flex:1;padding:8px 4px;background:linear-gradient(135deg,#001830,#002a50);color:#c9a84c;border:1px solid #c9a84c55;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer"
-      : "flex:1;padding:8px 4px;background:#0a0f1a;color:#4a5a7a;border:1px solid #1a2030;border-radius:8px;font-size:10px;cursor:pointer";
-  };
-
-  var html = '<div style="max-width:560px;margin:0 auto">';
-
-  // KPIs
-  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">';
-  html += '<div style="background:#0a0f1a;border:1px solid #1a2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">📋</div><div style="font-size:16px;font-weight:700;color:#a8d880">' + fichesAujourdhui.length + '</div><div style="font-size:8px;color:#4a5a7a">AUJOURD'HUI</div></div>';
-  html += '<div style="background:#0a0f1a;border:1px solid ' + (fichesNonLues.length > 0 ? "#ff444444" : "#1a2030") + ';border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">🔴</div><div style="font-size:16px;font-weight:700;color:' + (fichesNonLues.length > 0 ? "#ff8080" : "#4a5a7a") + '">' + fichesNonLues.length + '</div><div style="font-size:8px;color:#4a5a7a">NON LUES</div></div>';
-  html += '<div style="background:#0a0f1a;border:1px solid ' + (tachesEnAttente.length > 0 ? "#d5a03a44" : "#1a2030") + ';border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">📌</div><div style="font-size:16px;font-weight:700;color:' + (tachesEnAttente.length > 0 ? "#d5a03a" : "#4a5a7a") + '">' + tachesEnAttente.length + '</div><div style="font-size:8px;color:#4a5a7a">TÂCHES</div></div>';
-  html += '<div style="background:#0a0f1a;border:1px solid #1a2030;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px">🧺</div><div style="font-size:14px;font-weight:700;color:#7ac97a">' + totalKgRecoltes.toFixed(1) + '</div><div style="font-size:8px;color:#4a5a7a">KG TOTAL</div></div>';
-  html += '</div>';
-
-  // Alerte si pas de fiche aujourd'hui
-  if(fichesAujourdhui.length === 0) {
-    html += '<div class="stock-alert-blink" style="border-radius:10px;padding:10px 14px;margin-bottom:12px;text-align:center">';
-    html += '<div style="font-size:12px;font-weight:700;color:#ff8080">⚠️ Aucune fiche reçue aujourd'hui !</div>';
-    html += '</div>';
-  }
-
-  // Sous-onglets
-  html += '<div style="display:flex;gap:6px;margin-bottom:14px">';
-  html += '<button onclick="terrainTab('fiches')" style="' + tabStyle("fiches") + '">📋 Fiches (' + _fichesCache.length + ')</button>';
-  html += '<button onclick="terrainTab('taches')" style="' + tabStyle("taches") + '">📌 Tâches (' + tachesEnAttente.length + ')</button>';
-  html += '<button onclick="terrainTab('recoltes')" style="' + tabStyle("recoltes") + '">🧺 Récoltes</button>';
-  html += '</div>';
-
-  if(_terrainSousOnglet === "fiches") {
-    html += renderTerrainFiches();
-  } else if(_terrainSousOnglet === "taches") {
-    html += renderTerrainTaches(tachesEnAttente, today);
-  } else {
-    html += renderTerrainRecoltes(recoltes, totalKgRecoltes);
-  }
-
-  html += '</div>';
-  el.innerHTML = html;
-  techMarquerLu();
-}
-
-function terrainTab(tab) {
-  _terrainSousOnglet = tab;
-  var el = document.getElementById("admin-content");
-  if(el) renderTabTerrain(el);
-}
-
-function renderTerrainFiches() {
-  if(_fichesCache.length === 0) {
-    return '<div style="text-align:center;padding:30px;color:#4a5a7a"><div style="font-size:36px;margin-bottom:10px">📭</div><div>Aucune fiche reçue</div></div>';
-  }
-  var html = '';
-  _fichesCache.forEach(function(fiche) {
-    var hasProbleme = fiche.problemes && fiche.problemes.length > 0 && !fiche.problemes.includes("RAS — Tout va bien");
-    var borderCol = hasProbleme ? "#d55a1a" : fiche.lu ? "#1a2030" : "#c9a84c";
-    var blinkCls = hasProbleme && !fiche.lu ? " stock-alert-blink" : "";
-    html += '<div class="' + blinkCls.trim() + '" style="background:#0a0f1a;border:1px solid ' + borderCol + ';border-radius:12px;padding:14px;margin-bottom:10px">';
-
-    // En-tête
-    html += '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">';
-    html += '<div>';
-    html += '<div style="font-size:14px;font-weight:700;color:#e8e0d0">👷 ' + escapeHtml(fiche.technicien||"Technicien") + '</div>';
-    html += '<div style="font-size:11px;color:#4a5a7a;margin-top:2px">📅 ' + (fiche.date||"—") + ' · ' + (fiche.heure||"—") + '</div>';
-    if(fiche.heureDebut || fiche.heureFin) html += '<div style="font-size:11px;color:#4a5a7a">🕐 ' + (fiche.heureDebut||"?") + ' → ' + (fiche.heureFin||"?") + '</div>';
-    html += '</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">';
-    if(!fiche.lu) html += '<span style="background:#c9a84c;color:#0a0906;padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700">NOUVEAU</span>';
-    if(hasProbleme) html += '<span style="background:#d55a1a;color:#fff;padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700">⚠️ ALERTE</span>';
-    html += '</div></div>';
-
-    // Tâches effectuées
-    if(fiche.taches && fiche.taches.length > 0) {
-      html += '<div style="margin-bottom:8px"><div style="font-size:10px;color:#c9a84c;letter-spacing:1px;margin-bottom:4px">✅ TÂCHES EFFECTUÉES</div>';
-      html += '<div style="display:flex;flex-wrap:wrap;gap:4px">';
-      fiche.taches.forEach(function(t){ html += '<span style="background:#001428;border:1px solid #1a2a40;color:#a8c8e8;padding:3px 8px;border-radius:10px;font-size:10px">✓ ' + escapeHtml(t) + '</span>'; });
-      html += '</div></div>';
-    }
-
-    // Parcelles
-    if(fiche.parcelles && fiche.parcelles.length > 0) {
-      var parcelles = typeof getParcelles === "function" ? getParcelles() : [];
-      var nomsParcelles = fiche.parcelles.map(function(pid){
-        var p = parcelles.find(function(x){ return x.id === pid; });
-        return p ? p.nom : pid;
-      });
-      html += '<div style="margin-bottom:8px"><div style="font-size:10px;color:#c9a84c;letter-spacing:1px;margin-bottom:4px">🌿 PARCELLES TRAVAILLÉES</div>';
-      html += '<div style="font-size:12px;color:#a8d880">' + nomsParcelles.map(escapeHtml).join(", ") + '</div></div>';
-    }
-
-    // Récolte
-    if(fiche.recolte && fiche.recolte.kg > 0) {
-      var parcelles2 = typeof getParcelles === "function" ? getParcelles() : [];
-      var pNom = "";
-      if(fiche.recolte.parcelleId) {
-        var pObj = parcelles2.find(function(p){ return p.id === fiche.recolte.parcelleId; });
-        if(pObj) pNom = " — " + pObj.nom;
-      }
-      html += '<div style="margin-bottom:8px;background:#001a08;border:1px solid #1a4a0844;border-radius:8px;padding:8px 12px">';
-      html += '<div style="font-size:10px;color:#c9a84c;letter-spacing:1px;margin-bottom:2px">🧺 RÉCOLTE DU JOUR</div>';
-      html += '<div style="font-size:15px;font-weight:700;color:#7ac97a">' + fiche.recolte.kg + ' kg' + escapeHtml(pNom) + '</div>';
-      html += '</div>';
-    }
-
-    // Produits
-    if(fiche.produits) {
-      html += '<div style="margin-bottom:8px"><div style="font-size:10px;color:#c9a84c;letter-spacing:1px;margin-bottom:2px">🧪 PRODUITS UTILISÉS</div>';
-      html += '<div style="font-size:12px;color:#a8b8c8">' + escapeHtml(fiche.produits) + '</div></div>';
-    }
-
-    // Commentaire
-    if(fiche.commentaire) {
-      html += '<div style="margin-bottom:8px"><div style="font-size:10px;color:#c9a84c;letter-spacing:1px;margin-bottom:2px">📝 OBSERVATIONS</div>';
-      html += '<div style="font-size:12px;color:#a8b8c8;background:#0a0f1a;border:1px solid #1a2030;border-radius:8px;padding:8px">' + escapeHtml(fiche.commentaire) + '</div></div>';
-    }
-
-    // Problèmes
-    if(hasProbleme) {
-      html += '<div style="background:#1a0800;border:1px solid #d55a1a44;border-radius:8px;padding:8px 12px">';
-      html += '<div style="font-size:10px;color:#d55a1a;letter-spacing:1px;margin-bottom:4px">⚠️ PROBLÈMES SIGNALÉS</div>';
-      fiche.problemes.forEach(function(p){ html += '<div style="font-size:12px;color:#ff9060">• ' + escapeHtml(p) + '</div>'; });
-      html += '</div>';
-    }
-
-    html += '</div>';
-  });
-  return html;
-}
-
-function renderTerrainTaches(tachesEnAttente, today) {
-  var html = '';
-  // Formulaire assigner
-  html += '<div class="acard" style="margin-bottom:14px">';
-  html += '<div class="acard-title">📌 ASSIGNER UNE TÂCHE</div>';
-  html += '<div class="field"><label>TÂCHE *</label><textarea id="tech-tache-texte" placeholder="Ex: Traiter parcelle Nord avec Mancozèbe 2g/L..." style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;min-height:70px;resize:none;box-sizing:border-box"></textarea></div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-  html += '<div class="field"><label>DATE LIMITE</label><input type="date" id="tech-tache-date" value="' + today + '" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box"></div>';
-  html += '<div class="field"><label>PRIORITÉ</label><select id="tech-tache-prio" style="width:100%;background:#0a0f1a;border:1px solid #1a2030;color:#e8e0d0;padding:10px;border-radius:8px;font-size:13px;box-sizing:border-box"><option value="normale">🟡 Normale</option><option value="haute">🔴 Haute</option><option value="urgente">🚨 Urgente</option></select></div>';
-  html += '</div>';
-  html += '<button onclick="techAssignerTache()" class="btn-gold" style="width:100%;font-size:13px">📤 Envoyer la tâche</button>';
-  html += '</div>';
-
-  // Liste tâches
-  if(tachesEnAttente.length > 0) {
-    html += '<div class="acard-title" style="padding:0 0 8px">📌 EN ATTENTE (' + tachesEnAttente.length + ')</div>';
-    tachesEnAttente.forEach(function(t) {
-      var prioCol = t.priorite==="urgente" ? "#ff4040" : t.priorite==="haute" ? "#ff8040" : "#d5a03a";
-      var prioIcon = t.priorite==="urgente" ? "🚨" : t.priorite==="haute" ? "🔴" : "🟡";
-      html += '<div style="background:#0a0f1a;border:1px solid #1a2030;border-left:3px solid ' + prioCol + ';border-radius:8px;padding:10px 12px;margin-bottom:8px">';
-      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
-      html += '<div style="flex:1"><div style="font-size:12px;color:#e8e0d0;margin-bottom:4px">' + prioIcon + ' ' + escapeHtml(t.texte) + '</div>';
-      html += '<div style="font-size:10px;color:#4a5a7a">Limite : ' + (t.dateLimite||"—") + '</div></div>';
-      html += '<button onclick="techSupprimerTache('' + t.id + '')" style="background:none;border:none;color:#5a3a3a;font-size:18px;cursor:pointer;padding:0;flex-shrink:0">×</button>';
-      html += '</div></div>';
-    });
-  } else {
-    html += '<div style="text-align:center;padding:20px;color:#4a5a7a;font-size:12px">✅ Aucune tâche en attente</div>';
-  }
-  return html;
-}
-
-function renderTerrainRecoltes(recoltes, totalKg) {
-  var html = '<div class="acard">';
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
-  html += '<div class="acard-title" style="margin:0">🧺 HISTORIQUE RÉCOLTES</div>';
-  if(recoltes.length > 0) html += '<button onclick="acEffacerToutesRecoltes()" style="background:none;border:1px solid #ff444444;color:#ff8888;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">🗑️ Tout effacer</button>';
-  html += '</div>';
-  html += '<div style="background:#001428;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">';
-  html += '<span style="font-size:11px;color:#4a5a7a">Total saison</span>';
-  html += '<span style="font-size:20px;font-weight:700;color:#7ac97a">' + totalKg.toFixed(1) + ' kg</span>';
-  html += '</div>';
-  if(recoltes.length === 0) {
-    html += '<div style="text-align:center;padding:20px;color:#4a5a7a;font-size:12px">Aucune récolte enregistrée</div>';
-  } else {
-    var sorted = recoltes.slice().sort(function(a,b){ return b.date > a.date ? 1 : -1; });
-    sorted.forEach(function(r) {
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1a2030">';
-      html += '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:#e8e0d0">' + escapeHtml(r.parcelleNom||"?") + '</div>';
-      html += '<div style="font-size:10px;color:#4a5a7a">' + escapeHtml(r.date) + ' · ' + escapeHtml(r.technicien||"") + '</div></div>';
-      html += '<div style="font-size:14px;font-weight:700;color:#7ac97a">' + (r.kg||0).toFixed(1) + ' kg</div>';
-      html += '<button onclick="acEffacerRecolte('' + r.id + '')" style="background:none;border:none;color:#ff6666;font-size:14px;cursor:pointer">🗑️</button>';
-      html += '</div>';
-    });
-  }
-  html += '</div>';
-  return html;
-}
-
-
 function renderTabTechnicien(el) {
   // Charger les fiches depuis Firebase
   if (window.db) {
@@ -9804,20 +9630,31 @@ function renderTabTechnicien(el) {
   } else {
     _fichesCache.slice(0,20).forEach(function(fiche) {
       var hasProbleme = fiche.problemes && fiche.problemes.length > 0 && !fiche.problemes.includes("RAS — Tout va bien");
-      var borderCol = hasProbleme ? "#d55a1a" : fiche.lu ? "#1a2030" : "#c9a84c";
+      var isNew = !fiche.lu;
+      var borderCol = hasProbleme ? "#d55a1a" : isNew ? "#c9a84c" : "#1a3a1222";
       var blinkCls = hasProbleme && !fiche.lu ? " stock-alert-blink" : "";
-      html += '<div class="' + blinkCls.trim() + '" style="background:#0a0f1a;border:1px solid ' + borderCol + ';border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="techVoirFiche(\'' + fiche.id + '\')">';
+      html += '<div class="' + blinkCls.trim() + '" style="background:linear-gradient(135deg,#070f06,#0b1a08);border:1px solid ' + borderCol + ';border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;position:relative;overflow:hidden" onclick="techVoirFiche(\'' + fiche.id + '\')">';
+      // Barre couleur gauche
+      html += '<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:' + (hasProbleme?"#d55a1a":isNew?"#c9a84c":"#2a5a1a") + ';border-radius:3px 0 0 3px"></div>';
+      html += '<div style="padding-left:8px">';
+      // Ligne 1 : nom + badges
       html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
-      html += '<div><div style="font-size:13px;font-weight:700;color:#e8e0d0">👷 ' + escapeHtml(fiche.technicien||"Technicien") + '</div>';
-      html += '<div style="font-size:10px;color:#4a5a7a">' + fiche.date + ' à ' + (fiche.heure||"—") + (fiche.heureDebut ? " · Travail : " + fiche.heureDebut + "→" + (fiche.heureFin||"?") : "") + '</div></div>';
-      html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">';
-      if (!fiche.lu) html += '<span style="font-size:9px;background:#c9a84c;color:#0a0906;padding:2px 6px;border-radius:8px;font-weight:700">NOUVEAU</span>';
-      if (hasProbleme) html += '<span style="font-size:9px;background:#d55a1a;color:#fff;padding:2px 6px;border-radius:8px;font-weight:700">⚠️ ALERTE</span>';
+      html += '<div style="font-size:13px;font-weight:700;color:#e8e0d0">👷 ' + escapeHtml(fiche.technicien||"Technicien") + '</div>';
+      html += '<div style="display:flex;gap:5px">';
+      if (isNew) html += '<span style="font-size:9px;background:#c9a84c;color:#0a0906;padding:2px 7px;border-radius:8px;font-weight:700">NOUVEAU</span>';
+      if (hasProbleme) html += '<span style="font-size:9px;background:#d55a1a;color:#fff;padding:2px 7px;border-radius:8px;font-weight:700">⚠️ ALERTE</span>';
       html += '</div></div>';
-      if (fiche.taches && fiche.taches.length > 0) html += '<div style="font-size:11px;color:#7ac97a;margin-bottom:4px">✅ ' + fiche.taches.length + ' tâche(s) effectuée(s)</div>';
-      if (hasProbleme) html += '<div style="font-size:11px;color:#ff9090">⚠️ ' + fiche.problemes.join(" · ") + '</div>';
-      if (fiche.commentaire) html += '<div style="font-size:11px;color:#8a8070;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">"' + escapeHtml(fiche.commentaire.substring(0,80)) + (fiche.commentaire.length>80?"...":"") + '"</div>';
-      html += '</div>';
+      // Ligne 2 : date + horaires
+      html += '<div style="font-size:10px;color:#4a6a5a;margin-bottom:8px">' + (fiche.date||"") + (fiche.heureDebut ? " · " + fiche.heureDebut + " → " + (fiche.heureFin||"?") : "") + " · Envoyée à " + (fiche.heure||"—") + '</div>';
+      // Tâches
+      if (fiche.taches && fiche.taches.length > 0) {
+        html += '<div style="font-size:11px;color:#6a9a50;margin-bottom:4px">✅ ' + fiche.taches.length + ' tâche(s) · ' + fiche.taches.slice(0,2).map(function(t){return escapeHtml(t.substring(0,25));}).join(", ") + (fiche.taches.length>2?"…":"") + '</div>';
+      }
+      // Problèmes
+      if (hasProbleme) html += '<div style="font-size:11px;color:#ff9070;margin-bottom:4px">⚠️ ' + fiche.problemes.filter(function(p){return p!=="RAS — Tout va bien";}).join(" · ") + '</div>';
+      // Commentaire extrait
+      if (fiche.commentaire) html += '<div style="font-size:11px;color:#6a8060;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic">"' + escapeHtml(fiche.commentaire.substring(0,70)) + (fiche.commentaire.length>70?"…":"") + '"</div>';
+      html += '</div></div>';
     });
   }
 
@@ -10314,78 +10151,96 @@ if ('serviceWorker' in navigator) {
      PAGE TECHNICIEN — ACCUEIL
 ═══════════════════════════════════════ -->
 <div id="page-tech-home" class="page" style="background:#040d03;min-height:100vh">
-  <div style="background:linear-gradient(135deg,#061504,#0a2008);border-bottom:1px solid #2a5a1a44;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div id="tech-home-avatar" style="width:42px;height:42px;border-radius:50%;background:#0a2008;border:2px solid #4a8a3055;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0">👷</div>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:#a8d880">Tsi'i Ocam</div>
-        <div id="tech-home-name" style="font-size:10px;color:#5a8a4a;letter-spacing:1px">Chargement...</div>
+
+  <!-- ── HEADER TECHNICIEN ── -->
+  <div style="background:linear-gradient(135deg,#071a05,#0c2a08);border-bottom:1px solid #2a5a1a33;padding:14px 16px 12px;position:sticky;top:0;z-index:50;backdrop-filter:blur(8px)">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="tech-home-avatar" style="width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#2d7a1a,#0a2008);border:2px solid #4a8a3066;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0;box-shadow:0 0 12px rgba(74,138,48,0.25)">👷</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#c8f0a0;letter-spacing:0.3px">Tsi'i Ocam</div>
+          <div id="tech-home-name" style="font-size:10px;color:#5a8a4a;letter-spacing:0.5px;display:flex;align-items:center;gap:5px">
+            <span id="tech-sync-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7ac97a;animation:techBadgePop 2s ease-in-out infinite"></span>
+            En ligne
+          </div>
+        </div>
       </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div id="tech-sync-dot" style="width:8px;height:8px;border-radius:50%;background:#7ac97a"></div>
-      <button onclick="doLogout()" style="background:#0a1a08;border:1px solid #2a5a1a44;color:#5a8a4a;padding:7px 12px;border-radius:8px;font-size:11px">Déconnexion</button>
+      <button onclick="doLogout()" style="background:#0a1a08;border:1px solid #2a5a1a44;color:#5a7a4a;padding:7px 14px;border-radius:20px;font-size:11px;cursor:pointer">Déco.</button>
     </div>
   </div>
-  <div id="tech-home-content" style="padding:16px">
 
-    <!-- KPIs statiques, mis à jour par renderTechHome() -->
+  <div id="tech-home-content" style="padding:14px 14px 24px">
+
+    <!-- KPIs — mis à jour par renderTechHome() -->
     <div id="tech-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
-      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px">🌿</div>
-        <div id="tech-kpi-parcelles" style="font-size:18px;font-weight:700;color:#a8d880">0</div>
-        <div style="font-size:9px;color:#5a8a4a">PARCELLES</div>
+      <div style="background:#061504;border:1px solid #2a5a1a33;border-radius:12px;padding:12px 8px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#4a8a30,transparent);opacity:0.5"></div>
+        <div style="font-size:22px;margin-bottom:4px">🌿</div>
+        <div id="tech-kpi-parcelles" style="font-size:20px;font-weight:700;color:#a8d880;line-height:1">0</div>
+        <div style="font-size:9px;color:#4a7a3a;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px">Parcelles</div>
       </div>
-      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px">⚠️</div>
-        <div id="tech-kpi-alertes" style="font-size:18px;font-weight:700;color:#5a8a4a">0</div>
-        <div style="font-size:9px;color:#5a8a4a">MALADIES 7J</div>
+      <div style="background:#061504;border:1px solid #2a5a1a33;border-radius:12px;padding:12px 8px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#4a8a30,transparent);opacity:0.5"></div>
+        <div style="font-size:22px;margin-bottom:4px">🔬</div>
+        <div id="tech-kpi-alertes" style="font-size:20px;font-weight:700;color:#5a8a4a;line-height:1">0</div>
+        <div style="font-size:9px;color:#4a7a3a;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px">Maladies 7j</div>
       </div>
-      <div id="tech-kpi-taches-box" style="background:#061504;border:1px solid #d5a03a44;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:20px">📌</div>
-        <div id="tech-kpi-taches" style="font-size:18px;font-weight:700;color:#d5a03a">0</div>
-        <div style="font-size:9px;color:#5a8a4a">TÂCHES</div>
+      <div id="tech-kpi-taches-box" style="background:#061504;border:1px solid #d5a03a33;border-radius:12px;padding:12px 8px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#d5a03a,transparent);opacity:0.4"></div>
+        <div style="font-size:22px;margin-bottom:4px">📌</div>
+        <div id="tech-kpi-taches" style="font-size:20px;font-weight:700;color:#d5a03a;line-height:1">0</div>
+        <div style="font-size:9px;color:#8a7030;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px">Tâches</div>
       </div>
     </div>
 
-    <!-- Boutons modules -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <button id="tbtn-dashboard" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">🏠</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Tableau de bord</div>
-      </button>
-      <button id="tbtn-parcelles" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">🌿</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Mes parcelles</div>
-      </button>
-      <button id="tbtn-journal" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📋</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Journal terrain</div>
-      </button>
-      <button id="tbtn-alertes" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">⚠️</div>
-        <div id="tbtn-alertes-label" style="font-size:12px;font-weight:600;color:#a8d880">Alertes</div>
-      </button>
-      <button id="tbtn-camera" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📸</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Diagnostic IA</div>
-      </button>
-      <button id="tbtn-diagnostics" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">🔬</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880">Historique diag.</div>
-      </button>
-      <button id="tbtn-taches" style="background:#061504;border:2px solid #d5a03a55;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
-        <div style="font-size:24px">📌</div>
-        <div style="font-size:12px;font-weight:600;color:#d5a03a" id="tbtn-taches-label">Mes tâches</div>
-      </button>
-      <button id="tbtn-fiche" style="background:linear-gradient(135deg,#061504,#0a2808);border:2px solid #4a8a3055;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%;grid-column:1/-1">
-        <div style="font-size:24px">📋</div>
-        <div style="font-size:12px;font-weight:600;color:#a8d880" id="tbtn-fiche-label">Fiche du jour — À remplir</div>
-      </button>
+    <!-- Fiche du Jour — CTA principal pleine largeur -->
+    <button id="tbtn-fiche" class="fiche-todo-blink" style="width:100%;border-radius:14px;padding:16px 14px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:14px;text-align:left">
+      <div style="width:46px;height:46px;border-radius:12px;background:rgba(230,126,34,0.15);border:1px solid rgba(230,126,34,0.35);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📋</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:#e8a84c" id="tbtn-fiche-label">Fiche du jour — À remplir ❌</div>
+        <div style="font-size:11px;color:#8a7040;margin-top:2px">À soumettre avant 18h00</div>
+      </div>
+      <div style="color:#e8a84c;font-size:18px;opacity:0.7">›</div>
+    </button>
 
+    <!-- Grille modules 2×3 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <button id="tbtn-dashboard" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%;transition:border-color 0.2s">
+        <div style="font-size:26px">🏠</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Tableau de bord</div>
+      </button>
+      <button id="tbtn-parcelles" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">🌿</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Mes parcelles</div>
+      </button>
+      <button id="tbtn-journal" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">📗</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Journal terrain</div>
+      </button>
+      <!-- ALERTES — avec badge animé injecté dynamiquement -->
+      <button id="tbtn-alertes" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%;position:relative">
+        <div style="position:relative;display:inline-block">
+          <div style="font-size:26px" id="tbtn-alertes-icon">⚠️</div>
+          <span id="tbtn-alertes-badge" style="display:none;position:absolute;top:-4px;right:-8px;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 3px" class="tech-badge-anim bell-shake">0</span>
+        </div>
+        <div id="tbtn-alertes-label" style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Alertes</div>
+      </button>
+      <button id="tbtn-camera" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">📷</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Diagnostic IA</div>
+      </button>
+      <button id="tbtn-diagnostics" style="background:#071a05;border:1px solid #2a5a1a33;border-radius:13px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;width:100%">
+        <div style="font-size:26px">🔬</div>
+        <div style="font-size:12px;font-weight:600;color:#a8d880;line-height:1.3">Historique diag.</div>
+      </button>
     </div>
 
-
+    <!-- Tâches — bouton pleine largeur -->
+    <button id="tbtn-taches" style="background:#071a05;border:2px solid #d5a03a44;border-radius:13px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%">
+      <div style="font-size:24px">📌</div>
+      <div style="font-size:13px;font-weight:600;color:#d5a03a" id="tbtn-taches-label">Mes tâches</div>
+      <div style="margin-left:auto;color:#d5a03a;font-size:16px;opacity:0.6">›</div>
+    </button>
 
   </div>
 </div>
