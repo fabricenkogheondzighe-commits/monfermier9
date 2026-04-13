@@ -2350,7 +2350,7 @@ async function envoyerQuestionIA(question) {
   try {
     var response=await fetch("/api/Sanny",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"meta-llama/llama-3.1-8b-instruct:free",max_tokens:1500,messages:[{role:"system",content:getSannySystem()},...iaConversation]})
+      body:JSON.stringify({model:"openrouter/auto",max_tokens:1500,messages:[{role:"system",content:getSannySystem()},...iaConversation]})
     });
     if (!response.ok) {
       var errBodyC=""; try { errBodyC=await response.text(); } catch(_){}
