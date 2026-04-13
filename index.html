@@ -2455,12 +2455,17 @@ function renderACModal(modal) {
     return getAlertesParcelle(p, observations).some(function(a){ return a.type === "danger"; });
   });
   var tabStyle = function(id) {
-    return scOnglet === id
-      ? "flex:1;padding:6px 2px;background:linear-gradient(135deg,#1a4a08,#2d7a1a);color:#d8f0b0;border:none;border-radius:8px;font-size:9px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2"
-      : "flex:1;padding:6px 2px;background:#061504;color:#5a8a4a;border:none;border-radius:8px;font-size:9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2";
+    var isAlert = (id === "alertes" && totalAl > 0);
+    if(scOnglet === id) {
+      return "flex:1;padding:10px 2px 8px;background:linear-gradient(135deg,#1a4a08,#2d7a1a);color:#d8f0b0;border:none;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.3;box-shadow:0 2px 8px #1a7a0844";
+    } else if(isAlert) {
+      return "flex:1;padding:10px 2px 8px;background:linear-gradient(135deg,#2a0800,#1a0400);color:#ff8040;border:2px solid #ff402066;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.3;animation:alertBlink 1s ease-in-out infinite";
+    } else {
+      return "flex:1;padding:10px 2px 8px;background:linear-gradient(160deg,#0a1a08,#061504);color:#5a8a4a;border:1px solid #1a3a1233;border-radius:10px;font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.3";
+    }
   };
   var alertBadge = totalAl > 0
-    ? '<div class="' + (hasDanger ? "stock-alert-blink" : "") + '" style="background:' + (hasDanger ? "transparent" : "#d5803a") + ';color:#fff;border-radius:50%;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;padding:0 4px">' + totalAl + '</div>'
+    ? '<div class="tech-alerte-blink" style="color:#fff;border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;padding:0 4px">' + totalAl + '</div>'
     : '';
   var html = '<div style="background:linear-gradient(180deg,#030d02,#051a02);border-radius:20px 20px 0 0;height:94vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;overflow:hidden">';
   html += '<div style="padding:12px 14px;border-bottom:1px solid #1a3a1244;display:flex;align-items:center;gap:10px;flex-shrink:0">';
@@ -2472,20 +2477,20 @@ function renderACModal(modal) {
   // Barre d'onglets : cachée pour technicien (navigation via espace technicien)
   var isTech = currentUser && currentUser.role === "technicien";
   if(!isTech) {
-    html += '<div style="display:flex;gap:3px;padding:5px 8px 2px;flex-shrink:0">';
-    html += '<button onclick="scSetOnglet(\'dashboard\')" style="' + tabStyle("dashboard") + '"><span style="font-size:15px">🏠</span>Accueil</button>';
-    html += '<button onclick="scSetOnglet(\'parcelles\')" style="' + tabStyle("parcelles") + '"><span style="font-size:15px">🌿</span>Parcelles</button>';
-    html += '<button onclick="scSetOnglet(\'journal\')" style="' + tabStyle("journal") + '"><span style="font-size:15px">📋</span>Journal</button>';
-    html += '<button onclick="scSetOnglet(\'alertes\')" style="' + tabStyle("alertes") + '"><span style="font-size:15px">⚠️</span>' + (totalAl > 0 ? 'Alertes ' + totalAl : 'Alertes') + '</button>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:8px 10px 4px;flex-shrink:0">';
+    html += '<button onclick="scSetOnglet(\'dashboard\')" style="' + tabStyle("dashboard") + '"><span style="font-size:18px">🏠</span>Accueil</button>';
+    html += '<button onclick="scSetOnglet(\'parcelles\')" style="' + tabStyle("parcelles") + '"><span style="font-size:18px">🌿</span>Parcelles</button>';
+    html += '<button onclick="scSetOnglet(\'journal\')" style="' + tabStyle("journal") + '"><span style="font-size:18px">📋</span>Journal</button>';
+    html += '<button onclick="scSetOnglet(\'alertes\')" style="' + tabStyle("alertes") + '"><span style="font-size:18px">⚠️</span>' + (totalAl > 0 ? 'Alertes ' + totalAl : 'Alertes') + '</button>';
     html += '</div>';
-    html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
-    html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '"><span style="font-size:15px">📖</span>Guide</button>';
-    html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '"><span style="font-size:15px">📸</span>Caméra IA</button>';
-    html += '<button onclick="scSetOnglet(\'suivi\')" style="' + tabStyle("suivi") + '"><span style="font-size:15px">📊</span>Suivi</button>';
-    html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '"><span style="font-size:15px">👥</span>Équipe</button>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:0 10px 4px;flex-shrink:0">';
+    html += '<button onclick="scSetOnglet(\'guide\')" style="' + tabStyle("guide") + '"><span style="font-size:18px">📖</span>Guide</button>';
+    html += '<button onclick="scSetOnglet(\'camera\')" style="' + tabStyle("camera") + '"><span style="font-size:18px">📸</span>Caméra IA</button>';
+    html += '<button onclick="scSetOnglet(\'suivi\')" style="' + tabStyle("suivi") + '"><span style="font-size:18px">📊</span>Suivi</button>';
+    html += '<button onclick="scSetOnglet(\'equipe\')" style="' + tabStyle("equipe") + '"><span style="font-size:18px">👥</span>Équipe</button>';
     html += '</div>';
-    html += '<div style="display:flex;gap:3px;padding:2px 8px 5px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
-    html += '<button onclick="scSetOnglet(\'diagnostics\')" style="' + tabStyle("diagnostics") + '"><span style="font-size:15px">🔬</span>Diagnostics IA</button>';
+    html += '<div style="display:grid;grid-template-columns:1fr;gap:5px;padding:0 10px 6px;border-bottom:1px solid #1a3a1222;flex-shrink:0">';
+    html += '<button onclick="scSetOnglet(\'diagnostics\')" style="' + tabStyle("diagnostics") + ' width:100%"><span style="font-size:18px">🔬</span>Diagnostics IA</button>';
     html += '</div>';
   } else {
     // Technicien : juste un bouton retour discret + séparateur
