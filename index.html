@@ -1053,21 +1053,27 @@ function renderTechHome() {
     if(elTaches) elTaches.textContent = tachesEnAttente.length;
     if(elTachesBox) elTachesBox.style.borderColor = tachesEnAttente.length > 0 ? "#d5a03a" : "#2a5a1a44";
 
-    // Badge alerte sur le bouton Alertes
+    // Badge alerte sur le bouton Alertes — clignote si alertes actives
     var elAlerteBtn = document.getElementById("tbtn-alertes");
     var elAlerteLabel = document.getElementById("tbtn-alertes-label");
-    if(elAlerteLabel) {
-      elAlerteLabel.textContent = nAlertes > 0 ? "Alertes 🔴 " + nAlertes : "Alertes";
-      elAlerteLabel.style.color = nAlertes > 0 ? "#ff8040" : "#a8d880";
+    if(elAlerteBtn) {
+      if(nAlertes > 0) {
+        elAlerteBtn.className = "stock-alert-blink";
+        elAlerteBtn.style.cssText = "background:transparent;border:2px solid #ff402055;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%";
+      } else {
+        elAlerteBtn.className = "";
+        elAlerteBtn.style.cssText = "background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%";
+      }
     }
-    if(elAlerteBtn) elAlerteBtn.style.borderColor = nAlertes > 0 ? "#ff804055" : "#2a5a1a44";
+    if(elAlerteLabel) {
+      elAlerteLabel.textContent = nAlertes > 0 ? "⚠️ Alertes (" + nAlertes + ")" : "Alertes";
+      elAlerteLabel.style.color = nAlertes > 0 ? "#ff8040" : "#a8d880";
+      elAlerteLabel.style.fontWeight = nAlertes > 0 ? "700" : "600";
+    }
 
     // Label fiche du jour
     var elFiche = document.getElementById("tbtn-fiche-label");
     if(elFiche) { elFiche.textContent = ficheExistante ? "Fiche du jour — Soumise ✅" : "Fiche du jour — À remplir ❌"; }
-
-    var elAL = document.getElementById("tbtn-alertes-label");
-    if(elAL) elAL.textContent = nAlertes > 0 ? "Alertes (" + nAlertes + ")" : "Alertes";
   } catch(e) {
     console.warn("renderTechHome KPIs:", e);
   }
@@ -1078,12 +1084,16 @@ function renderTechHome() {
       "tbtn-dashboard": "dashboard",
       "tbtn-parcelles": "parcelles",
       "tbtn-journal":   "journal",
-      "tbtn-alertes":   "alertes",
       "tbtn-camera":    "camera",
       "tbtn-diagnostics": "diagnostics",
       "tbtn-fiche":     "technicien",
     };
     // Bouton tâches — ouvre un panel inline dans l'espace technicien
+    var elAlertesBtn = document.getElementById("tbtn-alertes");
+    if(elAlertesBtn && !elAlertesBtn._techEvt) {
+      elAlertesBtn._techEvt = true;
+      elAlertesBtn.addEventListener("click", function(){ renderTechAlertes(); });
+    }
     var elTachesBtn = document.getElementById("tbtn-taches");
     if(elTachesBtn && !elTachesBtn._techEvt) {
       elTachesBtn._techEvt = true;
@@ -1116,6 +1126,52 @@ function scMarquerTacheFaite(id) {
   renderTechTaches();
   // Rafraîchir les KPIs
   setTimeout(function(){ renderTechHome(); }, 300);
+}
+
+
+function renderTechAlertes() {
+  var content = document.getElementById("tech-home-content");
+  if(!content) return;
+
+  var parcelles = typeof getParcelles === "function" ? getParcelles() : [];
+  var observations = typeof getObservations === "function" ? getObservations() : [];
+
+  var toutesAlertes = [];
+  parcelles.forEach(function(p) {
+    getAlertesParcelle(p, observations).forEach(function(a){
+      toutesAlertes.push({ parcelle: p, alerte: a });
+    });
+  });
+
+  var html = '<div style="padding:4px">';
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">';
+  html += '<button onclick="renderTechHome()" style="background:#061504;border:1px solid #2a5a1a44;color:#6a9a50;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer">← Retour</button>';
+  html += '<div style="font-size:14px;font-weight:700;color:#ff8040">⚠️ Alertes actives</div>';
+  html += '</div>';
+
+  if(toutesAlertes.length === 0) {
+    html += '<div style="text-align:center;padding:40px 20px;color:#5a8a4a">';
+    html += '<div style="font-size:40px;margin-bottom:10px">✅</div>';
+    html += '<div style="font-size:14px">Aucune alerte active</div>';
+    html += '<div style="font-size:11px;margin-top:6px">Tout est en ordre !</div>';
+    html += '</div>';
+  } else {
+    var ordre = { danger:0, warning:1, info:2 };
+    toutesAlertes.sort(function(a,b){ return (ordre[a.alerte.type]||9)-(ordre[b.alerte.type]||9); });
+    toutesAlertes.forEach(function(item) {
+      var isDanger = item.alerte.type === "danger";
+      var isWarning = item.alerte.type === "warning";
+      var blinkCls = isDanger ? " stock-alert-blink" : "";
+      var borderCol = isDanger ? "#ff2020" : isWarning ? "#d5a03a" : "#3a7ad5";
+      var bg = isDanger ? "transparent" : isWarning ? "#1a0f02" : "#02101a";
+      html += '<div class="' + blinkCls.trim() + '" style="background:' + bg + ';border:1px solid ' + borderCol + '66;border-left:3px solid ' + borderCol + ';border-radius:10px;padding:12px;margin-bottom:8px">';
+      html += '<div style="font-size:10px;color:#6a8a6a;margin-bottom:4px;font-weight:700">📍 ' + escapeHtml(item.parcelle.nom) + '</div>';
+      html += '<div style="font-size:13px;color:' + (isDanger ? "#ff9090" : "#c8d8b0") + '">' + item.alerte.msg + '</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+  content.innerHTML = html;
 }
 
 
