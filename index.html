@@ -966,6 +966,55 @@ function goHome() {
 function renderTechHome() {
   if(!currentUser || currentUser.role !== "technicien") return;
 
+  // Restaurer le HTML statique si écrasé par renderTechTaches ou autre
+  var content = document.getElementById("tech-home-content");
+  if(content && !document.getElementById("tbtn-dashboard")) {
+    content.innerHTML = `
+    <div id="tech-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px">🌿</div>
+        <div id="tech-kpi-parcelles" style="font-size:18px;font-weight:700;color:#a8d880">0</div>
+        <div style="font-size:9px;color:#5a8a4a">PARCELLES</div>
+      </div>
+      <div style="background:#061504;border:1px solid #2a5a1a44;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px">⚠️</div>
+        <div id="tech-kpi-alertes" style="font-size:18px;font-weight:700;color:#5a8a4a">0</div>
+        <div style="font-size:9px;color:#5a8a4a">MALADIES 7J</div>
+      </div>
+      <div id="tech-kpi-taches-box" style="background:#061504;border:1px solid #d5a03a44;border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:20px">📌</div>
+        <div id="tech-kpi-taches" style="font-size:18px;font-weight:700;color:#d5a03a">0</div>
+        <div style="font-size:9px;color:#5a8a4a">TÂCHES</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <button id="tbtn-dashboard" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">🏠</div><div style="font-size:12px;font-weight:600;color:#a8d880">Tableau de bord</div>
+      </button>
+      <button id="tbtn-parcelles" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">🌿</div><div style="font-size:12px;font-weight:600;color:#a8d880">Mes parcelles</div>
+      </button>
+      <button id="tbtn-journal" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">📋</div><div style="font-size:12px;font-weight:600;color:#a8d880">Journal terrain</div>
+      </button>
+      <button id="tbtn-alertes" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">⚠️</div><div style="font-size:12px;font-weight:600;color:#a8d880" id="tbtn-alertes-label">Alertes</div>
+      </button>
+      <button id="tbtn-camera" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">📸</div><div style="font-size:12px;font-weight:600;color:#a8d880">Diagnostic IA</div>
+      </button>
+      <button id="tbtn-diagnostics" style="background:#061504;border:1px solid #2a5a1a44;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">🔬</div><div style="font-size:12px;font-weight:600;color:#a8d880">Historique diag.</div>
+      </button>
+      <button id="tbtn-taches" style="background:#061504;border:2px solid #d5a03a55;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">📌</div><div style="font-size:12px;font-weight:600;color:#d5a03a" id="tbtn-taches-label">Mes tâches</div>
+      </button>
+      <button id="tbtn-fiche" style="background:linear-gradient(135deg,#061504,#0a2808);border:2px solid #4a8a3055;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:100%">
+        <div style="font-size:24px">📋</div><div style="font-size:12px;font-weight:600;color:#a8d880" id="tbtn-fiche-label">Fiche du jour — À remplir ❌</div>
+      </button>
+    </div>`;
+  }
+
   // Mettre à jour le nom et la photo
   var nameEl = document.getElementById("tech-home-name");
   if(nameEl) nameEl.textContent = (currentUser.name || "Technicien") + " · Technicien";
