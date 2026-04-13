@@ -1071,24 +1071,24 @@ function doLogin() {
     }
   }
 
-  // Techniciens pas encore chargés ET ce n'est pas l'admin → attendre Firestore
+  // Techniciens pas encore chargés ET ce n'est pas l'admin → lire directement Firestore
   if(technicians.length === 0 && code !== ADMIN_CODE) {
     if(btn) { btn.textContent = "Connexion..."; btn.disabled = true; }
-    var _waitCount = 0;
-    var _waitTech = setInterval(function() {
-      _waitCount++;
-      var techNow = technicians.find(function(t){ return t.code && t.code.toUpperCase() === code; });
-      if(techNow) {
-        clearInterval(_waitTech);
+    // Lire directement la collection technicians depuis Firestore
+    _waitForFirebase(function() {
+      window.db.collection("technicians").get().then(function(snap) {
+        var techList = [];
+        snap.forEach(function(doc) { techList.push({id: doc.id, ...doc.data()}); });
+        // Mettre à jour le tableau global
+        if(techList.length > 0) technicians = techList;
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
         doLogin();
-      } else if(technicians.length > 0 || vendors.length > 0 || _waitCount >= 40) {
-        // Données chargées mais code non trouvé → continuer vers vendeur
-        clearInterval(_waitTech);
+      }).catch(function() {
         if(btn) { btn.textContent = "Se connecter"; btn.disabled = false; }
-        doLogin();
-      }
-    }, 250);
+        err.textContent = "Erreur de connexion. Vérifiez votre réseau.";
+        err.style.display = "block";
+      });
+    });
     return;
   }
 
