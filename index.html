@@ -8813,6 +8813,29 @@ var _suiviSousOnglet = "fiches";
 
 function scRenderSuivi() {
   var today = new Date().toISOString().split("T")[0];
+
+  // Charger les fiches depuis Firebase si pas encore fait
+  if (window.db && !window._suiviListener) {
+    window._suiviListener = true;
+    window.db.collection("app_data").onSnapshot(function(snap) {
+      _fichesCache = [];
+      snap.forEach(function(docItem) {
+        if (docItem.id.startsWith("fiche_tech_")) {
+          try { _fichesCache.push(JSON.parse(docItem.data().data || "{}")); } catch(e){}
+        }
+        if (docItem.id === "tech_taches") {
+          try { _techTachesCache = JSON.parse(docItem.data().data || "[]"); } catch(e){}
+        }
+      });
+      _fichesCache.sort(function(a,b){ return b.createdAt > a.createdAt ? 1 : -1; });
+      // Rafraîchir l'affichage automatiquement si l'onglet suivi est actif
+      if (scOnglet === "suivi") {
+        var modal = document.getElementById("modal-sanny-champ");
+        if (modal) renderACModal(modal);
+      }
+    });
+  }
+
   var fiches = _fichesCache || [];
 
   // ── En-tête ──────────────────────────────────────────────
