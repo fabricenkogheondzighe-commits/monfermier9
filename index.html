@@ -702,7 +702,7 @@ window.addEventListener('load', function() {
 // SDK FIREBASE (vrai SDK — cloud)
 // ═══════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, updateDoc, deleteDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const FIREBASE_CONFIG = {
@@ -727,6 +727,13 @@ window.db = {
         return onSnapshot(colRef, function(snap) {
           cb({ forEach: function(fn) { snap.docs.forEach(function(d){ fn({id:d.id, data:function(){return d.data();}}); }); } });
         }, errCb || function(){});
+      },
+      get: function() {
+        return getDocs(colRef).then(function(snap) {
+          var docs = [];
+          snap.forEach(function(d){ docs.push({id:d.id, data:function(){return d.data();}}); });
+          return { forEach: function(fn){ docs.forEach(fn); } };
+        });
       },
       add: function(data) {
         return addDoc(colRef, data).then(function(ref){ return {id: ref.id}; });
