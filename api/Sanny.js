@@ -14,58 +14,44 @@ export default async function handler(req, res) {
     const body = req.body;
     const model = body.model || '';
 
-    // ─── ROUTE CLAUDE VISION (Caméra IA / Diagnostic plante) ───────────────
-    // Modèles Anthropic : claude-*, claude-sonnet-*, claude-opus-*, claude-haiku-*
-    if (model.startsWith('claude')) {
-      const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-      if (!ANTHROPIC_KEY) {
-        return res.status(500).json({ error: 'Clé ANTHROPIC_API_KEY manquante sur Vercel' });
-      }
+    // Note: la route Claude/Anthropic a été retirée car elle nécessite des crédits payants.
+    // Tout passe maintenant par Groq (gratuit).
 
-      // Nettoyer les caractères Unicode dans system prompt et messages
-      const cleanBody = sanitizeUnicode(body);
-
-      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: cleanBody.model,
-          max_tokens: cleanBody.max_tokens || 1200,
-          system: cleanBody.system || '',
-          messages: cleanBody.messages || []
-        })
-      });
-
-      if (!anthropicRes.ok) {
-        const errText = await anthropicRes.text();
-        console.error('[Sanny/Claude] Erreur Anthropic:', anthropicRes.status, errText.substring(0, 300));
-        return res.status(anthropicRes.status).json({
-          error: 'Erreur Anthropic',
-          detail: errText.substring(0, 300)
-        });
-      }
-
-      const data = await anthropicRes.json();
-      return res.status(200).json(data);
-    }
-
-    // ─── ROUTE GROQ / LLAMA (Sanny chat) ────────────────────────────────────
+    // ─── ROUTE GROQ (Sanny chat + Vision caméra) ────────────────────────────
     const GROQ_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_KEY) {
       return res.status(500).json({ error: 'Clé GROQ_API_KEY manquante sur Vercel' });
     }
 
-    // Nettoyer les caractères Unicode dans les messages
-    const messages = (body.messages || []).map(msg => ({
-      role: msg.role,
-      content: typeof msg.content === 'string'
-        ? cleanString(msg.content)
-        : msg.content
-    }));
+    // groq-vision → modèle Llama 4 Scout qui supporte les images
+    const isVision = model === 'groq-vision';
+    const groqModel = isVision
+      ? 'meta-llama/llama-4-scout-17b-16e-instruct'
+      : (model || 'llama-3.3-70b-versatile');
+
+    // Construire les messages selon le type
+    let messages;
+    if (isVision) {
+      // Pour la vision : system injecté dans le premier message user
+      const userMsg = body.messages && body.messages[0];
+      const systemText = body.system ? cleanString(body.system) + '\n\n' : '';
+      messages = [{
+        role: 'user',
+        content: userMsg ? userMsg.content.map(part => {
+          if (part.type === 'text') return { type: 'text', text: systemText + cleanString(part.text) };
+          if (part.type === 'image_url') return part; // déjà au bon format Groq
+          return part;
+        }) : [{ type: 'text', text: systemText }]
+      }];
+    } else {
+      // Chat normal : system en premier message
+      messages = (body.messages || []).map(msg => ({
+        role: msg.role,
+        content: typeof msg.content === 'string'
+          ? cleanString(msg.content)
+          : msg.content
+      }));
+    }
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -74,7 +60,7 @@ export default async function handler(req, res) {
         'Authorization': 'Bearer ' + GROQ_KEY
       },
       body: JSON.stringify({
-        model: model || 'llama3-70b-8192',
+        model: groqModel,
         max_tokens: body.max_tokens || 1500,
         messages: messages
       })
