@@ -8482,7 +8482,7 @@ async function acLancerDiagnostic() {
 
   try {
     // Groq Vision (gratuit) - remplace Anthropic
-    var systemDiag = "Tu es un agronome expert specialise en pathologie vegetale et maturite pour le piment (Capsicum) au Gabon. Reponds UNIQUEMENT en JSON pur (sans balises markdown) : {"parasite":"nom ou Aucun visible","certitude":"Elevee|Moyenne|Faible","symptomes":"symptomes visibles","urgence":"Critique|Elevee|Moderee|Faible","traitement":"traitement avec doses","prevention":"mesures preventives","stade":"stade si applicable","maturite":"Immature|En cours|Pret a recolter|Sur-mur|Non applicable","maturite_detail":"couleur taille fermete conseils","recolte_recommandee":true}. Si pas une plante: {"erreur":"Image non reconnue comme plante"}.";
+    var systemDiag = "Tu es un agronome expert specialise en pathologie vegetale et maturite pour le piment (Capsicum) au Gabon. Reponds UNIQUEMENT en JSON pur (sans balises markdown) : {\"parasite\":\"nom ou Aucun visible\",\"certitude\":\"Elevee|Moyenne|Faible\",\"symptomes\":\"symptomes visibles\",\"urgence\":\"Critique|Elevee|Moderee|Faible\",\"traitement\":\"traitement avec doses\",\"prevention\":\"mesures preventives\",\"stade\":\"stade si applicable\",\"maturite\":\"Immature|En cours|Pret a recolter|Sur-mur|Non applicable\",\"maturite_detail\":\"couleur taille fermete conseils\",\"recolte_recommandee\":true}. Si pas une plante: {\"erreur\":\"Image non reconnue comme plante\"}.";
     var response = await fetch("/api/Sanny", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
