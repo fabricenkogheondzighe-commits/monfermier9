@@ -1363,7 +1363,7 @@ function doLogin() {
     }
 
     // 2. Chercher dans vendors
-    var vendor = vendors.find(function(v){ return v.code === code; });
+    var vendor = vendors.find(function(v){ return v.code && v.code.toUpperCase() === code; });
     if(vendor) {
       if(vendor.suspended) {
         err.innerHTML = "⛔ Compte suspendu. Contactez la direction.";
