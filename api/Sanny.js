@@ -1,5 +1,10 @@
-// api/Sanny.js — Proxy IA pour Sanny (Groq / Llama) + Claude Vision (Caméra IA)
-// Déployer dans le dossier /api/ de votre projet Vercel
+// api/Sanny.js — Proxy IA pour Sanny (Groq) + Caméra IA
+// Deployer dans le dossier /api/ de votre projet Vercel
+//
+// Variables Vercel :
+//   GROQ_API_KEY      (obligatoire)
+//   GROQ_MODEL        (optionnel, texte, defaut : openai/gpt-oss-120b)
+//   GROQ_VISION_MODEL (modele vision pour la Camera IA)
 
 export default async function handler(req, res) {
   // CORS
@@ -10,24 +15,26 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
 
   try {
-    // Lire le body — Vercel le parse automatiquement en JSON
     const body = req.body;
     const model = body.model || '';
 
-    // Note: la route Claude/Anthropic a été retirée car elle nécessite des crédits payants.
-    // Tout passe maintenant par Groq (gratuit).
-
-    // ─── ROUTE GROQ (Sanny chat + Vision caméra) ────────────────────────────
     const GROQ_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_KEY) {
       return res.status(500).json({ error: 'Clé GROQ_API_KEY manquante sur Vercel' });
     }
 
-    // groq-vision → modèle Llama 4 Scout qui supporte les images
+    // groq-vision → appel avec images (Caméra IA)
     const isVision = model === 'groq-vision';
     const groqModel = isVision
-      ? 'meta-llama/llama-4-scout-17b-16e-instruct'
-      : (model || 'llama-3.3-70b-versatile');
+      ? process.env.GROQ_VISION_MODEL
+      : (process.env.GROQ_MODEL || 'openai/gpt-oss-120b');
+
+    if (!groqModel) {
+      return res.status(501).json({
+        error: 'Vision indisponible',
+        detail: 'Aucun modele vision configure (GROQ_VISION_MODEL)'
+      });
+    }
 
     // Construire les messages selon le type
     let messages;
@@ -39,12 +46,12 @@ export default async function handler(req, res) {
         role: 'user',
         content: userMsg ? userMsg.content.map(part => {
           if (part.type === 'text') return { type: 'text', text: systemText + cleanString(part.text) };
-          if (part.type === 'image_url') return part; // déjà au bon format Groq
+          if (part.type === 'image_url') return part;
           return part;
         }) : [{ type: 'text', text: systemText }]
       }];
     } else {
-      // Chat normal : system en premier message
+      // Chat normal
       messages = (body.messages || []).map(msg => ({
         role: msg.role,
         content: typeof msg.content === 'string'
@@ -85,32 +92,13 @@ export default async function handler(req, res) {
 }
 
 // ── Nettoyage Unicode ────────────────────────────────────────────────────────
-// Remplace les caractères > U+00FF par leur équivalent ASCII ou les supprime
 function cleanString(str) {
   if (typeof str !== 'string') return str;
   return str
-    // Tirets typographiques → tiret simple
     .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, '-')
-    // Guillemets typographiques → guillemets droits
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
-    // Points de suspension → trois points
     .replace(/\u2026/g, '...')
-    // Espaces insécables → espace normale
     .replace(/[\u00A0\u202F\u2009]/g, ' ')
-    // Autres caractères > 255 → supprimés
     .replace(/[^\x00-\xFF]/g, '');
-}
-
-function sanitizeUnicode(obj) {
-  if (typeof obj === 'string') return cleanString(obj);
-  if (Array.isArray(obj)) return obj.map(sanitizeUnicode);
-  if (obj && typeof obj === 'object') {
-    const out = {};
-    for (const k of Object.keys(obj)) {
-      out[k] = sanitizeUnicode(obj[k]);
-    }
-    return out;
-  }
-  return obj;
 }
